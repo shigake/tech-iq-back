@@ -194,6 +194,7 @@ type TechnicianDTO struct {
 	Emails       []EmailEntry `json:"emails"`
 	Phones       []PhoneEntry `json:"phones"`
 	InAttendance bool         `json:"inAttendance"`
+	CreatedAt    time.Time    `json:"createdAt"`
 }
 
 func (t *Technician) ToDTO() TechnicianDTO {
@@ -208,6 +209,7 @@ func (t *Technician) ToDTO() TechnicianDTO {
 		Emails:       t.Emails,
 		Phones:       t.Phones,
 		InAttendance: t.InAttendance,
+		CreatedAt:    t.CreatedAt,
 	}
 }
 
