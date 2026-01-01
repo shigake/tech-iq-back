@@ -43,9 +43,9 @@ func JWTProtected(secret string) fiber.Handler {
 		}
 
 		// Store user info in context for later use
-		c.Locals("userId", claims["userId"])
+		c.Locals("userID", claims["userId"])
 		c.Locals("email", claims["email"])
-		c.Locals("role", claims["role"])
+		c.Locals("userRole", claims["role"])
 
 		return c.Next()
 	}
@@ -53,7 +53,7 @@ func JWTProtected(secret string) fiber.Handler {
 
 func AdminOnly() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		role := c.Locals("role")
+		role := c.Locals("userRole")
 		if role != "ADMIN" {
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 				"error": "Admin access required",
@@ -66,7 +66,7 @@ func AdminOnly() fiber.Handler {
 // AdminOrEmployee allows ADMIN and EMPLOYEE roles
 func AdminOrEmployee() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		role := c.Locals("role")
+		role := c.Locals("userRole")
 		if role != "ADMIN" && role != "EMPLOYEE" {
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 				"error": "Employee or admin access required",
@@ -80,7 +80,7 @@ func AdminOrEmployee() fiber.Handler {
 // Technicians (USER role) can only read
 func WriteAccess() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		role := c.Locals("role")
+		role := c.Locals("userRole")
 		method := c.Method()
 		
 		// GET requests allowed for all authenticated users
