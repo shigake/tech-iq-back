@@ -143,7 +143,7 @@ func (h *ExportHandler) ExportTechnicians(c *fiber.Ctx) error {
 // ExportTickets exports tickets data as CSV
 func (h *ExportHandler) ExportTickets(c *fiber.Ctx) error {
 	// Get all tickets with large page size
-	tickets, _, err := h.ticketRepo.FindAll(0, 10000)
+	tickets, _, err := h.ticketRepo.FindAll(0, 10000, nil)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
 			"success": false,
@@ -278,7 +278,7 @@ func (h *ExportHandler) ExportAll(c *fiber.Ctx) error {
 
 	// Export tickets section
 	writer.Write([]string{"=== TICKETS ==="})
-	tickets, _, err := h.ticketRepo.FindAll(0, 10000)
+	tickets, _, err := h.ticketRepo.FindAll(0, 10000, nil)
 	if err == nil {
 		ticketHeader := []string{
 			"ID", "Número OS", "Descrição do Erro", "Status", "Prioridade",
