@@ -186,3 +186,34 @@ func (h *TicketHandler) AssignTechnician(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{"message": "Technicians assigned successfully"})
 }
+
+func (h *TicketHandler) SignTicket(c *fiber.Ctx) error {
+	id := c.Params("id")
+	if id == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid ticket ID",
+		})
+	}
+
+	var req models.SignTicketRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	if req.TechnicianSignature == "" || req.ClientSignature == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Both technician and client signatures are required",
+		})
+	}
+
+	ticket, err := h.service.SignTicket(id, &req)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.JSON(ticket)
+}

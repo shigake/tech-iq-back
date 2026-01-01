@@ -159,6 +159,7 @@ func main() {
 	tickets.Delete("/:id", middleware.WriteAccess(), ticketHandler.Delete)
 	tickets.Put("/:id/status", middleware.WriteAccess(), ticketHandler.UpdateStatus)
 	tickets.Put("/:id/assign", middleware.WriteAccess(), ticketHandler.AssignTechnician)
+	tickets.Post("/:id/sign", middleware.WriteAccess(), ticketHandler.SignTicket)
 
 	// Client routes
 	clients := protected.Group("/clients")

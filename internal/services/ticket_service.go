@@ -16,6 +16,7 @@ type TicketService interface {
 	Delete(id string) error
 	UpdateStatus(id string, status string) error
 	AssignTechnicians(id string, technicianIDs []string) error
+	SignTicket(id string, req *models.SignTicketRequest) (*models.Ticket, error)
 }
 
 type ticketService struct {
@@ -183,4 +184,27 @@ func (s *ticketService) AssignTechnicians(id string, technicianIDs []string) err
 	}
 
 	return s.ticketRepo.AssignTechnicians(id, technicians)
+}
+
+func (s *ticketService) SignTicket(id string, req *models.SignTicketRequest) (*models.Ticket, error) {
+	ticket, err := s.ticketRepo.FindByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	if ticket.TechnicianSignature != "" && ticket.ClientSignature != "" {
+		return nil, errors.New("ticket already signed")
+	}
+
+	now := time.Now()
+	ticket.TechnicianSignature = req.TechnicianSignature
+	ticket.ClientSignature = req.ClientSignature
+	ticket.SignedByName = req.SignedByName
+	ticket.SignedAt = &now
+
+	if err := s.ticketRepo.Update(ticket); err != nil {
+		return nil, err
+	}
+
+	return ticket, nil
 }

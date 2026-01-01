@@ -56,6 +56,12 @@ type Ticket struct {
 	ComputerModel string `json:"computerModel" gorm:"column:computer_model;type:varchar(100)"`
 	SerialNumber  string `json:"serialNumber" gorm:"column:serial_number;type:varchar(100)"`
 
+	// Signatures (base64 encoded images)
+	TechnicianSignature string     `json:"technicianSignature" gorm:"column:technician_signature;type:text"`
+	ClientSignature     string     `json:"clientSignature" gorm:"column:client_signature;type:text"`
+	SignedAt            *time.Time `json:"signedAt" gorm:"column:signed_at"`
+	SignedByName        string     `json:"signedByName" gorm:"column:signed_by_name;type:varchar(255)"`
+
 	// Dates
 	StartDate *time.Time     `json:"startDate"`
 	DueDate   *time.Time     `json:"dueDate"`
@@ -115,22 +121,27 @@ type TicketFile struct {
 // DTOs
 
 type TicketDTO struct {
-	ID               string     `json:"id"`
-	OSNumber         string     `json:"osNumber"`
-	Status           string     `json:"status"`
-	Priority         string     `json:"priority"`
-	ErrorDescription string     `json:"errorDescription"`
-	CustomerFeedback string     `json:"customerFeedback"`
-	ClientName       string     `json:"clientName"`
-	CategoryName     string     `json:"categoryName"`
-	TechnicianCount  int        `json:"technicianCount"`
-	ComputerBrand    string     `json:"computerBrand"`
-	ComputerModel    string     `json:"computerModel"`
-	SerialNumber     string     `json:"serialNumber"`
-	StartDate        *time.Time `json:"startDate"`
-	DueDate          *time.Time `json:"dueDate"`
-	ClosedAt         *time.Time `json:"closedAt"`
-	CreatedAt        time.Time  `json:"createdAt"`
+	ID                  string     `json:"id"`
+	OSNumber            string     `json:"osNumber"`
+	Status              string     `json:"status"`
+	Priority            string     `json:"priority"`
+	ErrorDescription    string     `json:"errorDescription"`
+	CustomerFeedback    string     `json:"customerFeedback"`
+	ClientName          string     `json:"clientName"`
+	CategoryName        string     `json:"categoryName"`
+	TechnicianCount     int        `json:"technicianCount"`
+	ComputerBrand       string     `json:"computerBrand"`
+	ComputerModel       string     `json:"computerModel"`
+	SerialNumber        string     `json:"serialNumber"`
+	TechnicianSignature string     `json:"technicianSignature,omitempty"`
+	ClientSignature     string     `json:"clientSignature,omitempty"`
+	SignedAt            *time.Time `json:"signedAt"`
+	SignedByName        string     `json:"signedByName"`
+	IsSigned            bool       `json:"isSigned"`
+	StartDate           *time.Time `json:"startDate"`
+	DueDate             *time.Time `json:"dueDate"`
+	ClosedAt            *time.Time `json:"closedAt"`
+	CreatedAt           time.Time  `json:"createdAt"`
 }
 
 func (t *Ticket) ToDTO() TicketDTO {
@@ -144,22 +155,27 @@ func (t *Ticket) ToDTO() TicketDTO {
 	}
 
 	return TicketDTO{
-		ID:               t.ID,
-		OSNumber:         t.OSNumber,
-		Status:           string(t.Status),
-		Priority:         string(t.Priority),
-		ErrorDescription: t.ErrorDescription,
-		CustomerFeedback: t.CustomerFeedback,
-		ClientName:       clientName,
-		CategoryName:     categoryName,
-		TechnicianCount:  len(t.Technicians),
-		ComputerBrand:    t.ComputerBrand,
-		ComputerModel:    t.ComputerModel,
-		SerialNumber:     t.SerialNumber,
-		StartDate:        t.StartDate,
-		DueDate:          t.DueDate,
-		ClosedAt:         t.ClosedAt,
-		CreatedAt:        t.CreatedAt,
+		ID:                  t.ID,
+		OSNumber:            t.OSNumber,
+		Status:              string(t.Status),
+		Priority:            string(t.Priority),
+		ErrorDescription:    t.ErrorDescription,
+		CustomerFeedback:    t.CustomerFeedback,
+		ClientName:          clientName,
+		CategoryName:        categoryName,
+		TechnicianCount:     len(t.Technicians),
+		ComputerBrand:       t.ComputerBrand,
+		ComputerModel:       t.ComputerModel,
+		SerialNumber:        t.SerialNumber,
+		TechnicianSignature: t.TechnicianSignature,
+		ClientSignature:     t.ClientSignature,
+		SignedAt:            t.SignedAt,
+		SignedByName:        t.SignedByName,
+		IsSigned:            t.TechnicianSignature != "" && t.ClientSignature != "",
+		StartDate:           t.StartDate,
+		DueDate:             t.DueDate,
+		ClosedAt:            t.ClosedAt,
+		CreatedAt:           t.CreatedAt,
 	}
 }
 
@@ -197,6 +213,12 @@ func (r *CreateTicketRequest) GetModel() string {
 
 type UpdateStatusRequest struct {
 	Status string `json:"status" validate:"required"`
+}
+
+type SignTicketRequest struct {
+	TechnicianSignature string `json:"technicianSignature" validate:"required"`
+	ClientSignature     string `json:"clientSignature" validate:"required"`
+	SignedByName        string `json:"signedByName" validate:"required"`
 }
 
 type AssignTechnicianRequest struct {
