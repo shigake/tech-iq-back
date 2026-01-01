@@ -84,6 +84,7 @@ func main() {
 	categoryRepo := repositories.NewCategoryRepository(db)
 	hierarchyRepo := repositories.NewHierarchyRepository(db)
 	activityLogRepo := repositories.NewActivityLogRepository(db)
+	geoRepo := repositories.NewGeoRepository(db)
 
 	// Initialize services
 	authService := services.NewAuthService(userRepo, cfg)
@@ -91,6 +92,8 @@ func main() {
 	ticketService := services.NewTicketService(ticketRepo, technicianRepo, clientRepo, categoryRepo)
 	dashboardService := services.NewDashboardService(technicianRepo, ticketRepo, clientRepo)
 	activityLogService := services.NewActivityLogService(activityLogRepo)
+	hierarchyService := services.NewHierarchyService(hierarchyRepo)
+	geoService := services.NewGeoService(geoRepo, userRepo, hierarchyService)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
@@ -104,6 +107,7 @@ func main() {
 	hierarchyHandler := handlers.NewHierarchyHandler(hierarchyRepo)
 	userHandler := handlers.NewUserHandler(userRepo)
 	activityLogHandler := handlers.NewActivityLogHandler(activityLogService)
+	geoHandler := handlers.NewGeoHandler(geoService)
 
 	// Routes
 	api := app.Group("/api/v1")
@@ -251,6 +255,19 @@ func main() {
 	access.Get("/user/:userId", hierarchyHandler.GetUserAccess)
 	access.Get("/history", hierarchyHandler.GetHistory)
 	access.Post("/history/:id/revert", middleware.WriteAccess(), hierarchyHandler.RevertChange)
+
+	// ==================== Geolocation Routes ====================
+	geo := protected.Group("/geo")
+	// Technician endpoints (send location)
+	geo.Post("/locations", geoHandler.CreateLocation)
+	geo.Post("/locations/batch", geoHandler.CreateBatchLocations)
+	// Manager endpoints (view locations)
+	geo.Get("/technicians/last", geoHandler.GetTechniciansLastLocations)
+	geo.Get("/technicians/:id/history", geoHandler.GetTechnicianHistory)
+	geo.Get("/tickets/:id/locations", geoHandler.GetTicketLocations)
+	// Admin endpoints (settings)
+	geo.Get("/settings", geoHandler.GetGeoSettings)
+	geo.Put("/settings", middleware.WriteAccess(), geoHandler.UpdateGeoSettings)
 
 	// Start server
 	port := cfg.AppPort

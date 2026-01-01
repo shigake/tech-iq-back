@@ -58,6 +58,10 @@ func Migrate(db *gorm.DB) error {
 		&models.AccessAuditLog{},
 		// Activity Logs
 		&models.ActivityLog{},
+		// Geolocation
+		&models.TechnicianLocation{},
+		&models.TechnicianLastLocation{},
+		&models.GeoSettings{},
 	)
 	if err != nil {
 		log.Println("⚠️ Migration warning (continuing anyway):", err)
