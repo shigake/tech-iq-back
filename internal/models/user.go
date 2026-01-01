@@ -66,3 +66,56 @@ type ChangePasswordRequest struct {
 	CurrentPassword string `json:"currentPassword" validate:"required,min=6"`
 	NewPassword     string `json:"newPassword" validate:"required,min=6"`
 }
+
+// CreateUserRequest represents admin request to create a new user
+type CreateUserRequest struct {
+	Email     string `json:"email" validate:"required,email"`
+	Password  string `json:"password" validate:"required,min=6"`
+	FirstName string `json:"firstName" validate:"required,min=2"`
+	LastName  string `json:"lastName" validate:"required,min=2"`
+	Role      string `json:"role" validate:"required,oneof=ADMIN EMPLOYEE USER"`
+}
+
+// UpdateUserRequest represents admin request to update a user
+type UpdateUserRequest struct {
+	Email     string `json:"email" validate:"omitempty,email"`
+	FirstName string `json:"firstName" validate:"omitempty,min=2"`
+	LastName  string `json:"lastName" validate:"omitempty,min=2"`
+	Role      string `json:"role" validate:"omitempty,oneof=ADMIN EMPLOYEE USER"`
+	Active    *bool  `json:"active"`
+}
+
+// ResetPasswordRequest represents admin request to reset user password
+type ResetPasswordRequest struct {
+	NewPassword string `json:"newPassword" validate:"required,min=6"`
+}
+
+// UserResponse represents a user response without sensitive data
+type UserResponse struct {
+	ID             string `json:"id"`
+	Email          string `json:"email"`
+	FirstName      string `json:"firstName"`
+	LastName       string `json:"lastName"`
+	FullName       string `json:"fullName"`
+	Role           string `json:"role"`
+	ProfilePicture string `json:"profilePicture,omitempty"`
+	Active         bool   `json:"active"`
+	CreatedAt      string `json:"createdAt"`
+	UpdatedAt      string `json:"updatedAt"`
+}
+
+// ToResponse converts a User to UserResponse
+func (u *User) ToResponse() UserResponse {
+	return UserResponse{
+		ID:             u.ID,
+		Email:          u.Email,
+		FirstName:      u.FirstName,
+		LastName:       u.LastName,
+		FullName:       u.FullName,
+		Role:           u.Role,
+		ProfilePicture: u.ProfilePicture,
+		Active:         u.Active,
+		CreatedAt:      u.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		UpdatedAt:      u.UpdatedAt.Format("2006-01-02T15:04:05Z"),
+	}
+}

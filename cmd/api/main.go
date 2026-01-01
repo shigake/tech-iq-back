@@ -82,6 +82,7 @@ func main() {
 	ticketRepo := repositories.NewTicketRepository(db)
 	clientRepo := repositories.NewClientRepository(db)
 	categoryRepo := repositories.NewCategoryRepository(db)
+	hierarchyRepo := repositories.NewHierarchyRepository(db)
 
 	// Initialize services
 	authService := services.NewAuthService(userRepo, cfg)
@@ -98,6 +99,8 @@ func main() {
 	categoryHandler := handlers.NewCategoryHandler(categoryRepo)
 	termsHandler := handlers.NewTermsHandler()
 	exportHandler := handlers.NewExportHandler(clientRepo, technicianRepo, ticketRepo)
+	hierarchyHandler := handlers.NewHierarchyHandler(hierarchyRepo)
+	userHandler := handlers.NewUserHandler(userRepo)
 
 	// Routes
 	api := app.Group("/api/v1")
@@ -124,6 +127,17 @@ func main() {
 
 	// Protected auth routes
 	protected.Post("/auth/change-password", authHandler.ChangePassword)
+
+	// User management routes (admin)
+	users := protected.Group("/users")
+	users.Get("/", userHandler.GetUsers)
+	users.Get("/search", userHandler.SearchUsers)
+	users.Get("/:id", userHandler.GetUser)
+	users.Post("/", userHandler.CreateUser)
+	users.Put("/:id", userHandler.UpdateUser)
+	users.Delete("/:id", userHandler.DeleteUser)
+	users.Post("/:id/reset-password", userHandler.ResetPassword)
+	users.Post("/:id/toggle-status", userHandler.ToggleUserStatus)
 
 	// Technician routes
 	technicians := protected.Group("/technicians")
@@ -183,6 +197,49 @@ func main() {
 	export.Get("/technicians", exportHandler.ExportTechnicians)
 	export.Get("/tickets", exportHandler.ExportTickets)
 	export.Get("/all", exportHandler.ExportAll)
+
+	// ==================== Hierarchy Access Control Routes ====================
+	// Hierarchies
+	hierarchies := protected.Group("/hierarchies")
+	hierarchies.Get("/", hierarchyHandler.GetAllHierarchies)
+	hierarchies.Get("/:id", hierarchyHandler.GetHierarchy)
+	hierarchies.Post("/", middleware.WriteAccess(), hierarchyHandler.CreateHierarchy)
+	hierarchies.Put("/:id", middleware.WriteAccess(), hierarchyHandler.UpdateHierarchy)
+	hierarchies.Delete("/:id", middleware.WriteAccess(), hierarchyHandler.DeleteHierarchy)
+
+	// Nodes (within hierarchy)
+	hierarchies.Post("/:id/nodes", middleware.WriteAccess(), hierarchyHandler.CreateNode)
+
+	// Node operations
+	nodes := protected.Group("/nodes")
+	nodes.Put("/:id", middleware.WriteAccess(), hierarchyHandler.UpdateNode)
+	nodes.Put("/:id/move", middleware.WriteAccess(), hierarchyHandler.MoveNode)
+	nodes.Delete("/:id", middleware.WriteAccess(), hierarchyHandler.DeleteNode)
+	nodes.Get("/:id/members", hierarchyHandler.GetNodeMembers)
+	nodes.Post("/:id/members", middleware.WriteAccess(), hierarchyHandler.AddNodeMember)
+
+	// Memberships
+	memberships := protected.Group("/memberships")
+	memberships.Put("/:id", middleware.WriteAccess(), hierarchyHandler.UpdateMembership)
+	memberships.Delete("/:id", middleware.WriteAccess(), hierarchyHandler.DeleteMembership)
+
+	// Roles
+	roles := protected.Group("/roles")
+	roles.Get("/", hierarchyHandler.GetAllRoles)
+	roles.Get("/:id", hierarchyHandler.GetRole)
+	roles.Post("/", middleware.WriteAccess(), hierarchyHandler.CreateRole)
+	roles.Put("/:id", middleware.WriteAccess(), hierarchyHandler.UpdateRole)
+	roles.Delete("/:id", middleware.WriteAccess(), hierarchyHandler.DeleteRole)
+
+	// Permissions
+	protected.Get("/permissions", hierarchyHandler.GetAllPermissions)
+
+	// Access simulation and history
+	access := protected.Group("/access")
+	access.Post("/simulate", hierarchyHandler.SimulateAccess)
+	access.Get("/user/:userId", hierarchyHandler.GetUserAccess)
+	access.Get("/history", hierarchyHandler.GetHistory)
+	access.Post("/history/:id/revert", middleware.WriteAccess(), hierarchyHandler.RevertChange)
 
 	// Start server
 	port := cfg.AppPort
