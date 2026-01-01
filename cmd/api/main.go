@@ -86,6 +86,7 @@ func main() {
 	activityLogRepo := repositories.NewActivityLogRepository(db)
 	geoRepo := repositories.NewGeoRepository(db)
 	securityLogRepo := repositories.NewSecurityLogRepository(db)
+	financialRepo := repositories.NewFinancialRepository(db)
 
 	// Initialize services
 	authService := services.NewAuthService(userRepo, securityLogRepo, cfg)
@@ -97,6 +98,7 @@ func main() {
 	geoService := services.NewGeoService(geoRepo, userRepo, hierarchyService)
 	securityLogService := services.NewSecurityLogService(securityLogRepo)
 	systemMetricsService := services.NewSystemMetricsService(db, redisClient, userRepo, ticketRepo, securityLogRepo)
+	financialService := services.NewFinancialService(financialRepo)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
@@ -113,6 +115,7 @@ func main() {
 	geoHandler := handlers.NewGeoHandler(geoService)
 	securityLogHandler := handlers.NewSecurityLogHandler(securityLogService)
 	adminHandler := handlers.NewAdminHandler(systemMetricsService)
+	financialHandler := handlers.NewFinancialHandler(financialService)
 
 	// Routes
 	api := app.Group("/api/v1")
@@ -276,6 +279,33 @@ func main() {
 	admin.Get("/system-metrics", adminHandler.GetSystemMetrics)
 	// Health check (public)
 	api.Get("/health", adminHandler.GetHealthCheck)
+
+	// ==================== Financial Routes ====================
+	financial := protected.Group("/financial")
+	// Categories (public info)
+	financial.Get("/categories", financialHandler.GetCategories)
+	// Dashboard and reports
+	financial.Get("/dashboard", financialHandler.GetDashboard)
+	financial.Get("/reports/cash-flow", financialHandler.GetCashFlowReport)
+	financial.Get("/reports/technician-payments", financialHandler.GetTechnicianPaymentsReport)
+	// Financial entries
+	entries := financial.Group("/entries")
+	entries.Get("/", financialHandler.ListEntries)
+	entries.Get("/:id", financialHandler.GetEntry)
+	entries.Post("/", middleware.WriteAccess(), financialHandler.CreateEntry)
+	entries.Put("/:id", middleware.WriteAccess(), financialHandler.UpdateEntry)
+	entries.Patch("/:id/status", middleware.WriteAccess(), financialHandler.UpdateEntryStatus)
+	entries.Delete("/:id", middleware.AdminOnly(), financialHandler.DeleteEntry)
+	// Payment batches (admin only)
+	batches := financial.Group("/batches", middleware.AdminOnly())
+	batches.Get("/", financialHandler.ListBatches)
+	batches.Get("/:id", financialHandler.GetBatch)
+	batches.Post("/", financialHandler.CreateBatch)
+	batches.Delete("/:id", financialHandler.DeleteBatch)
+	batches.Post("/:id/entries", financialHandler.AddEntriesToBatch)
+	batches.Delete("/:id/entries/:entryId", financialHandler.RemoveEntryFromBatch)
+	batches.Patch("/:id/approve", financialHandler.ApproveBatch)
+	batches.Patch("/:id/pay", financialHandler.PayBatch)
 
 	// Start server
 	port := cfg.AppPort
