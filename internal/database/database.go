@@ -5,6 +5,7 @@ import (
 
 	"github.com/shigake/tech-iq-back/internal/config"
 	"github.com/shigake/tech-iq-back/internal/models"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -207,12 +208,16 @@ func SeedAdminUser(db *gorm.DB) {
 
 	// Create admin user with hashed password
 	// Password: admin123
-	// Hash generated with bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
-	hashedPassword := "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZRGdjGj/n3.Q1SN9m1pW1mZr2E2TW"
+	// Generate hash at runtime to ensure it's valid
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
+	if err != nil {
+		log.Printf("⚠️ Failed to hash password: %v", err)
+		return
+	}
 
 	admin := models.User{
 		Email:     "admin@techerp.com",
-		Password:  hashedPassword,
+		Password:  string(hashedPassword),
 		FirstName: "Administrador",
 		LastName:  "Sistema",
 		FullName:  "Administrador Sistema",
