@@ -1,0 +1,1406 @@
+{
+	"info": {
+		"_postman_id": "tech-erp-api-collection",
+		"name": "TechERP API",
+		"description": "Complete API collection for TechERP Backend",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "https://srv1209774.hstgr.cloud/api/v1",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Health",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["health"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Sign In",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.token) {",
+									"    pm.collectionVariables.set('token', jsonData.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"admin@techerp.com\",\n    \"password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/signin",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "signin"]
+						}
+					}
+				},
+				{
+					"name": "Sign Up",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"user@example.com\",\n    \"password\": \"password123\",\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/signup",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "signup"]
+						}
+					}
+				},
+				{
+					"name": "Refresh Token",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"refreshToken\": \"{{token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/refresh",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "refresh"]
+						}
+					}
+				},
+				{
+					"name": "Change Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"currentPassword\": \"admin123\",\n    \"newPassword\": \"newpassword123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/change-password",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "change-password"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "List Users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/users?page=1&limit=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["users"],
+							"query": [
+								{"key": "page", "value": "1"},
+								{"key": "limit", "value": "20"},
+								{"key": "search", "value": "", "disabled": true}
+							]
+						}
+					}
+				},
+				{
+					"name": "Search Users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/users/search?q=admin&limit=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", "search"],
+							"query": [
+								{"key": "q", "value": "admin"},
+								{"key": "limit", "value": "10"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get User by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/users/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", ":id"],
+							"variable": [
+								{"key": "id", "value": "user-uuid-here"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"newuser@example.com\",\n    \"password\": \"password123\",\n    \"firstName\": \"New\",\n    \"lastName\": \"User\",\n    \"role\": \"USER\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["users"]
+						}
+					}
+				},
+				{
+					"name": "Update User",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"firstName\": \"Updated\",\n    \"lastName\": \"Name\",\n    \"role\": \"EMPLOYEE\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/users/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", ":id"],
+							"variable": [
+								{"key": "id", "value": "user-uuid-here"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/users/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", ":id"],
+							"variable": [
+								{"key": "id", "value": "user-uuid-here"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Reset User Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"newPassword\": \"newpassword123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/users/:id/reset-password",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", ":id", "reset-password"],
+							"variable": [
+								{"key": "id", "value": "user-uuid-here"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Toggle User Status",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/users/:id/toggle-status",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", ":id", "toggle-status"],
+							"variable": [
+								{"key": "id", "value": "user-uuid-here"}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Technicians",
+			"item": [
+				{
+					"name": "List Technicians",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/technicians?page=0&size=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["technicians"],
+							"query": [
+								{"key": "page", "value": "0"},
+								{"key": "size", "value": "20"},
+								{"key": "search", "value": "", "disabled": true},
+								{"key": "status", "value": "", "disabled": true},
+								{"key": "type", "value": "", "disabled": true},
+								{"key": "city", "value": "", "disabled": true},
+								{"key": "state", "value": "", "disabled": true}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Technician by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/technicians/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["technicians", ":id"],
+							"variable": [
+								{"key": "id", "value": "1"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Technician",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"John Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"phone\": \"11999999999\",\n    \"cpf\": \"12345678901\",\n    \"type\": \"TECNICO\",\n    \"status\": \"ATIVO\",\n    \"city\": \"São Paulo\",\n    \"state\": \"SP\",\n    \"address\": \"Rua Example, 123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/technicians",
+							"host": ["{{baseUrl}}"],
+							"path": ["technicians"]
+						}
+					}
+				},
+				{
+					"name": "Update Technician",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"John Doe Updated\",\n    \"status\": \"INATIVO\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/technicians/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["technicians", ":id"],
+							"variable": [
+								{"key": "id", "value": "1"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Technician",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/technicians/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["technicians", ":id"],
+							"variable": [
+								{"key": "id", "value": "1"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Search Technicians",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/technicians/search?q=john",
+							"host": ["{{baseUrl}}"],
+							"path": ["technicians", "search"],
+							"query": [
+								{"key": "q", "value": "john"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Technicians by City",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/technicians/by-city/:city",
+							"host": ["{{baseUrl}}"],
+							"path": ["technicians", "by-city", ":city"],
+							"variable": [
+								{"key": "city", "value": "São Paulo"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Technicians by State",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/technicians/by-state/:state",
+							"host": ["{{baseUrl}}"],
+							"path": ["technicians", "by-state", ":state"],
+							"variable": [
+								{"key": "state", "value": "SP"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Cities",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/technicians/cities",
+							"host": ["{{baseUrl}}"],
+							"path": ["technicians", "cities"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Tickets",
+			"item": [
+				{
+					"name": "List Tickets",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tickets",
+							"host": ["{{baseUrl}}"],
+							"path": ["tickets"]
+						}
+					}
+				},
+				{
+					"name": "Get Ticket by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tickets/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["tickets", ":id"],
+							"variable": [
+								{"key": "id", "value": "1"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Ticket",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Server maintenance\",\n    \"description\": \"Routine server maintenance required\",\n    \"status\": \"ABERTO\",\n    \"priority\": \"MEDIA\",\n    \"clientId\": 1,\n    \"categoryId\": 1\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/tickets",
+							"host": ["{{baseUrl}}"],
+							"path": ["tickets"]
+						}
+					}
+				},
+				{
+					"name": "Update Ticket",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Updated title\",\n    \"status\": \"EM_ANDAMENTO\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/tickets/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["tickets", ":id"],
+							"variable": [
+								{"key": "id", "value": "1"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Ticket",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tickets/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["tickets", ":id"],
+							"variable": [
+								{"key": "id", "value": "1"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Ticket Status",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"FECHADO\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/tickets/:id/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["tickets", ":id", "status"],
+							"variable": [
+								{"key": "id", "value": "1"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Assign Technician",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"technicianId\": 1\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/tickets/:id/assign",
+							"host": ["{{baseUrl}}"],
+							"path": ["tickets", ":id", "assign"],
+							"variable": [
+								{"key": "id", "value": "1"}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Clients",
+			"item": [
+				{
+					"name": "List Clients",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/clients",
+							"host": ["{{baseUrl}}"],
+							"path": ["clients"]
+						}
+					}
+				},
+				{
+					"name": "Count Clients",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/clients/count",
+							"host": ["{{baseUrl}}"],
+							"path": ["clients", "count"]
+						}
+					}
+				},
+				{
+					"name": "Get Client by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/clients/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["clients", ":id"],
+							"variable": [
+								{"key": "id", "value": "1"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Client",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"ACME Corp\",\n    \"email\": \"contact@acme.com\",\n    \"phone\": \"11999999999\",\n    \"document\": \"12345678000190\",\n    \"address\": \"Av. Principal, 1000\",\n    \"city\": \"São Paulo\",\n    \"state\": \"SP\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/clients",
+							"host": ["{{baseUrl}}"],
+							"path": ["clients"]
+						}
+					}
+				},
+				{
+					"name": "Update Client",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"ACME Corp Updated\",\n    \"phone\": \"11888888888\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/clients/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["clients", ":id"],
+							"variable": [
+								{"key": "id", "value": "1"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Client",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/clients/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["clients", ":id"],
+							"variable": [
+								{"key": "id", "value": "1"}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Categories",
+			"item": [
+				{
+					"name": "List Categories",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/categories",
+							"host": ["{{baseUrl}}"],
+							"path": ["categories"]
+						}
+					}
+				},
+				{
+					"name": "Get Category by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/categories/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["categories", ":id"],
+							"variable": [
+								{"key": "id", "value": "1"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Category",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Hardware\",\n    \"description\": \"Hardware related issues\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/categories",
+							"host": ["{{baseUrl}}"],
+							"path": ["categories"]
+						}
+					}
+				},
+				{
+					"name": "Update Category",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Hardware Updated\",\n    \"description\": \"Updated description\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/categories/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["categories", ":id"],
+							"variable": [
+								{"key": "id", "value": "1"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Category",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/categories/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["categories", ":id"],
+							"variable": [
+								{"key": "id", "value": "1"}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Dashboard",
+			"item": [
+				{
+					"name": "Get Stats",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/dashboard/stats",
+							"host": ["{{baseUrl}}"],
+							"path": ["dashboard", "stats"]
+						}
+					}
+				},
+				{
+					"name": "Get Tickets by Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/dashboard/tickets-by-status",
+							"host": ["{{baseUrl}}"],
+							"path": ["dashboard", "tickets-by-status"]
+						}
+					}
+				},
+				{
+					"name": "Get Technicians by State",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/dashboard/technicians-by-state",
+							"host": ["{{baseUrl}}"],
+							"path": ["dashboard", "technicians-by-state"]
+						}
+					}
+				},
+				{
+					"name": "Get Chart Data",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/dashboard/chart",
+							"host": ["{{baseUrl}}"],
+							"path": ["dashboard", "chart"]
+						}
+					}
+				},
+				{
+					"name": "Get Recent Activity",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/dashboard/recent-activity",
+							"host": ["{{baseUrl}}"],
+							"path": ["dashboard", "recent-activity"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Export",
+			"item": [
+				{
+					"name": "Export Clients",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/export/clients",
+							"host": ["{{baseUrl}}"],
+							"path": ["export", "clients"]
+						}
+					}
+				},
+				{
+					"name": "Export Technicians",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/export/technicians",
+							"host": ["{{baseUrl}}"],
+							"path": ["export", "technicians"]
+						}
+					}
+				},
+				{
+					"name": "Export Tickets",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/export/tickets",
+							"host": ["{{baseUrl}}"],
+							"path": ["export", "tickets"]
+						}
+					}
+				},
+				{
+					"name": "Export All",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/export/all",
+							"host": ["{{baseUrl}}"],
+							"path": ["export", "all"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Terms",
+			"item": [
+				{
+					"name": "Get Terms",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/terms",
+							"host": ["{{baseUrl}}"],
+							"path": ["terms"]
+						}
+					}
+				},
+				{
+					"name": "Accept Terms",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/terms/accept",
+							"host": ["{{baseUrl}}"],
+							"path": ["terms", "accept"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Hierarchy",
+			"item": [
+				{
+					"name": "Hierarchies",
+					"item": [
+						{
+							"name": "List Hierarchies",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/hierarchies",
+									"host": ["{{baseUrl}}"],
+									"path": ["hierarchies"]
+								}
+							}
+						},
+						{
+							"name": "Get Hierarchy by ID",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/hierarchies/:id",
+									"host": ["{{baseUrl}}"],
+									"path": ["hierarchies", ":id"],
+									"variable": [
+										{"key": "id", "value": "1"}
+									]
+								}
+							}
+						},
+						{
+							"name": "Create Hierarchy",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Company Hierarchy\",\n    \"description\": \"Main organizational hierarchy\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/hierarchies",
+									"host": ["{{baseUrl}}"],
+									"path": ["hierarchies"]
+								}
+							}
+						},
+						{
+							"name": "Update Hierarchy",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Updated Hierarchy Name\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/hierarchies/:id",
+									"host": ["{{baseUrl}}"],
+									"path": ["hierarchies", ":id"],
+									"variable": [
+										{"key": "id", "value": "1"}
+									]
+								}
+							}
+						},
+						{
+							"name": "Delete Hierarchy",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/hierarchies/:id",
+									"host": ["{{baseUrl}}"],
+									"path": ["hierarchies", ":id"],
+									"variable": [
+										{"key": "id", "value": "1"}
+									]
+								}
+							}
+						},
+						{
+							"name": "Create Node in Hierarchy",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Sales Department\",\n    \"parentId\": null\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/hierarchies/:id/nodes",
+									"host": ["{{baseUrl}}"],
+									"path": ["hierarchies", ":id", "nodes"],
+									"variable": [
+										{"key": "id", "value": "1"}
+									]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Nodes",
+					"item": [
+						{
+							"name": "Update Node",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Updated Node Name\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/nodes/:id",
+									"host": ["{{baseUrl}}"],
+									"path": ["nodes", ":id"],
+									"variable": [
+										{"key": "id", "value": "1"}
+									]
+								}
+							}
+						},
+						{
+							"name": "Move Node",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"newParentId\": 2\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/nodes/:id/move",
+									"host": ["{{baseUrl}}"],
+									"path": ["nodes", ":id", "move"],
+									"variable": [
+										{"key": "id", "value": "1"}
+									]
+								}
+							}
+						},
+						{
+							"name": "Delete Node",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/nodes/:id",
+									"host": ["{{baseUrl}}"],
+									"path": ["nodes", ":id"],
+									"variable": [
+										{"key": "id", "value": "1"}
+									]
+								}
+							}
+						},
+						{
+							"name": "Get Node Members",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/nodes/:id/members",
+									"host": ["{{baseUrl}}"],
+									"path": ["nodes", ":id", "members"],
+									"variable": [
+										{"key": "id", "value": "1"}
+									]
+								}
+							}
+						},
+						{
+							"name": "Add Node Member",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"userId\": \"user-uuid-here\",\n    \"roleId\": 1\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/nodes/:id/members",
+									"host": ["{{baseUrl}}"],
+									"path": ["nodes", ":id", "members"],
+									"variable": [
+										{"key": "id", "value": "1"}
+									]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Memberships",
+					"item": [
+						{
+							"name": "Update Membership",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"roleId\": 2\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/memberships/:id",
+									"host": ["{{baseUrl}}"],
+									"path": ["memberships", ":id"],
+									"variable": [
+										{"key": "id", "value": "1"}
+									]
+								}
+							}
+						},
+						{
+							"name": "Delete Membership",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/memberships/:id",
+									"host": ["{{baseUrl}}"],
+									"path": ["memberships", ":id"],
+									"variable": [
+										{"key": "id", "value": "1"}
+									]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Roles",
+					"item": [
+						{
+							"name": "List Roles",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/roles",
+									"host": ["{{baseUrl}}"],
+									"path": ["roles"]
+								}
+							}
+						},
+						{
+							"name": "Get Role by ID",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/roles/:id",
+									"host": ["{{baseUrl}}"],
+									"path": ["roles", ":id"],
+									"variable": [
+										{"key": "id", "value": "1"}
+									]
+								}
+							}
+						},
+						{
+							"name": "Create Role",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Manager\",\n    \"description\": \"Department manager role\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/roles",
+									"host": ["{{baseUrl}}"],
+									"path": ["roles"]
+								}
+							}
+						},
+						{
+							"name": "Update Role",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Updated Role\",\n    \"permissionIds\": [1, 2, 3]\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/roles/:id",
+									"host": ["{{baseUrl}}"],
+									"path": ["roles", ":id"],
+									"variable": [
+										{"key": "id", "value": "1"}
+									]
+								}
+							}
+						},
+						{
+							"name": "Delete Role",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/roles/:id",
+									"host": ["{{baseUrl}}"],
+									"path": ["roles", ":id"],
+									"variable": [
+										{"key": "id", "value": "1"}
+									]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Permissions",
+					"item": [
+						{
+							"name": "List Permissions",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/permissions",
+									"host": ["{{baseUrl}}"],
+									"path": ["permissions"]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Access",
+					"item": [
+						{
+							"name": "Simulate Access",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"userId\": \"user-uuid-here\",\n    \"nodeId\": 1\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/access/simulate",
+									"host": ["{{baseUrl}}"],
+									"path": ["access", "simulate"]
+								}
+							}
+						},
+						{
+							"name": "Get User Access",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/access/user/:userId",
+									"host": ["{{baseUrl}}"],
+									"path": ["access", "user", ":userId"],
+									"variable": [
+										{"key": "userId", "value": "user-uuid-here"}
+									]
+								}
+							}
+						},
+						{
+							"name": "Get Access History",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/access/history",
+									"host": ["{{baseUrl}}"],
+									"path": ["access", "history"]
+								}
+							}
+						},
+						{
+							"name": "Revert Access Change",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/access/history/:id/revert",
+									"host": ["{{baseUrl}}"],
+									"path": ["access", "history", ":id", "revert"],
+									"variable": [
+										{"key": "id", "value": "1"}
+									]
+								}
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}
