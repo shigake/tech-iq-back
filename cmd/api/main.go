@@ -85,6 +85,7 @@ func main() {
 	hierarchyRepo := repositories.NewHierarchyRepository(db)
 	activityLogRepo := repositories.NewActivityLogRepository(db)
 	geoRepo := repositories.NewGeoRepository(db)
+	securityLogRepo := repositories.NewSecurityLogRepository(db)
 
 	// Initialize services
 	authService := services.NewAuthService(userRepo, cfg)
@@ -94,6 +95,8 @@ func main() {
 	activityLogService := services.NewActivityLogService(activityLogRepo)
 	hierarchyService := services.NewHierarchyService(hierarchyRepo)
 	geoService := services.NewGeoService(geoRepo, userRepo, hierarchyService)
+	securityLogService := services.NewSecurityLogService(securityLogRepo)
+	systemMetricsService := services.NewSystemMetricsService(db, userRepo, ticketRepo, securityLogRepo)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
@@ -108,17 +111,11 @@ func main() {
 	userHandler := handlers.NewUserHandler(userRepo)
 	activityLogHandler := handlers.NewActivityLogHandler(activityLogService)
 	geoHandler := handlers.NewGeoHandler(geoService)
+	securityLogHandler := handlers.NewSecurityLogHandler(securityLogService)
+	adminHandler := handlers.NewAdminHandler(systemMetricsService)
 
 	// Routes
 	api := app.Group("/api/v1")
-
-	// Health check
-	api.Get("/health", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{
-			"status":  "healthy",
-			"version": "1.0.0",
-		})
-	})
 
 	// Terms of service (public access)
 	api.Get("/terms", termsHandler.GetTerms)
@@ -268,6 +265,17 @@ func main() {
 	// Admin endpoints (settings)
 	geo.Get("/settings", geoHandler.GetGeoSettings)
 	geo.Put("/settings", middleware.WriteAccess(), geoHandler.UpdateGeoSettings)
+
+	// ==================== Admin Routes ====================
+	admin := protected.Group("/admin")
+	// Security logs (admin only)
+	admin.Get("/security-logs", securityLogHandler.GetSecurityLogs)
+	admin.Get("/security-logs/recent", securityLogHandler.GetRecentSecurityLogs)
+	admin.Get("/security-logs/stats", securityLogHandler.GetSecurityStats)
+	// System metrics (admin only)
+	admin.Get("/system-metrics", adminHandler.GetSystemMetrics)
+	// Health check (public)
+	api.Get("/health", adminHandler.GetHealthCheck)
 
 	// Start server
 	port := cfg.AppPort
