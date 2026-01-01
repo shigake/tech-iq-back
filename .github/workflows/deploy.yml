@@ -32,7 +32,7 @@ jobs:
           source: "."
           target: "/opt/tech-iq/backend"
 
-      - name: Deploy to Production Server
+      - name: Deploy to Kubernetes
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.PROD_HOST }}
@@ -40,14 +40,16 @@ jobs:
           key: ${{ secrets.PROD_SSH_KEY }}
           script: |
             cd /opt/tech-iq/backend
+            
+            # Build Docker image
             docker build -t tech-iq-back:latest .
-            docker stop tech-iq-back || true
-            docker rm tech-iq-back || true
-            docker run -d \
-              --name tech-iq-back \
-              --restart always \
-              -p 8080:8080 \
-              --env-file /opt/tech-iq/.env \
-              --add-host=host.docker.internal:host-gateway \
-              tech-iq-back:latest
+            
+            # Import image to k3s containerd
+            docker save tech-iq-back:latest | k3s ctr images import -
+            
+            # Restart deployment to pick up new image
+            kubectl rollout restart deployment/tech-erp-backend -n hml
+            kubectl rollout status deployment/tech-erp-backend -n hml --timeout=120s
+            
+            # Cleanup
             docker image prune -f

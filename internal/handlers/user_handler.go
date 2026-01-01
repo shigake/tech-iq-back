@@ -22,6 +22,26 @@ func NewUserHandler(repo repositories.UserRepository) *UserHandler {
 	}
 }
 
+// Helper function to safely get user role from context
+func getUserRole(c *fiber.Ctx) string {
+	if role := c.Locals("userRole"); role != nil {
+		if roleStr, ok := role.(string); ok {
+			return roleStr
+		}
+	}
+	return ""
+}
+
+// Helper function to safely get user ID from context
+func getUserID(c *fiber.Ctx) string {
+	if id := c.Locals("userID"); id != nil {
+		if idStr, ok := id.(string); ok {
+			return idStr
+		}
+	}
+	return ""
+}
+
 // GetUsers returns all users with pagination
 // @Summary List users
 // @Tags Users
@@ -34,7 +54,7 @@ func NewUserHandler(repo repositories.UserRepository) *UserHandler {
 // @Router /api/v1/users [get]
 func (h *UserHandler) GetUsers(c *fiber.Ctx) error {
 	// Check if user is admin
-	userRole := c.Locals("userRole").(string)
+	userRole := getUserRole(c)
 	if userRole != "ADMIN" {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 			"error": "Only admins can list users",
@@ -83,8 +103,8 @@ func (h *UserHandler) GetUsers(c *fiber.Ctx) error {
 // @Success 200 {object} models.UserResponse
 // @Router /api/v1/users/{id} [get]
 func (h *UserHandler) GetUser(c *fiber.Ctx) error {
-	userRole := c.Locals("userRole").(string)
-	currentUserID := c.Locals("userID").(string)
+	userRole := getUserRole(c)
+	currentUserID := getUserID(c)
 	requestedID := c.Params("id")
 
 	// Users can view their own profile, admins can view anyone
@@ -115,7 +135,7 @@ func (h *UserHandler) GetUser(c *fiber.Ctx) error {
 // @Router /api/v1/users [post]
 func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 	// Check if user is admin
-	userRole := c.Locals("userRole").(string)
+	userRole := getUserRole(c)
 	if userRole != "ADMIN" {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 			"error": "Only admins can create users",
@@ -181,8 +201,8 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 // @Success 200 {object} models.UserResponse
 // @Router /api/v1/users/{id} [put]
 func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
-	userRole := c.Locals("userRole").(string)
-	currentUserID := c.Locals("userID").(string)
+	userRole := getUserRole(c)
+	currentUserID := getUserID(c)
 	targetID := c.Params("id")
 
 	// Only admins can update other users
@@ -261,14 +281,14 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 // @Success 204
 // @Router /api/v1/users/{id} [delete]
 func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
-	userRole := c.Locals("userRole").(string)
+	userRole := getUserRole(c)
 	if userRole != "ADMIN" {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 			"error": "Only admins can delete users",
 		})
 	}
 
-	currentUserID := c.Locals("userID").(string)
+	currentUserID := getUserID(c)
 	targetID := c.Params("id")
 
 	// Cannot delete yourself
@@ -315,7 +335,7 @@ func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
 // @Success 200 {object} map[string]string
 // @Router /api/v1/users/{id}/reset-password [post]
 func (h *UserHandler) ResetPassword(c *fiber.Ctx) error {
-	userRole := c.Locals("userRole").(string)
+	userRole := getUserRole(c)
 	if userRole != "ADMIN" {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 			"error": "Only admins can reset passwords",
@@ -374,14 +394,14 @@ func (h *UserHandler) ResetPassword(c *fiber.Ctx) error {
 // @Success 200 {object} models.UserResponse
 // @Router /api/v1/users/{id}/toggle-status [post]
 func (h *UserHandler) ToggleUserStatus(c *fiber.Ctx) error {
-	userRole := c.Locals("userRole").(string)
+	userRole := getUserRole(c)
 	if userRole != "ADMIN" {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 			"error": "Only admins can toggle user status",
 		})
 	}
 
-	currentUserID := c.Locals("userID").(string)
+	currentUserID := getUserID(c)
 	targetID := c.Params("id")
 
 	// Cannot deactivate yourself
