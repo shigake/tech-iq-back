@@ -14,30 +14,49 @@ import (
 )
 
 type AuthService interface {
-	SignIn(req *models.SignInRequest) (*models.AuthResponse, error)
+	SignIn(req *models.SignInRequest, ipAddress, userAgent string) (*models.AuthResponse, error)
 	SignUp(req *models.SignUpRequest) (*models.AuthResponse, error)
 	RefreshToken(tokenString string) (*models.AuthResponse, error)
-	ChangePassword(userID string, req *models.ChangePasswordRequest) error
+	ChangePassword(userID string, req *models.ChangePasswordRequest, ipAddress, userAgent string) error
 }
 
 type authService struct {
-	userRepo repositories.UserRepository
-	config   *config.Config
+	userRepo           repositories.UserRepository
+	securityLogRepo    repositories.SecurityLogRepository
+	config             *config.Config
 }
 
-func NewAuthService(userRepo repositories.UserRepository, config *config.Config) AuthService {
+func NewAuthService(userRepo repositories.UserRepository, securityLogRepo repositories.SecurityLogRepository, config *config.Config) AuthService {
 	return &authService{
-		userRepo: userRepo,
-		config:   config,
+		userRepo:        userRepo,
+		securityLogRepo: securityLogRepo,
+		config:          config,
 	}
 }
 
-func (s *authService) SignIn(req *models.SignInRequest) (*models.AuthResponse, error) {
+func (s *authService) logSecurityEvent(userID, email, action, ipAddress, userAgent, details string, success bool) {
+	secLog := &models.SecurityLog{
+		UserID:    userID,
+		Email:     email,
+		Action:    action,
+		IPAddress: ipAddress,
+		UserAgent: userAgent,
+		Details:   details,
+		Success:   success,
+		CreatedAt: time.Now(),
+	}
+	if err := s.securityLogRepo.Create(secLog); err != nil {
+		log.Printf("Failed to log security event: %v", err)
+	}
+}
+
+func (s *authService) SignIn(req *models.SignInRequest, ipAddress, userAgent string) (*models.AuthResponse, error) {
 	log.Printf("SignIn attempt for email: %s", req.Email)
 	
 	user, err := s.userRepo.FindByEmail(req.Email)
 	if err != nil {
 		log.Printf("User not found: %v", err)
+		s.logSecurityEvent("", req.Email, "login_failed", ipAddress, userAgent, "User not found", false)
 		return nil, errors.New("invalid credentials")
 	}
 
@@ -45,11 +64,13 @@ func (s *authService) SignIn(req *models.SignInRequest) (*models.AuthResponse, e
 
 	if !user.Active {
 		log.Printf("User account is deactivated")
+		s.logSecurityEvent(user.ID, req.Email, "login_failed", ipAddress, userAgent, "Account deactivated", false)
 		return nil, errors.New("user account is deactivated")
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
 		log.Printf("Password mismatch: %v", err)
+		s.logSecurityEvent(user.ID, req.Email, "login_failed", ipAddress, userAgent, "Invalid password", false)
 		return nil, errors.New("invalid credentials")
 	}
 
@@ -57,6 +78,9 @@ func (s *authService) SignIn(req *models.SignInRequest) (*models.AuthResponse, e
 	if err != nil {
 		return nil, err
 	}
+
+	// Log successful login
+	s.logSecurityEvent(user.ID, user.Email, "login_success", ipAddress, userAgent, "", true)
 
 	return &models.AuthResponse{
 		Token:     token,
@@ -167,7 +191,7 @@ func (s *authService) generateToken(user *models.User) (string, error) {
 	return token.SignedString([]byte(s.config.JWTSecret))
 }
 
-func (s *authService) ChangePassword(userID string, req *models.ChangePasswordRequest) error {
+func (s *authService) ChangePassword(userID string, req *models.ChangePasswordRequest, ipAddress, userAgent string) error {
 	user, err := s.userRepo.FindByID(userID)
 	if err != nil {
 		return errors.New("user not found")
@@ -175,6 +199,7 @@ func (s *authService) ChangePassword(userID string, req *models.ChangePasswordRe
 
 	// Verify current password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.CurrentPassword)); err != nil {
+		s.logSecurityEvent(userID, user.Email, "password_change_failed", ipAddress, userAgent, "Invalid current password", false)
 		return errors.New("current password is incorrect")
 	}
 
@@ -186,5 +211,11 @@ func (s *authService) ChangePassword(userID string, req *models.ChangePasswordRe
 
 	// Update password
 	user.Password = string(hashedPassword)
-	return s.userRepo.Update(user)
+	if err := s.userRepo.Update(user); err != nil {
+		return err
+	}
+
+	// Log successful password change
+	s.logSecurityEvent(userID, user.Email, "password_change", ipAddress, userAgent, "", true)
+	return nil
 }

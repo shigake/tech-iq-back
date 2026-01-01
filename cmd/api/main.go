@@ -88,7 +88,7 @@ func main() {
 	securityLogRepo := repositories.NewSecurityLogRepository(db)
 
 	// Initialize services
-	authService := services.NewAuthService(userRepo, cfg)
+	authService := services.NewAuthService(userRepo, securityLogRepo, cfg)
 	technicianService := services.NewTechnicianService(technicianRepo, redisClient)
 	ticketService := services.NewTicketService(ticketRepo, technicianRepo, clientRepo, categoryRepo)
 	dashboardService := services.NewDashboardService(technicianRepo, ticketRepo, clientRepo)

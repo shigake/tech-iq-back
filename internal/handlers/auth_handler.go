@@ -46,7 +46,11 @@ func (h *AuthHandler) SignIn(c *fiber.Ctx) error {
 		})
 	}
 
-	response, err := h.service.SignIn(&req)
+	// Get IP and User-Agent for security logging
+	ipAddress := c.IP()
+	userAgent := c.Get("User-Agent")
+
+	response, err := h.service.SignIn(&req, ipAddress, userAgent)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": err.Error(),
@@ -167,7 +171,11 @@ func (h *AuthHandler) ChangePassword(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := h.service.ChangePassword(userID, &req); err != nil {
+	// Get IP and User-Agent for security logging
+	ipAddress := c.IP()
+	userAgent := c.Get("User-Agent")
+
+	if err := h.service.ChangePassword(userID, &req, ipAddress, userAgent); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),
 		})
