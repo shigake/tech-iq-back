@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/tech-erp/backend/internal/config"
-	"github.com/tech-erp/backend/internal/models"
-	"github.com/tech-erp/backend/internal/repositories"
+	"github.com/shigake/tech-iq-back/internal/config"
+	"github.com/shigake/tech-iq-back/internal/models"
+	"github.com/shigake/tech-iq-back/internal/repositories"
 	"golang.org/x/crypto/bcrypt"
 )
 

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/tech-erp/backend/internal/repositories"
+	"github.com/shigake/tech-iq-back/internal/repositories"
 )
 
 type ExportHandler struct {

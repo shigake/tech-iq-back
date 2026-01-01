@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	"github.com/tech-erp/backend/internal/models"
+	"github.com/shigake/tech-iq-back/internal/models"
 	"gorm.io/gorm"
 )
 

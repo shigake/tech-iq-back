@@ -6,9 +6,9 @@ import (
 	"strings"
 	
 	"github.com/redis/go-redis/v9"
-	"github.com/tech-erp/backend/internal/cache"
-	"github.com/tech-erp/backend/internal/models"
-	"github.com/tech-erp/backend/internal/repositories"
+	"github.com/shigake/tech-iq-back/internal/cache"
+	"github.com/shigake/tech-iq-back/internal/models"
+	"github.com/shigake/tech-iq-back/internal/repositories"
 )
 
 type TechnicianService interface {

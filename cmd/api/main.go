@@ -8,13 +8,13 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/joho/godotenv"
-	"github.com/tech-erp/backend/internal/cache"
-	"github.com/tech-erp/backend/internal/config"
-	"github.com/tech-erp/backend/internal/database"
-	"github.com/tech-erp/backend/internal/handlers"
-	"github.com/tech-erp/backend/internal/middleware"
-	"github.com/tech-erp/backend/internal/repositories"
-	"github.com/tech-erp/backend/internal/services"
+	"github.com/shigake/tech-iq-back/internal/cache"
+	"github.com/shigake/tech-iq-back/internal/config"
+	"github.com/shigake/tech-iq-back/internal/database"
+	"github.com/shigake/tech-iq-back/internal/handlers"
+	"github.com/shigake/tech-iq-back/internal/middleware"
+	"github.com/shigake/tech-iq-back/internal/repositories"
+	"github.com/shigake/tech-iq-back/internal/services"
 )
 
 func main() {

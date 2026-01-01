@@ -3,8 +3,8 @@ package database
 import (
 	"log"
 
-	"github.com/tech-erp/backend/internal/config"
-	"github.com/tech-erp/backend/internal/models"
+	"github.com/shigake/tech-iq-back/internal/config"
+	"github.com/shigake/tech-iq-back/internal/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/tech-erp/backend/internal/models"
-	"github.com/tech-erp/backend/internal/repositories"
+	"github.com/shigake/tech-iq-back/internal/models"
+	"github.com/shigake/tech-iq-back/internal/repositories"
 )
 
 type DashboardService interface {

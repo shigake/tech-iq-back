@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/tech-erp/backend/internal/services"
+	"github.com/shigake/tech-iq-back/internal/services"
 )
 
 type DashboardHandler struct {
