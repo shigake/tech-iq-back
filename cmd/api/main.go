@@ -83,12 +83,14 @@ func main() {
 	clientRepo := repositories.NewClientRepository(db)
 	categoryRepo := repositories.NewCategoryRepository(db)
 	hierarchyRepo := repositories.NewHierarchyRepository(db)
+	activityLogRepo := repositories.NewActivityLogRepository(db)
 
 	// Initialize services
 	authService := services.NewAuthService(userRepo, cfg)
 	technicianService := services.NewTechnicianService(technicianRepo, redisClient)
 	ticketService := services.NewTicketService(ticketRepo, technicianRepo, clientRepo, categoryRepo)
 	dashboardService := services.NewDashboardService(technicianRepo, ticketRepo, clientRepo)
+	activityLogService := services.NewActivityLogService(activityLogRepo)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
@@ -101,6 +103,7 @@ func main() {
 	exportHandler := handlers.NewExportHandler(clientRepo, technicianRepo, ticketRepo)
 	hierarchyHandler := handlers.NewHierarchyHandler(hierarchyRepo)
 	userHandler := handlers.NewUserHandler(userRepo)
+	activityLogHandler := handlers.NewActivityLogHandler(activityLogService)
 
 	// Routes
 	api := app.Group("/api/v1")
@@ -234,6 +237,13 @@ func main() {
 
 	// Permissions
 	protected.Get("/permissions", hierarchyHandler.GetAllPermissions)
+
+	// Activity logs
+	activityLogs := protected.Group("/activity-logs")
+	activityLogs.Get("/", activityLogHandler.GetActivityLogs)
+	activityLogs.Get("/me", activityLogHandler.GetMyActivityLogs)
+	activityLogs.Get("/recent", activityLogHandler.GetRecentActivityLogs)
+	activityLogs.Get("/:id", activityLogHandler.GetActivityLogByID)
 
 	// Access simulation and history
 	access := protected.Group("/access")

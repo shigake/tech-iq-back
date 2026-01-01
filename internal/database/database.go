@@ -56,6 +56,8 @@ func Migrate(db *gorm.DB) error {
 		&models.Permission{},
 		&models.Membership{},
 		&models.AccessAuditLog{},
+		// Activity Logs
+		&models.ActivityLog{},
 	)
 	if err != nil {
 		log.Println("⚠️ Migration warning (continuing anyway):", err)
