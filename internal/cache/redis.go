@@ -91,6 +91,33 @@ func (r *RedisClient) Close() error {
 	return r.client.Close()
 }
 
+// GetStats returns Redis statistics
+func (r *RedisClient) GetStats() (dbSize int64, hitRate float64, err error) {
+	// Get DB size (number of keys)
+	dbSize, err = r.client.DBSize(r.ctx).Result()
+	if err != nil {
+		return 0, 0, err
+	}
+
+	// Get info stats for hit rate calculation
+	info, err := r.client.Info(r.ctx, "stats").Result()
+	if err != nil {
+		return dbSize, 0, nil // Return size even if we can't get stats
+	}
+
+	// Parse keyspace_hits and keyspace_misses from info
+	var hits, misses int64
+	// Simple parsing - in production you might want more robust parsing
+	fmt.Sscanf(info, "%*[^:]keyspace_hits:%d", &hits)
+	fmt.Sscanf(info, "%*[^:]keyspace_misses:%d", &misses)
+
+	if hits+misses > 0 {
+		hitRate = float64(hits) / float64(hits+misses) * 100
+	}
+
+	return dbSize, hitRate, nil
+}
+
 // Cache key generators
 func TechnicianCacheKey(page, size int, search string) string {
 	if search != "" {

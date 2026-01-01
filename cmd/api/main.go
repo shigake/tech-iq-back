@@ -96,7 +96,7 @@ func main() {
 	hierarchyService := services.NewHierarchyService(hierarchyRepo)
 	geoService := services.NewGeoService(geoRepo, userRepo, hierarchyService)
 	securityLogService := services.NewSecurityLogService(securityLogRepo)
-	systemMetricsService := services.NewSystemMetricsService(db, userRepo, ticketRepo, securityLogRepo)
+	systemMetricsService := services.NewSystemMetricsService(db, redisClient, userRepo, ticketRepo, securityLogRepo)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)

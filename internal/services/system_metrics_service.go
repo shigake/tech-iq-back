@@ -5,6 +5,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/shigake/tech-iq-back/internal/cache"
 	"github.com/shigake/tech-iq-back/internal/models"
 	"github.com/shigake/tech-iq-back/internal/repositories"
 	"gorm.io/gorm"
@@ -20,20 +21,23 @@ type SystemMetricsService interface {
 }
 
 type systemMetricsService struct {
-	db             *gorm.DB
-	userRepo       repositories.UserRepository
-	ticketRepo     repositories.TicketRepository
+	db              *gorm.DB
+	redisClient     *cache.RedisClient
+	userRepo        repositories.UserRepository
+	ticketRepo      repositories.TicketRepository
 	securityLogRepo repositories.SecurityLogRepository
 }
 
 func NewSystemMetricsService(
 	db *gorm.DB,
+	redisClient *cache.RedisClient,
 	userRepo repositories.UserRepository,
 	ticketRepo repositories.TicketRepository,
 	securityLogRepo repositories.SecurityLogRepository,
 ) SystemMetricsService {
 	return &systemMetricsService{
 		db:              db,
+		redisClient:     redisClient,
 		userRepo:        userRepo,
 		ticketRepo:      ticketRepo,
 		securityLogRepo: securityLogRepo,
@@ -89,9 +93,9 @@ func (s *systemMetricsService) GetMetrics() (*models.SystemMetrics, error) {
 		AvgResponseTime: avgResponseTime,
 		ErrorRate:       errorRate,
 
-		// Cache metrics (placeholder - integrate with Redis if available)
-		CacheHitRate: 85.5, // Placeholder
-		CacheSize:    1000, // Placeholder
+		// Cache metrics
+		CacheHitRate: s.getCacheHitRate(),
+		CacheSize:    s.getCacheSize(),
 
 		// Business metrics
 		ActiveUsers:  activeUsers,
@@ -165,4 +169,26 @@ func (s *systemMetricsService) getRequestMetrics(sqlDB *sql.DB) (int64, float64,
 	}
 
 	return totalRequests, avgResponseTime, errorRate
+}
+
+func (s *systemMetricsService) getCacheHitRate() float64 {
+	if s.redisClient == nil {
+		return 0
+	}
+	_, hitRate, err := s.redisClient.GetStats()
+	if err != nil {
+		return 0
+	}
+	return hitRate
+}
+
+func (s *systemMetricsService) getCacheSize() int64 {
+	if s.redisClient == nil {
+		return 0
+	}
+	dbSize, _, err := s.redisClient.GetStats()
+	if err != nil {
+		return 0
+	}
+	return dbSize
 }
