@@ -7,7 +7,7 @@ import (
 
 type TicketRepository interface {
 	Create(ticket *models.Ticket) error
-	FindAll(page, size int) ([]models.Ticket, int64, error)
+	FindAll(page, size int, filters *models.TicketFilters) ([]models.Ticket, int64, error)
 	FindByID(id string) (*models.Ticket, error)
 	Update(ticket *models.Ticket) error
 	Delete(id string) error
@@ -31,14 +31,49 @@ func (r *ticketRepository) Create(ticket *models.Ticket) error {
 	return r.db.Create(ticket).Error
 }
 
-func (r *ticketRepository) FindAll(page, size int) ([]models.Ticket, int64, error) {
+func (r *ticketRepository) FindAll(page, size int, filters *models.TicketFilters) ([]models.Ticket, int64, error) {
 	var tickets []models.Ticket
 	var total int64
 
-	r.db.Model(&models.Ticket{}).Count(&total)
+	query := r.db.Model(&models.Ticket{})
 
+	// Apply filters
+	if filters != nil {
+		if filters.Status != "" {
+			query = query.Where("status = ?", filters.Status)
+		}
+		if filters.Priority != "" {
+			query = query.Where("priority = ?", filters.Priority)
+		}
+		if filters.ClientID != "" {
+			query = query.Where("client_id = ?", filters.ClientID)
+		}
+		if filters.CategoryID != "" {
+			query = query.Where("category_id = ?", filters.CategoryID)
+		}
+		if filters.TechnicianID != "" {
+			query = query.Joins("JOIN ticket_technicians tt ON tt.ticket_id = tickets.id").
+				Where("tt.technician_id = ?", filters.TechnicianID)
+		}
+		if filters.Search != "" {
+			search := "%" + filters.Search + "%"
+			query = query.Where("error_description ILIKE ? OR serial_number ILIKE ? OR computer_brand ILIKE ? OR computer_model ILIKE ?", 
+				search, search, search, search)
+		}
+		if filters.DateFrom != "" {
+			query = query.Where("created_at >= ?", filters.DateFrom)
+		}
+		if filters.DateTo != "" {
+			query = query.Where("created_at <= ?", filters.DateTo)
+		}
+	}
+
+	// Count total with filters applied
+	query.Count(&total)
+
+	// Fetch paginated results
 	offset := page * size
-	err := r.db.
+	err := query.
 		Preload("Client").
 		Preload("Category").
 		Preload("Technicians").

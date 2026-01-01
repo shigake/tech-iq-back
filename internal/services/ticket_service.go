@@ -10,7 +10,7 @@ import (
 
 type TicketService interface {
 	Create(req *models.CreateTicketRequest) (*models.Ticket, error)
-	GetAll(page, size int) (*models.PaginatedResponse, error)
+	GetAll(page, size int, filters *models.TicketFilters) (*models.PaginatedResponse, error)
 	GetByID(id string) (*models.Ticket, error)
 	Update(id string, req *models.CreateTicketRequest) (*models.Ticket, error)
 	Delete(id string) error
@@ -87,8 +87,8 @@ func (s *ticketService) Create(req *models.CreateTicketRequest) (*models.Ticket,
 	return ticket, nil
 }
 
-func (s *ticketService) GetAll(page, size int) (*models.PaginatedResponse, error) {
-	tickets, total, err := s.ticketRepo.FindAll(page, size)
+func (s *ticketService) GetAll(page, size int, filters *models.TicketFilters) (*models.PaginatedResponse, error) {
+	tickets, total, err := s.ticketRepo.FindAll(page, size, filters)
 	if err != nil {
 		return nil, err
 	}

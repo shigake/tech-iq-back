@@ -202,3 +202,15 @@ type UpdateStatusRequest struct {
 type AssignTechnicianRequest struct {
 	TechnicianIDs []string `json:"technicianIds" validate:"required"`
 }
+
+// TicketFilters contains all possible filters for ticket queries
+type TicketFilters struct {
+	Status       string `json:"status"`
+	Priority     string `json:"priority"`
+	ClientID     string `json:"clientId"`
+	CategoryID   string `json:"categoryId"`
+	TechnicianID string `json:"technicianId"`
+	Search       string `json:"search"`
+	DateFrom     string `json:"dateFrom"`
+	DateTo       string `json:"dateTo"`
+}

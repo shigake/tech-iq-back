@@ -21,12 +21,24 @@ func NewTicketHandler(service services.TicketService) *TicketHandler {
 	}
 }
 
-// GetAll returns paginated list of tickets
+// GetAll returns paginated list of tickets with filters
 func (h *TicketHandler) GetAll(c *fiber.Ctx) error {
 	page, _ := strconv.Atoi(c.Query("page", "0"))
 	size, _ := strconv.Atoi(c.Query("size", "20"))
 
-	response, err := h.service.GetAll(page, size)
+	// Parse filters
+	filters := &models.TicketFilters{
+		Status:       c.Query("status"),
+		Priority:     c.Query("priority"),
+		ClientID:     c.Query("clientId"),
+		CategoryID:   c.Query("categoryId"),
+		TechnicianID: c.Query("technicianId"),
+		Search:       c.Query("search"),
+		DateFrom:     c.Query("dateFrom"),
+		DateTo:       c.Query("dateTo"),
+	}
+
+	response, err := h.service.GetAll(page, size, filters)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to fetch tickets",
