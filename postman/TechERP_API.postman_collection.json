@@ -1747,6 +1747,356 @@
 					]
 				}
 			]
+		},
+		{
+			"name": "Stock",
+			"description": "Stock management module - inventory, locations, movements and balances",
+			"item": [
+				{
+					"name": "Items",
+					"item": [
+						{
+							"name": "List Items",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/../api/stock/items?page=1&page_size=20",
+									"host": ["{{baseUrl}}"],
+									"path": ["..", "api", "stock", "items"],
+									"query": [
+										{"key": "page", "value": "1"},
+										{"key": "page_size", "value": "20"},
+										{"key": "search", "value": "", "disabled": true},
+										{"key": "category", "value": "", "disabled": true},
+										{"key": "is_active", "value": "true", "disabled": true}
+									]
+								}
+							}
+						},
+						{
+							"name": "Get Item",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/../api/stock/items/:id",
+									"host": ["{{baseUrl}}"],
+									"path": ["..", "api", "stock", "items", ":id"],
+									"variable": [
+										{"key": "id", "value": "item-uuid-here"}
+									]
+								}
+							}
+						},
+						{
+							"name": "Create Item",
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Content-Type", "value": "application/json"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"sku\": \"PROD-001\",\n    \"name\": \"Cabo de Rede Cat6\",\n    \"description\": \"Cabo de rede categoria 6, 1 metro\",\n    \"category\": \"Cabos\",\n    \"unit\": \"UN\",\n    \"minQty\": 10,\n    \"trackSerial\": false\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/../api/stock/items",
+									"host": ["{{baseUrl}}"],
+									"path": ["..", "api", "stock", "items"]
+								}
+							}
+						},
+						{
+							"name": "Update Item",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{"key": "Content-Type", "value": "application/json"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Cabo de Rede Cat6 - 1m\",\n    \"minQty\": 15\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/../api/stock/items/:id",
+									"host": ["{{baseUrl}}"],
+									"path": ["..", "api", "stock", "items", ":id"],
+									"variable": [
+										{"key": "id", "value": "item-uuid-here"}
+									]
+								}
+							}
+						},
+						{
+							"name": "Delete Item",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/../api/stock/items/:id",
+									"host": ["{{baseUrl}}"],
+									"path": ["..", "api", "stock", "items", ":id"],
+									"variable": [
+										{"key": "id", "value": "item-uuid-here"}
+									]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Locations",
+					"item": [
+						{
+							"name": "List Locations",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/../api/stock/locations?page=1&page_size=20",
+									"host": ["{{baseUrl}}"],
+									"path": ["..", "api", "stock", "locations"],
+									"query": [
+										{"key": "page", "value": "1"},
+										{"key": "page_size", "value": "20"},
+										{"key": "scope_id", "value": "", "disabled": true},
+										{"key": "type", "value": "", "disabled": true},
+										{"key": "search", "value": "", "disabled": true},
+										{"key": "is_active", "value": "true", "disabled": true}
+									]
+								}
+							}
+						},
+						{
+							"name": "Get Location",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/../api/stock/locations/:id",
+									"host": ["{{baseUrl}}"],
+									"path": ["..", "api", "stock", "locations", ":id"],
+									"variable": [
+										{"key": "id", "value": "location-uuid-here"}
+									]
+								}
+							}
+						},
+						{
+							"name": "Create Location",
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Content-Type", "value": "application/json"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"scopeId\": \"scope-uuid-here\",\n    \"type\": \"WAREHOUSE\",\n    \"name\": \"Depósito Central\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/../api/stock/locations",
+									"host": ["{{baseUrl}}"],
+									"path": ["..", "api", "stock", "locations"]
+								}
+							}
+						},
+						{
+							"name": "Update Location",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{"key": "Content-Type", "value": "application/json"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Depósito Central - Atualizado\",\n    \"isActive\": true\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/../api/stock/locations/:id",
+									"host": ["{{baseUrl}}"],
+									"path": ["..", "api", "stock", "locations", ":id"],
+									"variable": [
+										{"key": "id", "value": "location-uuid-here"}
+									]
+								}
+							}
+						},
+						{
+							"name": "Delete Location",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/../api/stock/locations/:id",
+									"host": ["{{baseUrl}}"],
+									"path": ["..", "api", "stock", "locations", ":id"],
+									"variable": [
+										{"key": "id", "value": "location-uuid-here"}
+									]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Movements",
+					"item": [
+						{
+							"name": "List Movements",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/../api/stock/movements?page=1&page_size=20",
+									"host": ["{{baseUrl}}"],
+									"path": ["..", "api", "stock", "movements"],
+									"query": [
+										{"key": "page", "value": "1"},
+										{"key": "page_size", "value": "20"},
+										{"key": "scope_id", "value": "", "disabled": true},
+										{"key": "type", "value": "", "disabled": true},
+										{"key": "item_id", "value": "", "disabled": true},
+										{"key": "location_id", "value": "", "disabled": true},
+										{"key": "ticket_id", "value": "", "disabled": true},
+										{"key": "start_date", "value": "", "disabled": true},
+										{"key": "end_date", "value": "", "disabled": true}
+									]
+								}
+							}
+						},
+						{
+							"name": "Get Movement",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/../api/stock/movements/:id",
+									"host": ["{{baseUrl}}"],
+									"path": ["..", "api", "stock", "movements", ":id"],
+									"variable": [
+										{"key": "id", "value": "movement-uuid-here"}
+									]
+								}
+							}
+						},
+						{
+							"name": "Create Movement - Entrada Compra",
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Content-Type", "value": "application/json"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"scopeId\": \"scope-uuid-here\",\n    \"type\": \"ENTRADA_COMPRA\",\n    \"itemId\": \"item-uuid-here\",\n    \"toLocationId\": \"location-uuid-here\",\n    \"quantity\": 100,\n    \"unitCost\": 15.50,\n    \"notes\": \"Compra NF 12345\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/../api/stock/movements",
+									"host": ["{{baseUrl}}"],
+									"path": ["..", "api", "stock", "movements"]
+								}
+							}
+						},
+						{
+							"name": "Create Movement - Saída OS",
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Content-Type", "value": "application/json"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"scopeId\": \"scope-uuid-here\",\n    \"type\": \"SAIDA_CONSUMO_OS\",\n    \"itemId\": \"item-uuid-here\",\n    \"fromLocationId\": \"location-uuid-here\",\n    \"ticketId\": \"ticket-uuid-here\",\n    \"quantity\": 2,\n    \"notes\": \"Consumo no atendimento\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/../api/stock/movements",
+									"host": ["{{baseUrl}}"],
+									"path": ["..", "api", "stock", "movements"]
+								}
+							}
+						},
+						{
+							"name": "Create Movement - Transferência",
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Content-Type", "value": "application/json"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"scopeId\": \"scope-uuid-here\",\n    \"type\": \"TRANSFERENCIA\",\n    \"itemId\": \"item-uuid-here\",\n    \"fromLocationId\": \"from-location-uuid\",\n    \"toLocationId\": \"to-location-uuid\",\n    \"quantity\": 10,\n    \"notes\": \"Transferência para técnico\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/../api/stock/movements",
+									"host": ["{{baseUrl}}"],
+									"path": ["..", "api", "stock", "movements"]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Balances",
+					"item": [
+						{
+							"name": "List Balances",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/../api/stock/balances?page=1&page_size=20",
+									"host": ["{{baseUrl}}"],
+									"path": ["..", "api", "stock", "balances"],
+									"query": [
+										{"key": "page", "value": "1"},
+										{"key": "page_size", "value": "20"},
+										{"key": "scope_id", "value": "", "disabled": true},
+										{"key": "item_id", "value": "", "disabled": true},
+										{"key": "location_id", "value": "", "disabled": true},
+										{"key": "search", "value": "", "disabled": true},
+										{"key": "low_stock", "value": "true", "disabled": true}
+									]
+								}
+							}
+						},
+						{
+							"name": "Get Single Balance",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/../api/stock/balances/single?item_id=item-uuid&location_id=location-uuid",
+									"host": ["{{baseUrl}}"],
+									"path": ["..", "api", "stock", "balances", "single"],
+									"query": [
+										{"key": "item_id", "value": "item-uuid"},
+										{"key": "location_id", "value": "location-uuid"}
+									]
+								}
+							}
+						},
+						{
+							"name": "Perform Inventory Count",
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Content-Type", "value": "application/json"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"scopeId\": \"scope-uuid-here\",\n    \"locationId\": \"location-uuid-here\",\n    \"itemId\": \"item-uuid-here\",\n    \"countedQuantity\": 95,\n    \"notes\": \"Contagem de inventário mensal\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/../api/stock/inventory-count",
+									"host": ["{{baseUrl}}"],
+									"path": ["..", "api", "stock", "inventory-count"]
+								}
+							}
+						}
+					]
+				}
+			]
 		}
 	]
 }
