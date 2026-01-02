@@ -497,7 +497,7 @@ func (h *StockHandler) PerformInventoryCount(c *fiber.Ctx) error {
 // =============== Route Registration ===============
 
 func (h *StockHandler) RegisterRoutes(app *fiber.App, authMiddleware fiber.Handler) {
-	stock := app.Group("/api/stock", authMiddleware)
+	stock := app.Group("/api/v1/stock", authMiddleware)
 
 	// Items - write requires ADMIN or EMPLOYEE
 	items := stock.Group("/items")

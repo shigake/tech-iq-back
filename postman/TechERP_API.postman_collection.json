@@ -1761,9 +1761,9 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/../api/stock/items?page=1&page_size=20",
+									"raw": "{{baseUrl}}/stock/items?page=1&page_size=20",
 									"host": ["{{baseUrl}}"],
-									"path": ["..", "api", "stock", "items"],
+									"path": ["stock", "items"],
 									"query": [
 										{"key": "page", "value": "1"},
 										{"key": "page_size", "value": "20"},
@@ -1780,9 +1780,9 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/../api/stock/items/:id",
+									"raw": "{{baseUrl}}/stock/items/:id",
 									"host": ["{{baseUrl}}"],
-									"path": ["..", "api", "stock", "items", ":id"],
+									"path": ["stock", "stock", "items", ":id"],
 									"variable": [
 										{"key": "id", "value": "item-uuid-here"}
 									]
@@ -1801,9 +1801,9 @@
 									"raw": "{\n    \"sku\": \"PROD-001\",\n    \"name\": \"Cabo de Rede Cat6\",\n    \"description\": \"Cabo de rede categoria 6, 1 metro\",\n    \"category\": \"Cabos\",\n    \"unit\": \"UN\",\n    \"minQty\": 10,\n    \"trackSerial\": false\n}"
 								},
 								"url": {
-									"raw": "{{baseUrl}}/../api/stock/items",
+									"raw": "{{baseUrl}}/stock/items",
 									"host": ["{{baseUrl}}"],
-									"path": ["..", "api", "stock", "items"]
+									"path": ["stock", "stock", "items"]
 								}
 							}
 						},
@@ -1819,9 +1819,9 @@
 									"raw": "{\n    \"name\": \"Cabo de Rede Cat6 - 1m\",\n    \"minQty\": 15\n}"
 								},
 								"url": {
-									"raw": "{{baseUrl}}/../api/stock/items/:id",
+									"raw": "{{baseUrl}}/stock/items/:id",
 									"host": ["{{baseUrl}}"],
-									"path": ["..", "api", "stock", "items", ":id"],
+									"path": ["stock", "stock", "items", ":id"],
 									"variable": [
 										{"key": "id", "value": "item-uuid-here"}
 									]
@@ -1834,9 +1834,9 @@
 								"method": "DELETE",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/../api/stock/items/:id",
+									"raw": "{{baseUrl}}/stock/items/:id",
 									"host": ["{{baseUrl}}"],
-									"path": ["..", "api", "stock", "items", ":id"],
+									"path": ["stock", "stock", "items", ":id"],
 									"variable": [
 										{"key": "id", "value": "item-uuid-here"}
 									]
@@ -1854,9 +1854,9 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/../api/stock/locations?page=1&page_size=20",
+									"raw": "{{baseUrl}}/stock/locations?page=1&page_size=20",
 									"host": ["{{baseUrl}}"],
-									"path": ["..", "api", "stock", "locations"],
+									"path": ["stock", "stock", "locations"],
 									"query": [
 										{"key": "page", "value": "1"},
 										{"key": "page_size", "value": "20"},
@@ -1874,9 +1874,9 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/../api/stock/locations/:id",
+									"raw": "{{baseUrl}}/stock/locations/:id",
 									"host": ["{{baseUrl}}"],
-									"path": ["..", "api", "stock", "locations", ":id"],
+									"path": ["stock", "stock", "locations", ":id"],
 									"variable": [
 										{"key": "id", "value": "location-uuid-here"}
 									]
@@ -1895,9 +1895,9 @@
 									"raw": "{\n    \"scopeId\": \"scope-uuid-here\",\n    \"type\": \"WAREHOUSE\",\n    \"name\": \"Depósito Central\"\n}"
 								},
 								"url": {
-									"raw": "{{baseUrl}}/../api/stock/locations",
+									"raw": "{{baseUrl}}/stock/locations",
 									"host": ["{{baseUrl}}"],
-									"path": ["..", "api", "stock", "locations"]
+									"path": ["stock", "stock", "locations"]
 								}
 							}
 						},
@@ -1913,9 +1913,9 @@
 									"raw": "{\n    \"name\": \"Depósito Central - Atualizado\",\n    \"isActive\": true\n}"
 								},
 								"url": {
-									"raw": "{{baseUrl}}/../api/stock/locations/:id",
+									"raw": "{{baseUrl}}/stock/locations/:id",
 									"host": ["{{baseUrl}}"],
-									"path": ["..", "api", "stock", "locations", ":id"],
+									"path": ["stock", "stock", "locations", ":id"],
 									"variable": [
 										{"key": "id", "value": "location-uuid-here"}
 									]
@@ -1928,9 +1928,9 @@
 								"method": "DELETE",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/../api/stock/locations/:id",
+									"raw": "{{baseUrl}}/stock/locations/:id",
 									"host": ["{{baseUrl}}"],
-									"path": ["..", "api", "stock", "locations", ":id"],
+									"path": ["stock", "stock", "locations", ":id"],
 									"variable": [
 										{"key": "id", "value": "location-uuid-here"}
 									]
@@ -1948,9 +1948,9 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/../api/stock/movements?page=1&page_size=20",
+									"raw": "{{baseUrl}}/stock/movements?page=1&page_size=20",
 									"host": ["{{baseUrl}}"],
-									"path": ["..", "api", "stock", "movements"],
+									"path": ["stock", "stock", "movements"],
 									"query": [
 										{"key": "page", "value": "1"},
 										{"key": "page_size", "value": "20"},
@@ -1971,9 +1971,9 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/../api/stock/movements/:id",
+									"raw": "{{baseUrl}}/stock/movements/:id",
 									"host": ["{{baseUrl}}"],
-									"path": ["..", "api", "stock", "movements", ":id"],
+									"path": ["stock", "stock", "movements", ":id"],
 									"variable": [
 										{"key": "id", "value": "movement-uuid-here"}
 									]
@@ -1992,9 +1992,9 @@
 									"raw": "{\n    \"scopeId\": \"scope-uuid-here\",\n    \"type\": \"ENTRADA_COMPRA\",\n    \"itemId\": \"item-uuid-here\",\n    \"toLocationId\": \"location-uuid-here\",\n    \"quantity\": 100,\n    \"unitCost\": 15.50,\n    \"notes\": \"Compra NF 12345\"\n}"
 								},
 								"url": {
-									"raw": "{{baseUrl}}/../api/stock/movements",
+									"raw": "{{baseUrl}}/stock/movements",
 									"host": ["{{baseUrl}}"],
-									"path": ["..", "api", "stock", "movements"]
+									"path": ["stock", "stock", "movements"]
 								}
 							}
 						},
@@ -2010,9 +2010,9 @@
 									"raw": "{\n    \"scopeId\": \"scope-uuid-here\",\n    \"type\": \"SAIDA_CONSUMO_OS\",\n    \"itemId\": \"item-uuid-here\",\n    \"fromLocationId\": \"location-uuid-here\",\n    \"ticketId\": \"ticket-uuid-here\",\n    \"quantity\": 2,\n    \"notes\": \"Consumo no atendimento\"\n}"
 								},
 								"url": {
-									"raw": "{{baseUrl}}/../api/stock/movements",
+									"raw": "{{baseUrl}}/stock/movements",
 									"host": ["{{baseUrl}}"],
-									"path": ["..", "api", "stock", "movements"]
+									"path": ["stock", "stock", "movements"]
 								}
 							}
 						},
@@ -2028,9 +2028,9 @@
 									"raw": "{\n    \"scopeId\": \"scope-uuid-here\",\n    \"type\": \"TRANSFERENCIA\",\n    \"itemId\": \"item-uuid-here\",\n    \"fromLocationId\": \"from-location-uuid\",\n    \"toLocationId\": \"to-location-uuid\",\n    \"quantity\": 10,\n    \"notes\": \"Transferência para técnico\"\n}"
 								},
 								"url": {
-									"raw": "{{baseUrl}}/../api/stock/movements",
+									"raw": "{{baseUrl}}/stock/movements",
 									"host": ["{{baseUrl}}"],
-									"path": ["..", "api", "stock", "movements"]
+									"path": ["stock", "stock", "movements"]
 								}
 							}
 						}
@@ -2045,9 +2045,9 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/../api/stock/balances?page=1&page_size=20",
+									"raw": "{{baseUrl}}/stock/balances?page=1&page_size=20",
 									"host": ["{{baseUrl}}"],
-									"path": ["..", "api", "stock", "balances"],
+									"path": ["stock", "stock", "balances"],
 									"query": [
 										{"key": "page", "value": "1"},
 										{"key": "page_size", "value": "20"},
@@ -2066,9 +2066,9 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/../api/stock/balances/single?item_id=item-uuid&location_id=location-uuid",
+									"raw": "{{baseUrl}}/stock/balances/single?item_id=item-uuid&location_id=location-uuid",
 									"host": ["{{baseUrl}}"],
-									"path": ["..", "api", "stock", "balances", "single"],
+									"path": ["stock", "stock", "balances", "single"],
 									"query": [
 										{"key": "item_id", "value": "item-uuid"},
 										{"key": "location_id", "value": "location-uuid"}
@@ -2088,9 +2088,9 @@
 									"raw": "{\n    \"scopeId\": \"scope-uuid-here\",\n    \"locationId\": \"location-uuid-here\",\n    \"itemId\": \"item-uuid-here\",\n    \"countedQuantity\": 95,\n    \"notes\": \"Contagem de inventário mensal\"\n}"
 								},
 								"url": {
-									"raw": "{{baseUrl}}/../api/stock/inventory-count",
+									"raw": "{{baseUrl}}/stock/inventory-count",
 									"host": ["{{baseUrl}}"],
-									"path": ["..", "api", "stock", "inventory-count"]
+									"path": ["stock", "stock", "inventory-count"]
 								}
 							}
 						}
