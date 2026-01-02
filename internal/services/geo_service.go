@@ -196,7 +196,7 @@ func (s *GeoService) GetTechnicianHistory(userID, technicianID uuid.UUID, filter
 	}
 
 	// Buscar técnico
-	technician, err := s.userRepo.GetByID(technicianID)
+	technician, err := s.userRepo.FindByID(technicianID.String())
 	if err != nil {
 		return nil, 0, err
 	}
@@ -385,7 +385,7 @@ func (s *GeoService) checkRateLimit(technicianID uuid.UUID, eventType models.Eve
 }
 
 func (s *GeoService) updateLastLocation(location *models.TechnicianLocation) {
-	technician, err := s.userRepo.GetByID(location.TechnicianID)
+	technician, err := s.userRepo.FindByID(location.TechnicianID.String())
 	if err != nil {
 		return
 	}
@@ -422,7 +422,9 @@ func (s *GeoService) getVisibleTechnicianIDs(userID uuid.UUID) ([]uuid.UUID, err
 	ids := make([]uuid.UUID, 0, len(users))
 	for _, u := range users {
 		if u.Role == "technician" {
-			ids = append(ids, u.ID)
+			if uid, err := uuid.Parse(u.ID); err == nil {
+				ids = append(ids, uid)
+			}
 		}
 	}
 	return ids, nil

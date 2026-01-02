@@ -7,10 +7,10 @@ import (
 )
 
 type HierarchyService struct {
-	hierarchyRepo *repositories.HierarchyRepository
+	hierarchyRepo repositories.HierarchyRepository
 }
 
-func NewHierarchyService(hierarchyRepo *repositories.HierarchyRepository) *HierarchyService {
+func NewHierarchyService(hierarchyRepo repositories.HierarchyRepository) *HierarchyService {
 	return &HierarchyService{hierarchyRepo: hierarchyRepo}
 }
 

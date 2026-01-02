@@ -22,6 +22,21 @@ var (
 	ErrItemSKUExists          = errors.New("SKU already exists")
 )
 
+// Helper functions for pointer conversion
+func stringPtrOrNil(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
+func ptrToString(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
 type StockService interface {
 	// Items
 	CreateItem(req models.CreateStockItemRequest) (*models.StockItem, error)
@@ -330,12 +345,12 @@ func (s *stockService) CreateMovement(req models.CreateStockMovementRequest, use
 		ScopeID:        req.ScopeID,
 		Type:           movementType,
 		ItemID:         req.ItemID,
-		FromLocationID: req.FromLocationID,
-		ToLocationID:   req.ToLocationID,
-		TicketID:       req.TicketID,
+		FromLocationID: stringPtrOrNil(req.FromLocationID),
+		ToLocationID:   stringPtrOrNil(req.ToLocationID),
+		TicketID:       stringPtrOrNil(req.TicketID),
 		Quantity:       req.Quantity,
 		UnitCost:       req.UnitCost,
-		Notes:          req.Notes,
+		Notes:          stringPtrOrNil(req.Notes),
 		PerformedBy:    userID,
 		PerformedAt:    time.Now(),
 	}
@@ -481,7 +496,7 @@ func (s *stockService) PerformInventoryCount(req models.InventoryCountRequest, u
 		Type:     string(models.MovementTypeAjusteInventario),
 		ItemID:   req.ItemID,
 		Quantity: abs(delta),
-		Notes:    req.Notes,
+		Notes:    ptrToString(req.Notes),
 	}
 
 	if delta > 0 {
