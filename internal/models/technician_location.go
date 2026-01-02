@@ -145,6 +145,7 @@ type BatchLocationResult struct {
 
 type TechnicianLocationResponse struct {
 	TechnicianID        uuid.UUID  `json:"technicianId"`
+	TicketID            *uuid.UUID `json:"ticketId,omitempty"`
 	Name                string     `json:"name"`
 	AvatarURL           *string    `json:"avatarUrl,omitempty"`
 	Status              string     `json:"status"`

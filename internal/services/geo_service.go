@@ -11,15 +11,15 @@ import (
 )
 
 type GeoService struct {
-	geoRepo      *repositories.GeoRepository
-	userRepo     *repositories.UserRepository
+	geoRepo          *repositories.GeoRepository
+	userRepo         repositories.UserRepository
 	hierarchyService *HierarchyService
 }
 
-func NewGeoService(geoRepo *repositories.GeoRepository, userRepo *repositories.UserRepository, hierarchyService *HierarchyService) *GeoService {
+func NewGeoService(geoRepo *repositories.GeoRepository, userRepo repositories.UserRepository, hierarchyService *HierarchyService) *GeoService {
 	return &GeoService{
-		geoRepo:      geoRepo,
-		userRepo:     userRepo,
+		geoRepo:          geoRepo,
+		userRepo:         userRepo,
 		hierarchyService: hierarchyService,
 	}
 }
@@ -161,7 +161,7 @@ func (s *GeoService) GetLastLocations(userID uuid.UUID, filter repositories.GeoF
 		}
 
 		if loc.Technician != nil {
-			response.Name = loc.Technician.Name
+			response.Name = loc.Technician.FullName
 			// response.AvatarURL = loc.Technician.AvatarURL
 		}
 
@@ -216,7 +216,7 @@ func (s *GeoService) GetTechnicianHistory(userID, technicianID uuid.UUID, filter
 	// Montar resposta
 	response := &models.TechnicianHistoryResponse{
 		TechnicianID:   technicianID,
-		TechnicianName: technician.Name,
+		TechnicianName: technician.FullName,
 		Period: models.PeriodInfo{
 			From: filter.From,
 			To:   filter.To,
@@ -264,7 +264,7 @@ func (s *GeoService) GetTicketLocations(ticketID uuid.UUID) (*models.TicketLocat
 				ServerTime:   loc.ServerTime,
 			}
 			if loc.Technician != nil {
-				response.Checkin.TechnicianName = loc.Technician.Name
+				response.Checkin.TechnicianName = loc.Technician.FullName
 			}
 		case models.EventTypeCheckout:
 			response.Checkout = &models.CheckinoutInfo{
@@ -275,7 +275,7 @@ func (s *GeoService) GetTicketLocations(ticketID uuid.UUID) (*models.TicketLocat
 				ServerTime:   loc.ServerTime,
 			}
 			if loc.Technician != nil {
-				response.Checkout.TechnicianName = loc.Technician.Name
+				response.Checkout.TechnicianName = loc.Technician.FullName
 			}
 		case models.EventTypeHeartbeat:
 			response.Heartbeats = append(response.Heartbeats, models.HeartbeatInfo{

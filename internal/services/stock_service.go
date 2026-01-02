@@ -119,10 +119,10 @@ func (s *stockService) UpdateItem(id string, req models.UpdateStockItemRequest) 
 		item.Name = *req.Name
 	}
 	if req.Description != nil {
-		item.Description = *req.Description
+		item.Description = req.Description
 	}
 	if req.Category != nil {
-		item.Category = *req.Category
+		item.Category = req.Category
 	}
 	if req.Unit != nil {
 		item.Unit = *req.Unit
