@@ -1,7 +1,7 @@
 package services
 
 import (
-	"tech-erp/internal/repositories"
+	"github.com/shigake/tech-iq-back/internal/repositories"
 
 	"github.com/google/uuid"
 )

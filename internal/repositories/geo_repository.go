@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	"tech-erp/internal/models"
+	"github.com/shigake/tech-iq-back/internal/models"
 	"time"
 
 	"github.com/google/uuid"

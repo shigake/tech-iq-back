@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"strconv"
-	"tech-erp/internal/models"
-	"tech-erp/internal/repositories"
-	"tech-erp/internal/services"
+	"github.com/shigake/tech-iq-back/internal/models"
+	"github.com/shigake/tech-iq-back/internal/repositories"
+	"github.com/shigake/tech-iq-back/internal/services"
 	"time"
 
 	"github.com/gofiber/fiber/v2"

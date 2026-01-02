@@ -3,8 +3,8 @@ package services
 import (
 	"errors"
 	"math"
-	"tech-erp/internal/models"
-	"tech-erp/internal/repositories"
+	"github.com/shigake/tech-iq-back/internal/models"
+	"github.com/shigake/tech-iq-back/internal/repositories"
 	"time"
 
 	"github.com/google/uuid"
