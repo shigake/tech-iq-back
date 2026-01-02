@@ -87,6 +87,7 @@ func main() {
 	geoRepo := repositories.NewGeoRepository(db)
 	securityLogRepo := repositories.NewSecurityLogRepository(db)
 	financialRepo := repositories.NewFinancialRepository(db)
+	stockRepo := repositories.NewStockRepository(db)
 
 	// Initialize services
 	authService := services.NewAuthService(userRepo, securityLogRepo, cfg)
@@ -99,6 +100,7 @@ func main() {
 	securityLogService := services.NewSecurityLogService(securityLogRepo)
 	systemMetricsService := services.NewSystemMetricsService(db, redisClient, userRepo, ticketRepo, securityLogRepo)
 	financialService := services.NewFinancialService(financialRepo)
+	stockService := services.NewStockService(stockRepo)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
@@ -116,6 +118,7 @@ func main() {
 	securityLogHandler := handlers.NewSecurityLogHandler(securityLogService)
 	adminHandler := handlers.NewAdminHandler(systemMetricsService)
 	financialHandler := handlers.NewFinancialHandler(financialService)
+	stockHandler := handlers.NewStockHandler(stockService)
 
 	// Routes
 	api := app.Group("/api/v1")
@@ -306,6 +309,9 @@ func main() {
 	batches.Delete("/:id/entries/:entryId", financialHandler.RemoveEntryFromBatch)
 	batches.Patch("/:id/approve", financialHandler.ApproveBatch)
 	batches.Patch("/:id/pay", financialHandler.PayBatch)
+
+	// ==================== Stock Module Routes ====================
+	stockHandler.RegisterRoutes(app, middleware.JWTProtected(cfg.JWTSecret))
 
 	// Start server
 	port := cfg.AppPort

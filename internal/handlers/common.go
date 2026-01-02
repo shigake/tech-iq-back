@@ -1,9 +1,16 @@
 package handlers
 
 import (
+	"time"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/go-playground/validator/v10"
 )
+
+// ErrorResponse is a standard error response
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
 
 // ErrorHandler is the global error handler
 func ErrorHandler(c *fiber.Ctx, err error) error {
@@ -43,4 +50,21 @@ func formatValidationErrors(err error) map[string]string {
 	}
 	
 	return errors
+}
+
+// parseTime parses a time string in multiple formats
+func parseTime(s string) (time.Time, error) {
+	formats := []string{
+		time.RFC3339,
+		"2006-01-02T15:04:05Z",
+		"2006-01-02",
+	}
+	
+	for _, format := range formats {
+		if t, err := time.Parse(format, s); err == nil {
+			return t, nil
+		}
+	}
+	
+	return time.Time{}, &time.ParseError{Value: s}
 }
