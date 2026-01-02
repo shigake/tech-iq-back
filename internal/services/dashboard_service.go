@@ -89,11 +89,11 @@ func (s *dashboardService) GetRecentActivity(limit int) ([]models.RecentActivity
 			action = "atualizado"
 		}
 		activities = append(activities, models.RecentActivity{
-			ID:          fmt.Sprintf("%d", t.ID),
+			ID:          t.ID,
 			Type:        "ticket",
 			Action:      action,
-			Title:       fmt.Sprintf("Ticket #%d", t.ID),
-			Description: fmt.Sprintf("Ticket #%d foi %s - %s", t.ID, action, t.Status),
+			Title:       fmt.Sprintf("Ticket #%s", t.ID),
+			Description: fmt.Sprintf("Ticket #%s foi %s - %s", t.ID, action, t.Status),
 			Timestamp:   formatTimeAgo(t.UpdatedAt),
 		})
 	}
