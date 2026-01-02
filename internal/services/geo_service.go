@@ -392,7 +392,8 @@ func (s *GeoService) updateLastLocation(location *models.TechnicianLocation) {
 
 	var statusSnapshot *string
 	if technician != nil {
-		status := technician.Status
+		// User doesn't have Status field, use Role as snapshot
+		status := technician.Role
 		statusSnapshot = &status
 	}
 

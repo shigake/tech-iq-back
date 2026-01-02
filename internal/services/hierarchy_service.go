@@ -2,8 +2,6 @@ package services
 
 import (
 	"github.com/shigake/tech-iq-back/internal/repositories"
-
-	"github.com/google/uuid"
 )
 
 type HierarchyService struct {
@@ -15,16 +13,16 @@ func NewHierarchyService(hierarchyRepo repositories.HierarchyRepository) *Hierar
 }
 
 // GetUserScopes retorna os IDs dos escopos que um usuário tem acesso
-func (s *HierarchyService) GetUserScopes(userID uuid.UUID) ([]uuid.UUID, error) {
+func (s *HierarchyService) GetUserScopes(userID string) ([]uint, error) {
 	// Buscar todos os nodes que o usuário é membro
 	memberships, err := s.hierarchyRepo.GetUserMemberships(userID)
 	if err != nil {
 		return nil, err
 	}
 
-	scopeIDs := make([]uuid.UUID, 0)
+	scopeIDs := make([]uint, 0)
 	for _, m := range memberships {
-		if m.NodeID != uuid.Nil {
+		if m.NodeID != 0 {
 			scopeIDs = append(scopeIDs, m.NodeID)
 		}
 	}
@@ -33,7 +31,7 @@ func (s *HierarchyService) GetUserScopes(userID uuid.UUID) ([]uuid.UUID, error) 
 }
 
 // CanViewNode verifica se um usuário pode visualizar um node específico
-func (s *HierarchyService) CanViewNode(userID, nodeID uuid.UUID) (bool, error) {
+func (s *HierarchyService) CanViewNode(userID string, nodeID uint) (bool, error) {
 	scopes, err := s.GetUserScopes(userID)
 	if err != nil {
 		return false, err
