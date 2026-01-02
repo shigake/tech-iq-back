@@ -310,7 +310,7 @@ func (h *StockHandler) CreateMovement(c *fiber.Ctx) error {
 	}
 
 	// Get user ID from JWT context
-	userID := middleware.GetUserID(c)
+	userID := c.Locals("userId").(string)
 
 	movement, err := h.service.CreateMovement(req, userID)
 	if err != nil {
@@ -481,7 +481,7 @@ func (h *StockHandler) PerformInventoryCount(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{Error: "CountedQuantity cannot be negative"})
 	}
 
-	userID := middleware.GetUserID(c)
+	userID := c.Locals("userId").(string)
 
 	result, err := h.service.PerformInventoryCount(req, userID)
 	if err != nil {
