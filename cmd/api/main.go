@@ -140,6 +140,19 @@ func main() {
 	// Terms of service (public access)
 	api.Get("/terms", termsHandler.GetTerms)
 
+	// Health check (public)
+	api.Get("/health", adminHandler.GetHealthCheck)
+
+	// Version info (public)
+	api.Get("/version", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{
+			"version":    Version,
+			"build_time": BuildTime,
+			"commit":     CommitSHA,
+			"go_version": runtime.Version(),
+		})
+	})
+
 	// Rate limiter for auth routes (5 requests per minute per IP)
 	authLimiter := limiter.New(limiter.Config{
 		Max:        5,
@@ -308,18 +321,6 @@ func main() {
 	admin.Get("/security-logs/stats", securityLogHandler.GetSecurityStats)
 	// System metrics (admin only)
 	admin.Get("/system-metrics", adminHandler.GetSystemMetrics)
-	// Health check (public)
-	api.Get("/health", adminHandler.GetHealthCheck)
-
-	// Version info (public)
-	api.Get("/version", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{
-			"version":    Version,
-			"build_time": BuildTime,
-			"commit":     CommitSHA,
-			"go_version": runtime.Version(),
-		})
-	})
 
 	// ==================== Financial Routes ====================
 	financial := protected.Group("/financial")
