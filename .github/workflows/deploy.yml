@@ -42,20 +42,20 @@ jobs:
             cd /opt/tech-iq/backend
             
             # Build Docker image with no-cache to ensure fresh build
-            docker build --no-cache -t tech-erp-api:latest .
+            docker build --no-cache -t tech-iq-back:latest .
             
             # Remove old image from k3s containerd
-            k3s ctr images rm docker.io/library/tech-erp-api:latest || true
+            k3s ctr images rm docker.io/library/tech-iq-back:latest || true
             
             # Import new image to k3s containerd
-            docker save tech-erp-api:latest | k3s ctr images import -
+            docker save tech-iq-back:latest | k3s ctr images import -
             
             # Delete existing pods to force recreation with new image
-            kubectl delete pods -l app=tech-erp-api -n hml --force --grace-period=0 || true
+            kubectl delete pods -l app=tech-erp-backend -n hml --force --grace-period=0 || true
             
             # Restart deployment to pick up new image
-            kubectl rollout restart deployment/tech-erp-api -n hml
-            kubectl rollout status deployment/tech-erp-api -n hml --timeout=120s
+            kubectl rollout restart deployment/tech-erp-backend -n hml
+            kubectl rollout status deployment/tech-erp-backend -n hml --timeout=120s
             
             # Cleanup Docker
             docker image prune -f
