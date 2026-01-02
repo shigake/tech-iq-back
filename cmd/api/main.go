@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"runtime"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -18,6 +19,13 @@ import (
 	"github.com/shigake/tech-iq-back/internal/middleware"
 	"github.com/shigake/tech-iq-back/internal/repositories"
 	"github.com/shigake/tech-iq-back/internal/services"
+)
+
+// Build info - injected at compile time via ldflags
+var (
+	Version   = "dev"
+	BuildTime = "unknown"
+	CommitSHA = "unknown"
 )
 
 func main() {
@@ -302,6 +310,16 @@ func main() {
 	admin.Get("/system-metrics", adminHandler.GetSystemMetrics)
 	// Health check (public)
 	api.Get("/health", adminHandler.GetHealthCheck)
+
+	// Version info (public)
+	api.Get("/version", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{
+			"version":    Version,
+			"build_time": BuildTime,
+			"commit":     CommitSHA,
+			"go_version": runtime.Version(),
+		})
+	})
 
 	// ==================== Financial Routes ====================
 	financial := protected.Group("/financial")

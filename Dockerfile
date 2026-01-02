@@ -13,8 +13,15 @@ RUN go mod download && go mod tidy
 # Copy source code
 COPY . .
 
-# Build the application
-RUN go mod tidy && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/api
+# Build arguments for version info
+ARG VERSION=1.0.0
+ARG BUILD_TIME
+ARG COMMIT_SHA
+
+# Build the application with version info
+RUN go mod tidy && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo \
+    -ldflags "-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME} -X main.CommitSHA=${COMMIT_SHA}" \
+    -o main ./cmd/api
 
 # Final stage
 FROM alpine:3.19
