@@ -55,21 +55,18 @@ func (s *authService) SignIn(req *models.SignInRequest, ipAddress, userAgent str
 	
 	user, err := s.userRepo.FindByEmail(req.Email)
 	if err != nil {
-		log.Printf("User not found: %v", err)
 		s.logSecurityEvent("", req.Email, "login_failed", ipAddress, userAgent, "User not found", false)
 		return nil, errors.New("invalid credentials")
 	}
 
-	log.Printf("User found: ID=%s, Email=%s, Active=%v, PasswordLen=%d", user.ID, user.Email, user.Active, len(user.Password))
+	// User found, proceeding with authentication
 
 	if !user.Active {
-		log.Printf("User account is deactivated")
 		s.logSecurityEvent(user.ID, req.Email, "login_failed", ipAddress, userAgent, "Account deactivated", false)
 		return nil, errors.New("user account is deactivated")
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
-		log.Printf("Password mismatch: %v", err)
 		s.logSecurityEvent(user.ID, req.Email, "login_failed", ipAddress, userAgent, "Invalid password", false)
 		return nil, errors.New("invalid credentials")
 	}

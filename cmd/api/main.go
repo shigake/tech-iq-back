@@ -2,9 +2,12 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/helmet"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/joho/godotenv"
@@ -76,6 +79,9 @@ func main() {
 		AllowCredentials: true,
 	}))
 
+	// Security headers (XSS, Content-Type sniffing, etc)
+	app.Use(helmet.New())
+
 	// Initialize repositories
 	userRepo := repositories.NewUserRepository(db)
 	technicianRepo := repositories.NewTechnicianRepository(db)
@@ -126,10 +132,24 @@ func main() {
 	// Terms of service (public access)
 	api.Get("/terms", termsHandler.GetTerms)
 
-	// Auth routes (public)
+	// Rate limiter for auth routes (5 requests per minute per IP)
+	authLimiter := limiter.New(limiter.Config{
+		Max:        5,
+		Expiration: 1 * time.Minute,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return c.IP()
+		},
+		LimitReached: func(c *fiber.Ctx) error {
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+				"error": "Too many login attempts. Please try again later.",
+			})
+		},
+	})
+
+	// Auth routes (public) with rate limiting
 	auth := api.Group("/auth")
-	auth.Post("/signin", authHandler.SignIn)
-	auth.Post("/signup", authHandler.SignUp)
+	auth.Post("/signin", authLimiter, authHandler.SignIn)
+	auth.Post("/signup", authLimiter, authHandler.SignUp)
 	auth.Post("/refresh", authHandler.RefreshToken)
 
 	// Protected routes
