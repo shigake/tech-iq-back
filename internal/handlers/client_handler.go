@@ -84,21 +84,50 @@ func (h *ClientHandler) GetByID(c *fiber.Ctx) error {
 
 // Create creates a new client
 func (h *ClientHandler) Create(c *fiber.Ctx) error {
-	var client models.Client
-	if err := c.BodyParser(&client); err != nil {
+	// First parse as map to handle both 'name' and 'fullName' fields
+	var body map[string]interface{}
+	if err := c.BodyParser(&body); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body",
 		})
 	}
 
-	// Check if we received 'name' field and need to map to FullName
-	var body map[string]interface{}
-	if err := c.BodyParser(&body); err == nil {
-		if name, exists := body["name"]; exists && name != nil {
-			if nameStr, ok := name.(string); ok && nameStr != "" {
-				client.FullName = nameStr
+	// Extract fullName from either 'fullName' or 'name' field
+	var fullName string
+	if fn, exists := body["fullName"]; exists && fn != nil {
+		if s, ok := fn.(string); ok {
+			fullName = s
+		}
+	}
+	if fullName == "" {
+		if n, exists := body["name"]; exists && n != nil {
+			if s, ok := n.(string); ok {
+				fullName = s
 			}
 		}
+	}
+
+	if fullName == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Nome é obrigatório",
+		})
+	}
+
+	// Build client from body
+	client := models.Client{
+		FullName:          fullName,
+		CPF:               getStringFromMap(body, "cpf"),
+		CNPJ:              getStringFromMap(body, "cnpj"),
+		InscricaoEstadual: getStringFromMap(body, "inscricaoEstadual"),
+		Email:             getStringFromMap(body, "email"),
+		Phone:             getStringFromMap(body, "phone"),
+		Street:            getStringFromMap(body, "street"),
+		Number:            getStringFromMap(body, "number"),
+		Complement:        getStringFromMap(body, "complement"),
+		Neighborhood:      getStringFromMap(body, "neighborhood"),
+		City:              getStringFromMap(body, "city"),
+		State:             getStringFromMap(body, "state"),
+		ZipCode:           getStringFromMap(body, "zipCode"),
 	}
 	
 	// Sanitize empty strings to avoid unique constraint issues
@@ -112,6 +141,16 @@ func (h *ClientHandler) Create(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(client)
+}
+
+// getStringFromMap safely extracts a string from a map
+func getStringFromMap(m map[string]interface{}, key string) string {
+	if v, exists := m[key]; exists && v != nil {
+		if s, ok := v.(string); ok {
+			return s
+		}
+	}
+	return ""
 }
 
 // sanitizeUniqueField returns empty string as is but trims whitespace
@@ -137,26 +176,62 @@ func (h *ClientHandler) Update(c *fiber.Ctx) error {
 		})
 	}
 
-	var update models.Client
-	if err := c.BodyParser(&update); err != nil {
+	// Parse as map to handle both 'name' and 'fullName' fields
+	var body map[string]interface{}
+	if err := c.BodyParser(&body); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body",
 		})
 	}
 
-	existing.FullName = update.FullName
-	existing.CPF = update.CPF
-	existing.CNPJ = update.CNPJ
-	existing.InscricaoEstadual = update.InscricaoEstadual
-	existing.Email = update.Email
-	existing.Phone = update.Phone
-	existing.Street = update.Street
-	existing.Number = update.Number
-	existing.Complement = update.Complement
-	existing.Neighborhood = update.Neighborhood
-	existing.City = update.City
-	existing.State = update.State
-	existing.ZipCode = update.ZipCode
+	// Extract fullName from either 'fullName' or 'name' field
+	if fn, exists := body["fullName"]; exists && fn != nil {
+		if s, ok := fn.(string); ok && s != "" {
+			existing.FullName = s
+		}
+	} else if n, exists := body["name"]; exists && n != nil {
+		if s, ok := n.(string); ok && s != "" {
+			existing.FullName = s
+		}
+	}
+
+	// Update other fields
+	if v := getStringFromMap(body, "cpf"); v != "" || body["cpf"] != nil {
+		existing.CPF = sanitizeUniqueField(v)
+	}
+	if v := getStringFromMap(body, "cnpj"); v != "" || body["cnpj"] != nil {
+		existing.CNPJ = sanitizeUniqueField(v)
+	}
+	if v := getStringFromMap(body, "inscricaoEstadual"); v != "" || body["inscricaoEstadual"] != nil {
+		existing.InscricaoEstadual = v
+	}
+	if v := getStringFromMap(body, "email"); v != "" || body["email"] != nil {
+		existing.Email = v
+	}
+	if v := getStringFromMap(body, "phone"); v != "" || body["phone"] != nil {
+		existing.Phone = v
+	}
+	if v := getStringFromMap(body, "street"); v != "" || body["street"] != nil {
+		existing.Street = v
+	}
+	if v := getStringFromMap(body, "number"); v != "" || body["number"] != nil {
+		existing.Number = v
+	}
+	if v := getStringFromMap(body, "complement"); v != "" || body["complement"] != nil {
+		existing.Complement = v
+	}
+	if v := getStringFromMap(body, "neighborhood"); v != "" || body["neighborhood"] != nil {
+		existing.Neighborhood = v
+	}
+	if v := getStringFromMap(body, "city"); v != "" || body["city"] != nil {
+		existing.City = v
+	}
+	if v := getStringFromMap(body, "state"); v != "" || body["state"] != nil {
+		existing.State = v
+	}
+	if v := getStringFromMap(body, "zipCode"); v != "" || body["zipCode"] != nil {
+		existing.ZipCode = v
+	}
 
 	if err := h.repo.Update(existing); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
