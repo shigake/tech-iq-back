@@ -10,6 +10,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/go-playground/validator/v10 v10.17.0
 	github.com/redis/go-redis/v9 v9.3.1
+	github.com/shopspring/decimal v1.3.1
 	go.uber.org/zap v1.26.0
 	golang.org/x/crypto v0.18.0
 	gorm.io/driver/postgres v1.5.4
