@@ -20,8 +20,14 @@ jobs:
           go-version: '1.22'
           cache: true
 
+      - name: Verify build
+        run: |
+          go mod tidy
+          go build -v ./cmd/api
+
       - name: Run tests
-        run: go test -v ./... || true
+        run: go test -v ./...
+        continue-on-error: true
 
       - name: Copy source to server
         uses: appleboy/scp-action@v0.1.7
