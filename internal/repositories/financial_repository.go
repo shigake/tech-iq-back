@@ -419,12 +419,12 @@ func (r *FinancialRepository) GetDashboardData(startDate, endDate time.Time) (*m
 	// Pending payments count
 	r.db.Model(&models.FinancialEntry{}).
 		Where("status = ?", models.FinancialEntryStatusPending).
-		Count((*int64)(&dashboard.PendingPayments))
+		Count(&dashboard.PendingPayments)
 
 	// Overdue count
 	r.db.Model(&models.FinancialEntry{}).
 		Where("status = ?", models.FinancialEntryStatusOverdue).
-		Count((*int64)(&dashboard.OverdueCount))
+		Count(&dashboard.OverdueCount)
 
 	// Recent entries
 	r.db.Preload("Technician").
@@ -533,11 +533,11 @@ func (r *FinancialRepository) GetTechnicianPaymentsReport(startDate, endDate tim
 	// Get technician names
 	for _, item := range data {
 		var tech models.Technician
-		r.db.Select("name").First(&tech, "id = ?", item.TechnicianID)
+		r.db.Select("full_name").First(&tech, "id = ?", item.TechnicianID)
 
 		report.Technicians = append(report.Technicians, models.TechnicianPaymentReport{
 			TechnicianID:   item.TechnicianID,
-			TechnicianName: tech.Name,
+			TechnicianName: tech.FullName,
 			Total:          item.Total,
 			EntriesCount:   item.Count,
 		})

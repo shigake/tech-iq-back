@@ -176,11 +176,11 @@ type PeriodInfo struct {
 }
 
 type HistorySummary struct {
-	TotalEvents    int `json:"totalEvents"`
-	Checkins       int `json:"checkins"`
-	Checkouts      int `json:"checkouts"`
-	Heartbeats     int `json:"heartbeats"`
-	TicketsVisited int `json:"ticketsVisited"`
+	TotalEvents    int64 `json:"totalEvents"`
+	Checkins       int64 `json:"checkins"`
+	Checkouts      int64 `json:"checkouts"`
+	Heartbeats     int64 `json:"heartbeats"`
+	TicketsVisited int64 `json:"ticketsVisited"`
 }
 
 type LocationHistoryItem struct {

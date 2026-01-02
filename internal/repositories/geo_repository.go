@@ -163,28 +163,28 @@ func (r *GeoRepository) GetHistorySummary(technicianID uuid.UUID, from, to time.
 	// Total de eventos
 	r.db.Model(&models.TechnicianLocation{}).
 		Where("technician_id = ? AND server_time BETWEEN ? AND ?", technicianID, from, to).
-		Count((*int64)(&summary.TotalEvents))
+		Count(&summary.TotalEvents)
 
 	// Checkins
 	r.db.Model(&models.TechnicianLocation{}).
 		Where("technician_id = ? AND server_time BETWEEN ? AND ? AND event_type = ?", technicianID, from, to, models.EventTypeCheckin).
-		Count((*int64)(&summary.Checkins))
+		Count(&summary.Checkins)
 
 	// Checkouts
 	r.db.Model(&models.TechnicianLocation{}).
 		Where("technician_id = ? AND server_time BETWEEN ? AND ? AND event_type = ?", technicianID, from, to, models.EventTypeCheckout).
-		Count((*int64)(&summary.Checkouts))
+		Count(&summary.Checkouts)
 
 	// Heartbeats
 	r.db.Model(&models.TechnicianLocation{}).
 		Where("technician_id = ? AND server_time BETWEEN ? AND ? AND event_type = ?", technicianID, from, to, models.EventTypeHeartbeat).
-		Count((*int64)(&summary.Heartbeats))
+		Count(&summary.Heartbeats)
 
 	// Tickets visitados (distintos)
 	r.db.Model(&models.TechnicianLocation{}).
 		Where("technician_id = ? AND server_time BETWEEN ? AND ? AND ticket_id IS NOT NULL", technicianID, from, to).
 		Distinct("ticket_id").
-		Count((*int64)(&summary.TicketsVisited))
+		Count(&summary.TicketsVisited)
 
 	return &summary, nil
 }

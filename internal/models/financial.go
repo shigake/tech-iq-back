@@ -213,8 +213,8 @@ type FinancialDashboard struct {
 		Income  map[string]float64 `json:"income"`
 		Expense map[string]float64 `json:"expense"`
 	} `json:"byCategory"`
-	PendingPayments int              `json:"pendingPayments"`
-	OverdueCount    int              `json:"overdueCount"`
+	PendingPayments int64            `json:"pendingPayments"`
+	OverdueCount    int64            `json:"overdueCount"`
 	RecentEntries   []FinancialEntry `json:"recentEntries"`
 }
 
