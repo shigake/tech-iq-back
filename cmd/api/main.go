@@ -123,7 +123,7 @@ func main() {
 	geoHandler := handlers.NewGeoHandler(geoService)
 	securityLogHandler := handlers.NewSecurityLogHandler(securityLogService)
 	adminHandler := handlers.NewAdminHandler(systemMetricsService)
-	financialHandler := handlers.NewFinancialHandler(financialService)
+	financialHandler := handlers.NewFinancialHandler(financialService, categoryRepo)
 	stockHandler := handlers.NewStockHandler(stockService)
 
 	// Routes

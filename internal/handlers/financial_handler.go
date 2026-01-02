@@ -3,15 +3,17 @@ package handlers
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/shigake/tech-iq-back/internal/models"
+	"github.com/shigake/tech-iq-back/internal/repositories"
 	"github.com/shigake/tech-iq-back/internal/services"
 )
 
 type FinancialHandler struct {
-	service *services.FinancialService
+	service      *services.FinancialService
+	categoryRepo repositories.CategoryRepository
 }
 
-func NewFinancialHandler(service *services.FinancialService) *FinancialHandler {
-	return &FinancialHandler{service: service}
+func NewFinancialHandler(service *services.FinancialService, categoryRepo repositories.CategoryRepository) *FinancialHandler {
+	return &FinancialHandler{service: service, categoryRepo: categoryRepo}
 }
 
 // =============== Financial Entries ===============
@@ -545,13 +547,42 @@ func (h *FinancialHandler) GetTechnicianPaymentsReport(c *fiber.Ctx) error {
 	return c.JSON(report)
 }
 
-// GetCategories returns available financial categories
+// GetCategories returns available financial categories from the database
 // @Summary Get financial categories
 // @Tags Financial
 // @Produce json
-// @Success 200 {array} models.FinancialCategory
+// @Param type query string false "Filter by type: finance_income or finance_expense"
+// @Success 200 {array} models.Category
 // @Router /financial/categories [get]
 func (h *FinancialHandler) GetCategories(c *fiber.Ctx) error {
-	categories := h.service.GetCategories()
-	return c.JSON(categories)
+	categoryType := c.Query("type")
+	
+	if categoryType != "" {
+		categories, err := h.categoryRepo.GetByTypeWithChildren(models.CategoryType(categoryType))
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to fetch categories",
+			})
+		}
+		return c.JSON(categories)
+	}
+	
+	// Return both income and expense categories
+	incomeCategories, err := h.categoryRepo.GetByTypeWithChildren(models.CategoryTypeFinanceIncome)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to fetch income categories",
+		})
+	}
+	
+	expenseCategories, err := h.categoryRepo.GetByTypeWithChildren(models.CategoryTypeFinanceExpense)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to fetch expense categories",
+		})
+	}
+	
+	// Combine both lists
+	allCategories := append(incomeCategories, expenseCategories...)
+	return c.JSON(allCategories)
 }

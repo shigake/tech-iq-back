@@ -85,6 +85,9 @@ func Migrate(db *gorm.DB) error {
 	
 	// Seed default admin user
 	SeedAdminUser(db)
+	
+	// Seed default financial categories
+	SeedFinancialCategories(db)
 
 	log.Println("✅ Migrations completed")
 	return nil
@@ -249,4 +252,101 @@ func SeedAdminUser(db *gorm.DB) {
 	}
 
 	log.Println("✅ Admin user created (admin@techerp.com / admin123)")
+}
+
+// SeedFinancialCategories creates default financial categories
+func SeedFinancialCategories(db *gorm.DB) {
+	log.Println("🔄 Seeding financial categories...")
+
+	// Check if financial categories already exist
+	var count int64
+	db.Model(&models.Category{}).Where("type IN ?", []string{"finance_income", "finance_expense"}).Count(&count)
+	if count > 0 {
+		log.Println("✅ Financial categories already exist")
+		return
+	}
+
+	// Income categories
+	incomeCategories := []struct {
+		Name        string
+		Description string
+		Icon        string
+		Color       string
+		Subs        []string
+	}{
+		{"Serviços", "Receitas de serviços prestados", "service", "#4CAF50", []string{"Conclusão de OS", "Manutenção", "Instalação", "Consultoria"}},
+		{"Produtos", "Receitas de venda de produtos", "product", "#2196F3", []string{"Venda de Equipamentos", "Venda de Peças"}},
+		{"Outros", "Outras receitas", "money", "#FF9800", []string{"Reembolso", "Bonificação", "Ajuste"}},
+	}
+
+	for i, cat := range incomeCategories {
+		category := models.Category{
+			Name:        cat.Name,
+			Description: cat.Description,
+			Icon:        cat.Icon,
+			Color:       cat.Color,
+			Type:        models.CategoryTypeFinanceIncome,
+			Active:      true,
+			SortOrder:   i,
+		}
+		if err := db.Create(&category).Error; err != nil {
+			log.Printf("⚠️ Failed to create income category %s: %v", cat.Name, err)
+			continue
+		}
+		// Create subcategories
+		for j, subName := range cat.Subs {
+			subcat := models.Category{
+				Name:      subName,
+				Type:      models.CategoryTypeFinanceIncome,
+				ParentID:  &category.ID,
+				Active:    true,
+				SortOrder: j,
+			}
+			db.Create(&subcat)
+		}
+	}
+
+	// Expense categories
+	expenseCategories := []struct {
+		Name        string
+		Description string
+		Icon        string
+		Color       string
+		Subs        []string
+	}{
+		{"Pagamento Técnicos", "Pagamentos a técnicos", "payment", "#F44336", []string{"Comissão", "Bonificação", "Reembolso"}},
+		{"Operacional", "Despesas operacionais", "operational", "#9C27B0", []string{"Combustível", "Ferramentas", "Equipamentos", "Suprimentos"}},
+		{"Administrativo", "Despesas administrativas", "administrative", "#00BCD4", []string{"Aluguel", "Utilidades", "Software", "Serviços"}},
+		{"Impostos", "Despesas com impostos", "tax", "#795548", []string{"Federal", "Estadual", "Municipal"}},
+		{"Outros", "Outras despesas", "category", "#607D8B", []string{"Ajuste", "Perda"}},
+	}
+
+	for i, cat := range expenseCategories {
+		category := models.Category{
+			Name:        cat.Name,
+			Description: cat.Description,
+			Icon:        cat.Icon,
+			Color:       cat.Color,
+			Type:        models.CategoryTypeFinanceExpense,
+			Active:      true,
+			SortOrder:   i,
+		}
+		if err := db.Create(&category).Error; err != nil {
+			log.Printf("⚠️ Failed to create expense category %s: %v", cat.Name, err)
+			continue
+		}
+		// Create subcategories
+		for j, subName := range cat.Subs {
+			subcat := models.Category{
+				Name:      subName,
+				Type:      models.CategoryTypeFinanceExpense,
+				ParentID:  &category.ID,
+				Active:    true,
+				SortOrder: j,
+			}
+			db.Create(&subcat)
+		}
+	}
+
+	log.Println("✅ Financial categories seeded")
 }
