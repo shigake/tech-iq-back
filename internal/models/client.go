@@ -9,7 +9,7 @@ import (
 
 type Client struct {
 	ID                 string         `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
-	FullName           string         `json:"fullName" gorm:"not null;type:varchar(255)" validate:"required"`
+	FullName           string         `json:"fullName" gorm:"column:name;not null;type:varchar(255)" validate:"required"`
 	CPF                string         `json:"cpf" gorm:"type:varchar(14);index:idx_clients_cpf,unique,where:cpf <> ''"`
 	CNPJ               string         `json:"cnpj" gorm:"type:varchar(18);index:idx_clients_cnpj,unique,where:cnpj <> ''"`
 	InscricaoEstadual  string         `json:"inscricaoEstadual" gorm:"type:varchar(20)"`
