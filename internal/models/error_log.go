@@ -194,12 +194,6 @@ func matchesPattern(actual, pattern string) bool {
 }
 
 func splitPath(s string) []string {
-	var parts []string
-	for _, p := range []byte(s) {
-		if p == '/' || p == ' ' {
-			continue
-		}
-	}
 	// Simple split
 	result := []string{}
 	current := ""
