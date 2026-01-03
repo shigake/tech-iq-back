@@ -118,8 +118,8 @@ func (s *technicianService) Update(id string, req *models.CreateTechnicianReques
 	existing.Contact = req.Contact
 	existing.Status = req.Status
 	existing.Type = req.Type
-	existing.Emails = req.Emails
-	existing.Phones = req.Phones
+	existing.Emails = req.Emails.ToEmailArray()
+	existing.Phones = req.Phones.ToPhoneArray()
 	existing.MinCallValue = req.MinCallValue
 	existing.Observation = req.Observation
 	existing.Street = req.Street

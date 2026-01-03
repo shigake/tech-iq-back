@@ -91,6 +91,11 @@ func (f *FlexEmailArray) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// ToEmailArray converts FlexEmailArray to EmailArray for database storage
+func (f FlexEmailArray) ToEmailArray() EmailArray {
+	return EmailArray(f)
+}
+
 // FlexPhoneArray accepts both string arrays and PhoneEntry arrays in JSON
 type FlexPhoneArray []PhoneEntry
 
@@ -114,6 +119,11 @@ func (f *FlexPhoneArray) UnmarshalJSON(data []byte) error {
 		(*f)[i] = PhoneEntry{Number: s, Type: "principal"}
 	}
 	return nil
+}
+
+// ToPhoneArray converts FlexPhoneArray to PhoneArray for database storage
+func (f FlexPhoneArray) ToPhoneArray() PhoneArray {
+	return PhoneArray(f)
 }
 
 // StringArray is a custom type for PostgreSQL JSONB array of strings
@@ -312,18 +322,6 @@ func (r *CreateTechnicianRequest) ToModel() *Technician {
 		vehicle = "NONE"
 	}
 
-	// Convert FlexEmailArray to EmailArray
-	emails := make(EmailArray, len(r.Emails))
-	for i, e := range r.Emails {
-		emails[i] = e
-	}
-
-	// Convert FlexPhoneArray to PhoneArray
-	phones := make(PhoneArray, len(r.Phones))
-	for i, p := range r.Phones {
-		phones[i] = p
-	}
-
 	return &Technician{
 		FullName:             r.FullName,
 		TradeName:            r.TradeName,
@@ -333,8 +331,8 @@ func (r *CreateTechnicianRequest) ToModel() *Technician {
 		Contact:              r.Contact,
 		Status:               status,
 		Type:                 techType,
-		Emails:               emails,
-		Phones:               phones,
+		Emails:               r.Emails.ToEmailArray(),
+		Phones:               r.Phones.ToPhoneArray(),
 		MinCallValue:         r.MinCallValue,
 		Observation:          r.Observation,
 		Street:               r.Street,
