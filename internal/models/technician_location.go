@@ -19,7 +19,7 @@ const (
 type TechnicianLocation struct {
 	ID           uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
 	TechnicianID string     `json:"technicianId" gorm:"type:varchar(36);not null;index:idx_tech_loc_technician_time,priority:1"`
-	TicketID     *uuid.UUID `json:"ticketId,omitempty" gorm:"type:uuid;index:idx_tech_loc_ticket"``
+	TicketID     *uuid.UUID `json:"ticketId,omitempty" gorm:"type:uuid;index:idx_tech_loc_ticket"`
 
 	// Tipo de evento
 	EventType EventType `json:"eventType" gorm:"type:varchar(20);not null"`
