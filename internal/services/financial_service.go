@@ -9,11 +9,12 @@ import (
 )
 
 type FinancialService struct {
-	repo *repositories.FinancialRepository
+	repo         *repositories.FinancialRepository
+	categoryRepo repositories.CategoryRepository
 }
 
-func NewFinancialService(repo *repositories.FinancialRepository) *FinancialService {
-	return &FinancialService{repo: repo}
+func NewFinancialService(repo *repositories.FinancialRepository, categoryRepo repositories.CategoryRepository) *FinancialService {
+	return &FinancialService{repo: repo, categoryRepo: categoryRepo}
 }
 
 // =============== Financial Entries ===============
@@ -453,15 +454,32 @@ func (s *FinancialService) MarkOverdueEntries() (int64, error) {
 // =============== Helpers ===============
 
 // ValidateCategory validates if the category and subcategory are valid for the type
+// Uses database categories instead of hardcoded values
 func (s *FinancialService) ValidateCategory(entryType models.FinancialEntryType, category string, subcategory string) bool {
-	categories := models.GetFinancialCategories()
-	for _, cat := range categories {
-		if cat.Type == entryType && cat.Category == category {
+	// Convert FinancialEntryType to CategoryType
+	var categoryType models.CategoryType
+	if entryType == models.FinancialEntryTypeIncome {
+		categoryType = models.CategoryTypeFinanceIncome
+	} else {
+		categoryType = models.CategoryTypeFinanceExpense
+	}
+
+	// Get categories from database
+	dbCategories, err := s.categoryRepo.GetByTypeWithChildren(categoryType)
+	if err != nil {
+		// If error, fallback to allow (or log error)
+		return false
+	}
+
+	// Find matching category by name
+	for _, cat := range dbCategories {
+		if cat.Name == category {
 			if subcategory == "" {
 				return true
 			}
-			for _, sub := range cat.Subcategories {
-				if sub == subcategory {
+			// Check subcategories (children)
+			for _, child := range cat.Children {
+				if child.Name == subcategory {
 					return true
 				}
 			}

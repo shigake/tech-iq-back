@@ -114,7 +114,7 @@ func main() {
 	geoService := services.NewGeoService(geoRepo, userRepo, technicianRepo, hierarchyService, redisClient)
 	securityLogService := services.NewSecurityLogService(securityLogRepo)
 	systemMetricsService := services.NewSystemMetricsService(db, redisClient, userRepo, ticketRepo, securityLogRepo)
-	financialService := services.NewFinancialService(financialRepo)
+	financialService := services.NewFinancialService(financialRepo, categoryRepo)
 	stockService := services.NewStockService(stockRepo)
 	errorLogService := services.NewErrorLogService(errorLogRepo)
 
