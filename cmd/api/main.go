@@ -102,6 +102,7 @@ func main() {
 	securityLogRepo := repositories.NewSecurityLogRepository(db)
 	financialRepo := repositories.NewFinancialRepository(db)
 	stockRepo := repositories.NewStockRepository(db)
+	errorLogRepo := repositories.NewErrorLogRepository(db)
 
 	// Initialize services
 	authService := services.NewAuthService(userRepo, securityLogRepo, cfg)
@@ -115,6 +116,7 @@ func main() {
 	systemMetricsService := services.NewSystemMetricsService(db, redisClient, userRepo, ticketRepo, securityLogRepo)
 	financialService := services.NewFinancialService(financialRepo)
 	stockService := services.NewStockService(stockRepo)
+	errorLogService := services.NewErrorLogService(errorLogRepo)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
@@ -133,6 +135,10 @@ func main() {
 	adminHandler := handlers.NewAdminHandler(systemMetricsService)
 	financialHandler := handlers.NewFinancialHandler(financialService, categoryRepo)
 	stockHandler := handlers.NewStockHandler(stockService)
+	errorLogHandler := handlers.NewErrorLogHandler(errorLogService)
+
+	// Error logging middleware (add before routes)
+	app.Use(middleware.ErrorLoggerMiddleware(errorLogService))
 
 	// Routes
 	api := app.Group("/api/v1")
@@ -321,6 +327,16 @@ func main() {
 	admin.Get("/security-logs/stats", securityLogHandler.GetSecurityStats)
 	// System metrics (admin only)
 	admin.Get("/system-metrics", adminHandler.GetSystemMetrics)
+
+	// ==================== Error Logs Routes (Admin only) ====================
+	errors := protected.Group("/errors", middleware.AdminOnly())
+	errors.Get("/", errorLogHandler.GetAll)
+	errors.Get("/stats", errorLogHandler.GetStats)
+	errors.Get("/:id", errorLogHandler.GetByID)
+	errors.Post("/:id/resolve", errorLogHandler.Resolve)
+	errors.Post("/bulk-resolve", errorLogHandler.BulkResolve)
+	errors.Delete("/:id", errorLogHandler.Delete)
+	errors.Post("/cleanup", errorLogHandler.Cleanup)
 
 	// ==================== Financial Routes ====================
 	financial := protected.Group("/financial")
