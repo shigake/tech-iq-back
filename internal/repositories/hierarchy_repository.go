@@ -19,6 +19,7 @@ type HierarchyRepository interface {
 	DeleteHierarchy(id uint) error
 
 	// Node CRUD
+	GetAllNodes() ([]models.Node, error)
 	GetNodeByID(id uint) (*models.Node, error)
 	GetNodesByHierarchy(hierarchyID uint) ([]models.Node, error)
 	GetNodeChildren(nodeID uint) ([]models.Node, error)
@@ -179,6 +180,12 @@ func (r *hierarchyRepository) DeleteHierarchy(id uint) error {
 }
 
 // ==================== Node CRUD ====================
+
+func (r *hierarchyRepository) GetAllNodes() ([]models.Node, error) {
+	var nodes []models.Node
+	err := r.db.Preload("Hierarchy").Order("path ASC").Find(&nodes).Error
+	return nodes, err
+}
 
 func (r *hierarchyRepository) GetNodeByID(id uint) (*models.Node, error) {
 	var node models.Node

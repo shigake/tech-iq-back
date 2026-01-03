@@ -45,6 +45,9 @@ func (r *ticketRepository) FindAll(page, size int, filters *models.TicketFilters
 		if filters.Priority != "" {
 			query = query.Where("priority = ?", filters.Priority)
 		}
+		if filters.NodeID != "" {
+			query = query.Where("node_id = ?", filters.NodeID)
+		}
 		if filters.ClientID != "" {
 			query = query.Where("client_id = ?", filters.ClientID)
 		}
@@ -74,6 +77,7 @@ func (r *ticketRepository) FindAll(page, size int, filters *models.TicketFilters
 	// Fetch paginated results
 	offset := page * size
 	err := query.
+		Preload("Node").
 		Preload("Client").
 		Preload("Category").
 		Preload("Technicians").
@@ -91,6 +95,7 @@ func (r *ticketRepository) FindAll(page, size int, filters *models.TicketFilters
 func (r *ticketRepository) FindByID(id string) (*models.Ticket, error) {
 	var ticket models.Ticket
 	err := r.db.
+		Preload("Node").
 		Preload("Client").
 		Preload("Category").
 		Preload("Technicians").

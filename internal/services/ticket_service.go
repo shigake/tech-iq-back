@@ -50,6 +50,7 @@ func (s *ticketService) Create(req *models.CreateTicketRequest) (*models.Ticket,
 		ComputerBrand:    req.GetBrand(),
 		ComputerModel:    req.GetModel(),
 		SerialNumber:     req.SerialNumber,
+		NodeID:           req.NodeID,
 	}
 
 	// Set ClientID
@@ -160,6 +161,7 @@ func (s *ticketService) Update(id string, req *models.CreateTicketRequest) (*mod
 	existing.ComputerBrand = req.GetBrand()
 	existing.ComputerModel = req.GetModel()
 	existing.SerialNumber = req.SerialNumber
+	existing.NodeID = req.NodeID
 
 	// Set ClientID
 	if req.ClientID != "" {

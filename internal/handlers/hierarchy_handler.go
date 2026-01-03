@@ -155,6 +155,33 @@ func (h *HierarchyHandler) DeleteHierarchy(c *fiber.Ctx) error {
 
 // ==================== Node Endpoints ====================
 
+// GetAllNodes returns all nodes (flat list)
+func (h *HierarchyHandler) GetAllNodes(c *fiber.Ctx) error {
+	nodes, err := h.repo.GetAllNodes()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to fetch nodes",
+		})
+	}
+
+	// Convert to DTO for response
+	response := make([]fiber.Map, len(nodes))
+	for i, node := range nodes {
+		response[i] = fiber.Map{
+			"id":            node.ID,
+			"name":          node.Name,
+			"path":          node.Path,
+			"hierarchyId":   node.HierarchyID,
+			"hierarchyName": "",
+		}
+		if node.Hierarchy != nil {
+			response[i]["hierarchyName"] = node.Hierarchy.Name
+		}
+	}
+
+	return c.JSON(response)
+}
+
 // CreateNode creates a new node in a hierarchy
 func (h *HierarchyHandler) CreateNode(c *fiber.Ctx) error {
 	hierarchyID, err := strconv.ParseUint(c.Params("id"), 10, 32)

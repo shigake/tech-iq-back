@@ -271,6 +271,7 @@ func main() {
 
 	// Node operations
 	nodes := protected.Group("/nodes")
+	nodes.Get("/", hierarchyHandler.GetAllNodes)
 	nodes.Put("/:id", middleware.WriteAccess(), hierarchyHandler.UpdateNode)
 	nodes.Put("/:id/move", middleware.WriteAccess(), hierarchyHandler.MoveNode)
 	nodes.Delete("/:id", middleware.WriteAccess(), hierarchyHandler.DeleteNode)

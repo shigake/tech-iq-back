@@ -30,6 +30,7 @@ func (h *TicketHandler) GetAll(c *fiber.Ctx) error {
 	filters := &models.TicketFilters{
 		Status:       c.Query("status"),
 		Priority:     c.Query("priority"),
+		NodeID:       c.Query("nodeId"),
 		ClientID:     c.Query("clientId"),
 		CategoryID:   c.Query("categoryId"),
 		TechnicianID: c.Query("technicianId"),

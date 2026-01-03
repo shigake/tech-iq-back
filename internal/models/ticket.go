@@ -37,6 +37,10 @@ type Ticket struct {
 	ErrorDescription string         `json:"errorDescription" gorm:"type:text"`
 	CustomerFeedback string         `json:"customerFeedback" gorm:"type:text"`
 
+	// Hierarchy Node (area/department) - e.g., "Itaú", "Vivo"
+	NodeID *uint `json:"nodeId" gorm:"index"`
+	Node   *Node `json:"node,omitempty" gorm:"foreignKey:NodeID"`
+
 	// Client
 	ClientID *string `json:"clientId" gorm:"type:uuid"`
 	Client   *Client `json:"client,omitempty" gorm:"foreignKey:ClientID"`
@@ -127,6 +131,8 @@ type TicketDTO struct {
 	Priority            string     `json:"priority"`
 	ErrorDescription    string     `json:"errorDescription"`
 	CustomerFeedback    string     `json:"customerFeedback"`
+	NodeID              *uint      `json:"nodeId"`
+	NodeName            string     `json:"nodeName"`
 	ClientName          string     `json:"clientName"`
 	CategoryName        string     `json:"categoryName"`
 	TechnicianCount     int        `json:"technicianCount"`
@@ -153,6 +159,10 @@ func (t *Ticket) ToDTO() TicketDTO {
 	if t.Category != nil && t.Category.Name != "" {
 		categoryName = t.Category.Name
 	}
+	nodeName := ""
+	if t.Node != nil && t.Node.Name != "" {
+		nodeName = t.Node.Name
+	}
 
 	return TicketDTO{
 		ID:                  t.ID,
@@ -161,6 +171,8 @@ func (t *Ticket) ToDTO() TicketDTO {
 		Priority:            string(t.Priority),
 		ErrorDescription:    t.ErrorDescription,
 		CustomerFeedback:    t.CustomerFeedback,
+		NodeID:              t.NodeID,
+		NodeName:            nodeName,
 		ClientName:          clientName,
 		CategoryName:        categoryName,
 		TechnicianCount:     len(t.Technicians),
@@ -182,6 +194,7 @@ func (t *Ticket) ToDTO() TicketDTO {
 type CreateTicketRequest struct {
 	ErrorDescription string   `json:"errorDescription" validate:"required"`
 	Priority         string   `json:"priority"`
+	NodeID           *uint    `json:"nodeId"`
 	ClientID         string   `json:"clientId"`
 	CategoryID       string   `json:"categoryId"`
 	TechnicianIDs    []string `json:"technicianIds"`
@@ -229,6 +242,7 @@ type AssignTechnicianRequest struct {
 type TicketFilters struct {
 	Status       string `json:"status"`
 	Priority     string `json:"priority"`
+	NodeID       string `json:"nodeId"`
 	ClientID     string `json:"clientId"`
 	CategoryID   string `json:"categoryId"`
 	TechnicianID string `json:"technicianId"`
