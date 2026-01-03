@@ -515,7 +515,7 @@ func (h *GeoHandler) UpdateGeoSettings(c *fiber.Ctx) error {
 
 // Helper para obter userID do contexto JWT
 func getUserIDFromContext(c *fiber.Ctx) (uuid.UUID, error) {
-	userIDStr := c.Locals("userID")
+	userIDStr := c.Locals("userId")
 	if userIDStr == nil {
 		return uuid.Nil, fiber.NewError(fiber.StatusUnauthorized, "User not authenticated")
 	}
