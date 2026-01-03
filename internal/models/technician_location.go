@@ -144,7 +144,7 @@ type BatchLocationResult struct {
 }
 
 type TechnicianLocationResponse struct {
-	TechnicianID        uuid.UUID  `json:"technicianId"`
+	TechnicianID        string     `json:"technicianId"`
 	TicketID            *uuid.UUID `json:"ticketId,omitempty"`
 	Name                string     `json:"name"`
 	AvatarURL           *string    `json:"avatarUrl,omitempty"`
@@ -164,7 +164,7 @@ type LocationInfo struct {
 }
 
 type TechnicianHistoryResponse struct {
-	TechnicianID   uuid.UUID           `json:"technicianId"`
+	TechnicianID   string              `json:"technicianId"`
 	TechnicianName string              `json:"technicianName"`
 	Period         PeriodInfo          `json:"period"`
 	Summary        HistorySummary      `json:"summary"`
@@ -205,7 +205,7 @@ type TicketLocationsResponse struct {
 }
 
 type CheckinoutInfo struct {
-	TechnicianID   uuid.UUID `json:"technicianId"`
+	TechnicianID   string    `json:"technicianId"`
 	TechnicianName string    `json:"technicianName"`
 	Latitude       float64   `json:"latitude"`
 	Longitude      float64   `json:"longitude"`
