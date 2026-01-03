@@ -21,6 +21,7 @@ type TechnicianRepository interface {
 	FindByIDs(ids []string) ([]models.Technician, error)
 	GetDistinctCities() ([]string, error)
 	GetRecent(limit int) ([]models.Technician, error)
+	GetAll() ([]models.Technician, error) // Retorna todos os técnicos sem paginação
 }
 
 type technicianRepository struct {
@@ -182,5 +183,12 @@ func (r *technicianRepository) GetDistinctCities() ([]string, error) {
 func (r *technicianRepository) GetRecent(limit int) ([]models.Technician, error) {
 	var technicians []models.Technician
 	err := r.db.Order("updated_at DESC").Limit(limit).Find(&technicians).Error
+	return technicians, err
+}
+
+// GetAll retorna todos os técnicos sem paginação (usado para cache)
+func (r *technicianRepository) GetAll() ([]models.Technician, error) {
+	var technicians []models.Technician
+	err := r.db.Order("full_name ASC").Find(&technicians).Error
 	return technicians, err
 }
