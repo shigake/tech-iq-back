@@ -38,7 +38,11 @@ func (h *TicketHandler) GetAll(c *fiber.Ctx) error {
 		DateTo:       c.Query("dateTo"),
 	}
 
-	response, err := h.service.GetAll(page, size, filters)
+	// Get user context for role-based filtering
+	userID, _ := c.Locals("userId").(string)
+	userRole, _ := c.Locals("userRole").(string)
+
+	response, err := h.service.GetAllForUser(page, size, filters, userID, userRole)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to fetch tickets",

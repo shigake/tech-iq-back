@@ -38,6 +38,7 @@ type HierarchyRepository interface {
 	// Permission
 	GetAllPermissions() ([]models.Permission, error)
 	GetPermissionsByCategory() (map[string][]models.Permission, error)
+	GetUserPermissions(userID string) ([]string, error)
 
 	// Membership CRUD
 	GetMembersByNode(nodeID uint) ([]models.MemberWithDetails, error)
@@ -378,6 +379,34 @@ func (r *hierarchyRepository) GetPermissionsByCategory() (map[string][]models.Pe
 		result[p.Category] = append(result[p.Category], p)
 	}
 	return result, nil
+}
+
+// GetUserPermissions returns all permission codes for a user based on their memberships
+func (r *hierarchyRepository) GetUserPermissions(userID string) ([]string, error) {
+	// Get all memberships with roles preloaded
+	var memberships []models.Membership
+	if err := r.db.Preload("Role.Permissions").
+		Where("user_id = ?", userID).
+		Find(&memberships).Error; err != nil {
+		return nil, err
+	}
+
+	// Collect unique permission codes
+	permSet := make(map[string]bool)
+	for _, m := range memberships {
+		if m.Role != nil {
+			for _, p := range m.Role.Permissions {
+				permSet[p.Code] = true
+			}
+		}
+	}
+
+	// Convert to slice
+	permissions := make([]string, 0, len(permSet))
+	for code := range permSet {
+		permissions = append(permissions, code)
+	}
+	return permissions, nil
 }
 
 // ==================== Membership CRUD ====================

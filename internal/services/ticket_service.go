@@ -11,6 +11,7 @@ import (
 type TicketService interface {
 	Create(req *models.CreateTicketRequest) (*models.Ticket, error)
 	GetAll(page, size int, filters *models.TicketFilters) (*models.PaginatedResponse, error)
+	GetAllForUser(page, size int, filters *models.TicketFilters, userID string, userRole string) (*models.PaginatedResponse, error)
 	GetByID(id string) (*models.Ticket, error)
 	Update(id string, req *models.CreateTicketRequest) (*models.Ticket, error)
 	Delete(id string) error
@@ -112,6 +113,36 @@ func (s *ticketService) GetAll(page, size int, filters *models.TicketFilters) (*
 		TotalElements: total,
 		TotalPages:    totalPages,
 	}, nil
+}
+
+// GetAllForUser returns tickets filtered by user role
+// For USER role (technicians), only returns tickets assigned to their technician profile
+func (s *ticketService) GetAllForUser(page, size int, filters *models.TicketFilters, userID string, userRole string) (*models.PaginatedResponse, error) {
+	// If user is ADMIN or EMPLOYEE, show all tickets
+	if userRole == "ADMIN" || userRole == "EMPLOYEE" {
+		return s.GetAll(page, size, filters)
+	}
+
+	// For USER role, find the technician linked to this user
+	technician, err := s.technicianRepo.FindByUserID(userID)
+	if err != nil {
+		// User is not linked to any technician - return empty result
+		return &models.PaginatedResponse{
+			Content:       []models.TicketDTO{},
+			Page:          page,
+			Size:          size,
+			TotalElements: 0,
+			TotalPages:    0,
+		}, nil
+	}
+
+	// Force filter by this technician
+	if filters == nil {
+		filters = &models.TicketFilters{}
+	}
+	filters.TechnicianID = technician.ID
+
+	return s.GetAll(page, size, filters)
 }
 
 func (s *ticketService) GetByID(id string) (*models.Ticket, error) {

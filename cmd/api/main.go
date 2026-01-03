@@ -105,7 +105,7 @@ func main() {
 	errorLogRepo := repositories.NewErrorLogRepository(db)
 
 	// Initialize services
-	authService := services.NewAuthService(userRepo, securityLogRepo, cfg)
+	authService := services.NewAuthService(userRepo, securityLogRepo, hierarchyRepo, cfg)
 	technicianService := services.NewTechnicianService(technicianRepo, redisClient)
 	ticketService := services.NewTicketService(ticketRepo, technicianRepo, clientRepo, categoryRepo)
 	dashboardService := services.NewDashboardService(technicianRepo, ticketRepo, clientRepo)

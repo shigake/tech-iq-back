@@ -9,6 +9,7 @@ type TechnicianRepository interface {
 	Create(technician *models.Technician) error
 	FindAll(page, size int) ([]models.Technician, int64, error)
 	FindByID(id string) (*models.Technician, error)
+	FindByUserID(userID string) (*models.Technician, error)
 	Update(technician *models.Technician) error
 	Delete(id string) error
 	FindByCity(city string) ([]models.Technician, error)
@@ -54,6 +55,15 @@ func (r *technicianRepository) FindAll(page, size int) ([]models.Technician, int
 func (r *technicianRepository) FindByID(id string) (*models.Technician, error) {
 	var technician models.Technician
 	err := r.db.Where("id = ?", id).First(&technician).Error
+	if err != nil {
+		return nil, err
+	}
+	return &technician, nil
+}
+
+func (r *technicianRepository) FindByUserID(userID string) (*models.Technician, error) {
+	var technician models.Technician
+	err := r.db.Where("user_id = ?", userID).First(&technician).Error
 	if err != nil {
 		return nil, err
 	}

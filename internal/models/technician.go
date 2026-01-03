@@ -181,6 +181,10 @@ type Technician struct {
 	Status    string    `json:"status" gorm:"type:varchar(20);default:ATIVO;index"`
 	Type      string    `json:"type" gorm:"type:varchar(20);default:PARCERIA"` // PARCERIA, PONTUAL
 
+	// User link - associates technician with a system user
+	UserID *string `json:"userId" gorm:"type:varchar(36);index"`
+	User   *User   `json:"user,omitempty" gorm:"foreignKey:UserID"`
+
 	// Contact info (JSONB arrays)
 	Emails EmailArray `json:"emails" gorm:"type:jsonb;default:'[]'"`
 	Phones PhoneArray `json:"phones" gorm:"type:jsonb;default:'[]'"`

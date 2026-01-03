@@ -200,6 +200,17 @@ func SeedAccessControl(db *gorm.DB) {
 				"reports.view",
 			},
 		},
+		{
+			Role: models.Role{
+				Name:        "Técnico",
+				Description: "Acesso apenas aos próprios tickets",
+				IsSystem:    false,
+			},
+			Permissions: []string{
+				"tickets.view", // Only own tickets (filtered by user)
+				"settings.view", // Can view settings/profile
+			},
+		},
 	}
 
 	// Insert roles if they don't exist

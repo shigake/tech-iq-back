@@ -21,15 +21,17 @@ type AuthService interface {
 }
 
 type authService struct {
-	userRepo           repositories.UserRepository
-	securityLogRepo    repositories.SecurityLogRepository
-	config             *config.Config
+	userRepo        repositories.UserRepository
+	securityLogRepo repositories.SecurityLogRepository
+	hierarchyRepo   repositories.HierarchyRepository
+	config          *config.Config
 }
 
-func NewAuthService(userRepo repositories.UserRepository, securityLogRepo repositories.SecurityLogRepository, config *config.Config) AuthService {
+func NewAuthService(userRepo repositories.UserRepository, securityLogRepo repositories.SecurityLogRepository, hierarchyRepo repositories.HierarchyRepository, config *config.Config) AuthService {
 	return &authService{
 		userRepo:        userRepo,
 		securityLogRepo: securityLogRepo,
+		hierarchyRepo:   hierarchyRepo,
 		config:          config,
 	}
 }
@@ -79,12 +81,27 @@ func (s *authService) SignIn(req *models.SignInRequest, ipAddress, userAgent str
 	// Log successful login
 	s.logSecurityEvent(user.ID, user.Email, "login_success", ipAddress, userAgent, "", true)
 
+	// Get user permissions from hierarchy
+	var permissions []string
+	if user.Role == "ADMIN" {
+		// Admin has all permissions
+		allPerms, _ := s.hierarchyRepo.GetAllPermissions()
+		permissions = make([]string, len(allPerms))
+		for i, p := range allPerms {
+			permissions[i] = p.Code
+		}
+	} else {
+		// Get permissions from user memberships
+		permissions, _ = s.hierarchyRepo.GetUserPermissions(user.ID)
+	}
+
 	return &models.AuthResponse{
-		Token:     token,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Email:     user.Email,
-		Role:      user.Role,
+		Token:       token,
+		FirstName:   user.FirstName,
+		LastName:    user.LastName,
+		Email:       user.Email,
+		Role:        user.Role,
+		Permissions: permissions,
 	}, nil
 }
 
@@ -119,12 +136,14 @@ func (s *authService) SignUp(req *models.SignUpRequest) (*models.AuthResponse, e
 		return nil, err
 	}
 
+	// New users have no permissions until assigned
 	return &models.AuthResponse{
-		Token:     token,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Email:     user.Email,
-		Role:      user.Role,
+		Token:       token,
+		FirstName:   user.FirstName,
+		LastName:    user.LastName,
+		Email:       user.Email,
+		Role:        user.Role,
+		Permissions: []string{},
 	}, nil
 }
 
@@ -164,12 +183,25 @@ func (s *authService) RefreshToken(tokenString string) (*models.AuthResponse, er
 		return nil, err
 	}
 
+	// Get user permissions
+	var permissions []string
+	if user.Role == "ADMIN" {
+		allPerms, _ := s.hierarchyRepo.GetAllPermissions()
+		permissions = make([]string, len(allPerms))
+		for i, p := range allPerms {
+			permissions[i] = p.Code
+		}
+	} else {
+		permissions, _ = s.hierarchyRepo.GetUserPermissions(user.ID)
+	}
+
 	return &models.AuthResponse{
-		Token:     newToken,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Email:     user.Email,
-		Role:      user.Role,
+		Token:       newToken,
+		FirstName:   user.FirstName,
+		LastName:    user.LastName,
+		Email:       user.Email,
+		Role:        user.Role,
+		Permissions: permissions,
 	}, nil
 }
 
