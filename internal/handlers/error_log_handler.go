@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"tech-erp/internal/models"
-	"tech-erp/internal/services"
+	"github.com/shigake/tech-iq-back/internal/models"
+	"github.com/shigake/tech-iq-back/internal/services"
 
 	"github.com/gofiber/fiber/v2"
 )

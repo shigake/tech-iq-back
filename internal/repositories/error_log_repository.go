@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"tech-erp/internal/models"
+	"github.com/shigake/tech-iq-back/internal/models"
 
 	"gorm.io/gorm"
 )

@@ -2097,6 +2097,144 @@
 					]
 				}
 			]
+		},
+		{
+			"name": "Error Logs",
+			"description": "Sistema de logging de erros (Admin only)",
+			"item": [
+				{
+					"name": "List Error Logs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/errors?page=0&size=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["errors"],
+							"query": [
+								{"key": "page", "value": "0"},
+								{"key": "size", "value": "20"},
+								{"key": "level", "value": "ERROR", "disabled": true},
+								{"key": "feature", "value": "", "disabled": true},
+								{"key": "endpoint", "value": "", "disabled": true},
+								{"key": "resolved", "value": "false", "disabled": true},
+								{"key": "search", "value": "", "disabled": true}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Error Stats",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/errors/stats",
+							"host": ["{{baseUrl}}"],
+							"path": ["errors", "stats"]
+						}
+					}
+				},
+				{
+					"name": "Get Error By ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/errors/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["errors", ":id"],
+							"variable": [
+								{"key": "id", "value": "error-uuid-here"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Resolve Error",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"notes\": \"Corrigido no commit abc123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/errors/:id/resolve",
+							"host": ["{{baseUrl}}"],
+							"path": ["errors", ":id", "resolve"],
+							"variable": [
+								{"key": "id", "value": "error-uuid-here"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Bulk Resolve Errors",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"ids\": [\"error-uuid-1\", \"error-uuid-2\"],\n    \"notes\": \"Corrigidos em lote\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/errors/bulk-resolve",
+							"host": ["{{baseUrl}}"],
+							"path": ["errors", "bulk-resolve"]
+						}
+					}
+				},
+				{
+					"name": "Delete Error Log",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/errors/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["errors", ":id"],
+							"variable": [
+								{"key": "id", "value": "error-uuid-here"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Cleanup Old Logs",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/errors/cleanup",
+							"host": ["{{baseUrl}}"],
+							"path": ["errors", "cleanup"]
+						}
+					}
+				},
+				{
+					"name": "Submit Frontend Errors",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"errors\": [\n        {\n            \"message\": \"RenderFlex overflowed by 32 pixels\",\n            \"stackTrace\": \"#0 RenderFlex.performLayout...\",\n            \"type\": \"responsive\",\n            \"page\": \"/technicians\",\n            \"component\": \"TechnicianCard\",\n            \"action\": \"render\",\n            \"context\": {\n                \"breakpoint\": \"mobile\"\n            },\n            \"deviceInfo\": {\n                \"screenWidth\": 375,\n                \"screenHeight\": 667,\n                \"pixelRatio\": 2.0,\n                \"platform\": \"web\",\n                \"orientation\": \"portrait\",\n                \"breakpoint\": \"mobile\"\n            },\n            \"timestamp\": \"2026-01-03T12:00:00Z\",\n            \"source\": \"frontend\"\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/errors/frontend",
+							"host": ["{{baseUrl}}"],
+							"path": ["errors", "frontend"]
+						}
+					}
+				}
+			]
 		}
 	]
 }
