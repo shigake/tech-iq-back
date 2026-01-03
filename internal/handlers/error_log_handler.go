@@ -1,7 +1,10 @@
 package handlers
 
 import (
+	"encoding/json"
 	"strconv"
+	"strings"
+	"time"
 
 	"tech-erp/internal/models"
 	"tech-erp/internal/services"
@@ -209,5 +212,115 @@ func (h *ErrorLogHandler) Cleanup(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"message": "Old logs cleaned up successfully",
 		"deleted": count,
+	})
+}
+
+// FrontendError represents a single error from the frontend
+type FrontendError struct {
+	Message    string                 `json:"message"`
+	StackTrace string                 `json:"stackTrace"`
+	Type       string                 `json:"type"`
+	Page       string                 `json:"page"`
+	Component  string                 `json:"component"`
+	Action     string                 `json:"action"`
+	Context    map[string]interface{} `json:"context"`
+	DeviceInfo map[string]interface{} `json:"deviceInfo"`
+	Timestamp  string                 `json:"timestamp"`
+	Source     string                 `json:"source"`
+}
+
+// FrontendErrorsRequest represents the request body from frontend
+type FrontendErrorsRequest struct {
+	Errors []FrontendError `json:"errors"`
+}
+
+// CreateFromFrontend receives errors from the frontend application
+// @Summary Receive frontend errors
+// @Tags Error Logs
+// @Accept json
+// @Produce json
+// @Param body body FrontendErrorsRequest true "Frontend errors"
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{}
+// @Router /api/v1/errors/frontend [post]
+func (h *ErrorLogHandler) CreateFromFrontend(c *fiber.Ctx) error {
+	var req FrontendErrorsRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	// Get user info from context
+	userID := ""
+	userEmail := ""
+	if uid := c.Locals("userId"); uid != nil {
+		userID = uid.(string)
+	}
+	if email := c.Locals("userEmail"); email != nil {
+		userEmail = email.(string)
+	}
+
+	successCount := 0
+	for _, fe := range req.Errors {
+		// Build device info string
+		deviceInfoStr := ""
+		if fe.DeviceInfo != nil {
+			if data, err := json.Marshal(fe.DeviceInfo); err == nil {
+				deviceInfoStr = string(data)
+			}
+		}
+
+		// Build context string
+		contextStr := ""
+		if fe.Context != nil {
+			if data, err := json.Marshal(fe.Context); err == nil {
+				contextStr = string(data)
+			}
+		}
+
+		// Determine feature name from page
+		feature := fe.Page
+		if fe.Component != "" {
+			feature = fe.Page + " > " + fe.Component
+		}
+
+		// Map frontend error type to backend level
+		level := "ERROR"
+		switch fe.Type {
+		case "runtime", "ui":
+			level = "CRITICAL"
+		case "responsive", "validation":
+			level = "WARN"
+		}
+
+		errorLog := &models.ErrorLog{
+			Timestamp:    time.Now(),
+			Level:        level,
+			Feature:      feature,
+			Endpoint:     "[FRONTEND] " + fe.Page,
+			Method:       "UI",
+			Action:       fe.Action,
+			ErrorCode:    "FE_" + strings.ToUpper(fe.Type),
+			ErrorMessage: fe.Message,
+			StackTrace:   fe.StackTrace,
+			RequestBody:  contextStr,
+			QueryParams:  deviceInfoStr,
+			UserID:       userID,
+			UserEmail:    userEmail,
+			IPAddress:    c.IP(),
+			UserAgent:    c.Get("User-Agent"),
+			StatusCode:   0, // Frontend errors don't have HTTP status
+		}
+
+		if err := h.service.LogError(errorLog); err == nil {
+			successCount++
+		}
+	}
+
+	return c.JSON(fiber.Map{
+		"message":  "Frontend errors logged",
+		"received": len(req.Errors),
+		"logged":   successCount,
 	})
 }

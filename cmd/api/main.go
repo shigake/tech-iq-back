@@ -328,7 +328,11 @@ func main() {
 	// System metrics (admin only)
 	admin.Get("/system-metrics", adminHandler.GetSystemMetrics)
 
-	// ==================== Error Logs Routes (Admin only) ====================
+	// ==================== Error Logs Routes ====================
+	// Frontend errors (any authenticated user can submit)
+	protected.Post("/errors/frontend", errorLogHandler.CreateFromFrontend)
+	
+	// Admin routes for managing error logs
 	errors := protected.Group("/errors", middleware.AdminOnly())
 	errors.Get("/", errorLogHandler.GetAll)
 	errors.Get("/stats", errorLogHandler.GetStats)
