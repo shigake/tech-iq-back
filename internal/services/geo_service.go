@@ -2,12 +2,15 @@ package services
 
 import (
 	"errors"
+	"log"
 	"math"
-	"github.com/shigake/tech-iq-back/internal/models"
-	"github.com/shigake/tech-iq-back/internal/repositories"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/shigake/tech-iq-back/internal/cache"
+	"github.com/shigake/tech-iq-back/internal/models"
+	"github.com/shigake/tech-iq-back/internal/repositories"
 )
 
 type GeoService struct {
@@ -15,15 +18,22 @@ type GeoService struct {
 	userRepo         repositories.UserRepository
 	technicianRepo   repositories.TechnicianRepository
 	hierarchyService *HierarchyService
+	redisClient      *cache.RedisClient
 }
 
-func NewGeoService(geoRepo *repositories.GeoRepository, userRepo repositories.UserRepository, technicianRepo repositories.TechnicianRepository, hierarchyService *HierarchyService) *GeoService {
-	return &GeoService{
+func NewGeoService(geoRepo *repositories.GeoRepository, userRepo repositories.UserRepository, technicianRepo repositories.TechnicianRepository, hierarchyService *HierarchyService, redisClient *cache.RedisClient) *GeoService {
+	svc := &GeoService{
 		geoRepo:          geoRepo,
 		userRepo:         userRepo,
 		technicianRepo:   technicianRepo,
 		hierarchyService: hierarchyService,
+		redisClient:      redisClient,
 	}
+	
+	// Carregar cache de técnicos em background
+	go svc.loadTechniciansToCache()
+	
+	return svc
 }
 
 // CreateLocation cria um registro de localização
@@ -127,7 +137,7 @@ func (s *GeoService) CreateBatchLocations(technicianID string, req *models.Batch
 	return results, nil
 }
 
-// GetLastLocations obtém as últimas localizações dos técnicos
+// GetLastLocations obtém as últimas localizações de TODOS os técnicos (do cache Redis)
 func (s *GeoService) GetLastLocations(userID uuid.UUID, filter repositories.GeoFilter) ([]models.TechnicianLocationResponse, int64, error) {
 	// Verificar se o usuário é admin
 	user, err := s.userRepo.FindByID(userID.String())
@@ -140,42 +150,83 @@ func (s *GeoService) GetLastLocations(userID uuid.UUID, filter repositories.GeoF
 		return []models.TechnicianLocationResponse{}, 0, nil
 	}
 
-	// Buscar últimas localizações (já inclui Technician via Preload)
-	lastLocations, total, err := s.geoRepo.GetAllLastLocations(filter)
+	// Buscar do cache Redis (ou fallback para banco)
+	allTechnicians, err := s.GetAllTechniciansFromCache()
 	if err != nil {
 		return nil, 0, err
 	}
 
+	// Aplicar filtros
+	filtered := make([]cache.TechnicianGeoData, 0)
+	for _, tech := range allTechnicians {
+		// Filtro por status
+		if filter.Status != "" && tech.Status != filter.Status {
+			continue
+		}
+		// Filtro por busca (nome)
+		if filter.Query != "" {
+			// Busca case-insensitive no nome
+			if !containsIgnoreCase(tech.Name, filter.Query) {
+				continue
+			}
+		}
+		filtered = append(filtered, tech)
+	}
+
+	total := int64(len(filtered))
+
+	// Aplicar paginação
+	start := filter.Offset
+	end := start + filter.Limit
+	if start > len(filtered) {
+		start = len(filtered)
+	}
+	if end > len(filtered) {
+		end = len(filtered)
+	}
+	if filter.Limit == 0 {
+		end = len(filtered) // Sem limite = retorna todos
+	}
+
+	paginated := filtered[start:end]
+
 	// Montar resposta
-	responses := make([]models.TechnicianLocationResponse, 0, len(lastLocations))
+	responses := make([]models.TechnicianLocationResponse, 0, len(paginated))
 
-	for _, loc := range lastLocations {
+	for _, tech := range paginated {
 		response := models.TechnicianLocationResponse{
-			TechnicianID: loc.TechnicianID,
-			TicketID:     loc.TicketID,
-		}
-
-		if loc.Technician != nil {
-			response.Name = loc.Technician.FullName
-		}
-
-		if loc.StatusSnapshot != nil {
-			response.Status = *loc.StatusSnapshot
+			TechnicianID: tech.TechnicianID,
+			Name:         tech.Name,
+			Status:       tech.Status,
 		}
 
 		response.Location = &models.LocationInfo{
-			Latitude:   loc.Latitude,
-			Longitude:  loc.Longitude,
-			AccuracyM:  loc.AccuracyM,
-			ServerTime: loc.ServerTime,
-			EventType:  loc.EventType,
-			MinutesAgo: int(time.Since(loc.ServerTime).Minutes()),
+			Latitude:  tech.Latitude,
+			Longitude: tech.Longitude,
+			AccuracyM: tech.AccuracyM,
+			EventType: models.EventType(tech.EventType),
+		}
+
+		if tech.LastUpdateTime != nil {
+			serverTime := time.Unix(*tech.LastUpdateTime, 0)
+			response.Location.ServerTime = serverTime
+			response.Location.MinutesAgo = int(time.Since(serverTime).Minutes())
+		}
+
+		// Flag para indicar se tem localização real ou estimada
+		if !tech.HasRealLocation {
+			response.Location.MinutesAgo = -1 // Indica que é localização estimada
 		}
 
 		responses = append(responses, response)
 	}
 
 	return responses, total, nil
+}
+
+// containsIgnoreCase verifica se a string contém a substring (case-insensitive)
+func containsIgnoreCase(s, substr string) bool {
+	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
 }
 
 // GetTechnicianHistory obtém o histórico de localizações de um técnico
@@ -394,6 +445,9 @@ func (s *GeoService) updateLastLocation(location *models.TechnicianLocation) {
 	}
 
 	s.geoRepo.UpsertLastLocation(lastLoc)
+	
+	// Atualizar também no Redis cache
+	go s.updateTechnicianInCache(location.TechnicianID)
 }
 
 // CalculateDistance calcula a distância entre dois pontos em metros (Haversine)
@@ -411,4 +465,199 @@ func CalculateDistance(lat1, lng1, lat2, lng2 float64) float64 {
 	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
 
 	return earthRadius * c
+}
+
+// loadTechniciansToCache carrega todos os técnicos no Redis cache
+func (s *GeoService) loadTechniciansToCache() {
+	if s.redisClient == nil {
+		log.Println("⚠️ Redis client not available, skipping geo cache load")
+		return
+	}
+	
+	// Verificar se já foi carregado recentemente
+	if s.redisClient.IsGeoCacheLoaded() {
+		count, _ := s.redisClient.GetGeoCacheCount()
+		log.Printf("✅ Geo cache already loaded with %d technicians", count)
+		return
+	}
+	
+	log.Println("🔄 Loading all technicians to geo cache...")
+	
+	// Buscar todos os técnicos ativos
+	technicians, err := s.technicianRepo.GetAll()
+	if err != nil {
+		log.Printf("❌ Error loading technicians: %v", err)
+		return
+	}
+	
+	// Buscar últimas localizações conhecidas
+	lastLocations, _, _ := s.geoRepo.GetAllLastLocations(repositories.GeoFilter{Limit: 10000})
+	
+	// Criar mapa de últimas localizações
+	locMap := make(map[string]models.TechnicianLastLocation)
+	for _, loc := range lastLocations {
+		locMap[loc.TechnicianID] = loc
+	}
+	
+	// Preparar dados para cache
+	geoData := make([]cache.TechnicianGeoData, 0, len(technicians))
+	
+	for _, tech := range technicians {
+		data := cache.TechnicianGeoData{
+			TechnicianID: tech.ID,
+			Name:         tech.FullName,
+			City:         tech.City,
+			State:        tech.State,
+			Status:       tech.Status,
+		}
+		
+		// Verificar se tem localização real
+		if lastLoc, ok := locMap[tech.ID]; ok {
+			data.Latitude = lastLoc.Latitude
+			data.Longitude = lastLoc.Longitude
+			data.AccuracyM = lastLoc.AccuracyM
+			data.EventType = string(lastLoc.EventType)
+			data.HasRealLocation = true
+			if !lastLoc.ServerTime.IsZero() {
+				ts := lastLoc.ServerTime.Unix()
+				data.LastUpdateTime = &ts
+			}
+		} else {
+			// Usar coordenadas da cidade/estado
+			lat, lng, _ := GetCoordinatesForLocation(tech.City, tech.State)
+			data.Latitude = lat
+			data.Longitude = lng
+			data.HasRealLocation = false
+		}
+		
+		geoData = append(geoData, data)
+	}
+	
+	// Salvar no Redis
+	if err := s.redisClient.SetAllTechniciansGeo(geoData); err != nil {
+		log.Printf("❌ Error saving technicians to cache: %v", err)
+		return
+	}
+	
+	log.Printf("✅ Loaded %d technicians to geo cache", len(geoData))
+}
+
+// updateTechnicianInCache atualiza um técnico específico no cache quando recebe nova localização
+func (s *GeoService) updateTechnicianInCache(technicianID string) {
+	if s.redisClient == nil {
+		return
+	}
+	
+	// Buscar técnico
+	tech, err := s.technicianRepo.FindByID(technicianID)
+	if err != nil || tech == nil {
+		return
+	}
+	
+	// Buscar última localização
+	lastLoc, err := s.geoRepo.GetLastLocation(technicianID)
+	if err != nil {
+		return
+	}
+	
+	data := cache.TechnicianGeoData{
+		TechnicianID:    tech.ID,
+		Name:            tech.FullName,
+		City:            tech.City,
+		State:           tech.State,
+		Status:          tech.Status,
+		Latitude:        lastLoc.Latitude,
+		Longitude:       lastLoc.Longitude,
+		AccuracyM:       lastLoc.AccuracyM,
+		EventType:       string(lastLoc.EventType),
+		HasRealLocation: true,
+	}
+	
+	if !lastLoc.ServerTime.IsZero() {
+		ts := lastLoc.ServerTime.Unix()
+		data.LastUpdateTime = &ts
+	}
+	
+	s.redisClient.UpdateTechnicianLocation(data)
+}
+
+// GetAllTechniciansFromCache retorna todos os técnicos do cache Redis
+// Fallback para o banco de dados se o cache estiver vazio
+func (s *GeoService) GetAllTechniciansFromCache() ([]cache.TechnicianGeoData, error) {
+	if s.redisClient == nil {
+		return s.loadTechniciansDirectly()
+	}
+	
+	// Tentar buscar do cache
+	technicians, err := s.redisClient.GetAllTechniciansGeo()
+	if err != nil || len(technicians) == 0 {
+		// Cache miss - carregar do banco
+		log.Println("⚠️ Geo cache miss, loading from database...")
+		go s.loadTechniciansToCache()
+		return s.loadTechniciansDirectly()
+	}
+	
+	return technicians, nil
+}
+
+// loadTechniciansDirectly carrega técnicos diretamente do banco (fallback)
+func (s *GeoService) loadTechniciansDirectly() ([]cache.TechnicianGeoData, error) {
+	technicians, err := s.technicianRepo.GetAll()
+	if err != nil {
+		return nil, err
+	}
+	
+	lastLocations, _, _ := s.geoRepo.GetAllLastLocations(repositories.GeoFilter{Limit: 10000})
+	locMap := make(map[string]models.TechnicianLastLocation)
+	for _, loc := range lastLocations {
+		locMap[loc.TechnicianID] = loc
+	}
+	
+	geoData := make([]cache.TechnicianGeoData, 0, len(technicians))
+	
+	for _, tech := range technicians {
+		data := cache.TechnicianGeoData{
+			TechnicianID: tech.ID,
+			Name:         tech.FullName,
+			City:         tech.City,
+			State:        tech.State,
+			Status:       tech.Status,
+		}
+		
+		if lastLoc, ok := locMap[tech.ID]; ok {
+			data.Latitude = lastLoc.Latitude
+			data.Longitude = lastLoc.Longitude
+			data.AccuracyM = lastLoc.AccuracyM
+			data.EventType = string(lastLoc.EventType)
+			data.HasRealLocation = true
+			if !lastLoc.ServerTime.IsZero() {
+				ts := lastLoc.ServerTime.Unix()
+				data.LastUpdateTime = &ts
+			}
+		} else {
+			lat, lng, _ := GetCoordinatesForLocation(tech.City, tech.State)
+			data.Latitude = lat
+			data.Longitude = lng
+			data.HasRealLocation = false
+		}
+		
+		geoData = append(geoData, data)
+	}
+	
+	return geoData, nil
+}
+
+// RefreshGeoCache força a recarga do cache de geolocalização
+func (s *GeoService) RefreshGeoCache() error {
+	if s.redisClient == nil {
+		return errors.New("redis client not available")
+	}
+	
+	// Deletar flag de cache carregado para forçar recarga
+	s.redisClient.Delete(cache.GeoCacheLoadedKey)
+	
+	// Recarregar
+	s.loadTechniciansToCache()
+	
+	return nil
 }
