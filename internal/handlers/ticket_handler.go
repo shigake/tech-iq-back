@@ -217,3 +217,24 @@ func (h *TicketHandler) SignTicket(c *fiber.Ctx) error {
 
 	return c.JSON(ticket)
 }
+
+func (h *TicketHandler) DeleteSignature(c *fiber.Ctx) error {
+	id := c.Params("id")
+	if id == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid ticket ID",
+		})
+	}
+
+	ticket, err := h.service.DeleteSignature(id)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Signature deleted successfully",
+		"ticket":  ticket,
+	})
+}
