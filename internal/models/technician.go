@@ -66,6 +66,56 @@ func (a *PhoneArray) Scan(value interface{}) error {
 	return json.Unmarshal(bytes, a)
 }
 
+// FlexEmailArray accepts both string arrays and EmailEntry arrays in JSON
+type FlexEmailArray []EmailEntry
+
+func (f *FlexEmailArray) UnmarshalJSON(data []byte) error {
+	// Try to unmarshal as EmailEntry array first
+	var entries []EmailEntry
+	if err := json.Unmarshal(data, &entries); err == nil {
+		*f = entries
+		return nil
+	}
+
+	// Try to unmarshal as string array
+	var strings []string
+	if err := json.Unmarshal(data, &strings); err != nil {
+		return err
+	}
+
+	// Convert strings to EmailEntry
+	*f = make([]EmailEntry, len(strings))
+	for i, s := range strings {
+		(*f)[i] = EmailEntry{Email: s, Type: "principal"}
+	}
+	return nil
+}
+
+// FlexPhoneArray accepts both string arrays and PhoneEntry arrays in JSON
+type FlexPhoneArray []PhoneEntry
+
+func (f *FlexPhoneArray) UnmarshalJSON(data []byte) error {
+	// Try to unmarshal as PhoneEntry array first
+	var entries []PhoneEntry
+	if err := json.Unmarshal(data, &entries); err == nil {
+		*f = entries
+		return nil
+	}
+
+	// Try to unmarshal as string array
+	var strings []string
+	if err := json.Unmarshal(data, &strings); err != nil {
+		return err
+	}
+
+	// Convert strings to PhoneEntry
+	*f = make([]PhoneEntry, len(strings))
+	for i, s := range strings {
+		(*f)[i] = PhoneEntry{Number: s, Type: "principal"}
+	}
+	return nil
+}
+
 // StringArray is a custom type for PostgreSQL JSONB array of strings
 type StringArray []string
 
@@ -223,8 +273,8 @@ type CreateTechnicianRequest struct {
 	Contact              string            `json:"contact"`
 	Status               string            `json:"status"`
 	Type                 string            `json:"type"`
-	Emails               []EmailEntry      `json:"emails"`
-	Phones               []PhoneEntry      `json:"phones"`
+	Emails               FlexEmailArray    `json:"emails"`
+	Phones               FlexPhoneArray    `json:"phones"`
 	MinCallValue         string            `json:"minCallValue"`
 	Observation          string            `json:"observation"`
 	Street               string            `json:"street"`
@@ -262,6 +312,18 @@ func (r *CreateTechnicianRequest) ToModel() *Technician {
 		vehicle = "NONE"
 	}
 
+	// Convert FlexEmailArray to EmailArray
+	emails := make(EmailArray, len(r.Emails))
+	for i, e := range r.Emails {
+		emails[i] = e
+	}
+
+	// Convert FlexPhoneArray to PhoneArray
+	phones := make(PhoneArray, len(r.Phones))
+	for i, p := range r.Phones {
+		phones[i] = p
+	}
+
 	return &Technician{
 		FullName:             r.FullName,
 		TradeName:            r.TradeName,
@@ -271,8 +333,8 @@ func (r *CreateTechnicianRequest) ToModel() *Technician {
 		Contact:              r.Contact,
 		Status:               status,
 		Type:                 techType,
-		Emails:               r.Emails,
-		Phones:               r.Phones,
+		Emails:               emails,
+		Phones:               phones,
 		MinCallValue:         r.MinCallValue,
 		Observation:          r.Observation,
 		Street:               r.Street,
