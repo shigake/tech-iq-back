@@ -13,19 +13,21 @@ import (
 type GeoService struct {
 	geoRepo          *repositories.GeoRepository
 	userRepo         repositories.UserRepository
+	technicianRepo   repositories.TechnicianRepository
 	hierarchyService *HierarchyService
 }
 
-func NewGeoService(geoRepo *repositories.GeoRepository, userRepo repositories.UserRepository, hierarchyService *HierarchyService) *GeoService {
+func NewGeoService(geoRepo *repositories.GeoRepository, userRepo repositories.UserRepository, technicianRepo repositories.TechnicianRepository, hierarchyService *HierarchyService) *GeoService {
 	return &GeoService{
 		geoRepo:          geoRepo,
 		userRepo:         userRepo,
+		technicianRepo:   technicianRepo,
 		hierarchyService: hierarchyService,
 	}
 }
 
 // CreateLocation cria um registro de localização
-func (s *GeoService) CreateLocation(technicianID uuid.UUID, req *models.CreateLocationRequest) (*models.TechnicianLocation, error) {
+func (s *GeoService) CreateLocation(technicianID string, req *models.CreateLocationRequest) (*models.TechnicianLocation, error) {
 	// Validar coordenadas
 	if err := s.validateCoordinates(req.Latitude, req.Longitude); err != nil {
 		return nil, err
@@ -68,7 +70,7 @@ func (s *GeoService) CreateLocation(technicianID uuid.UUID, req *models.CreateLo
 }
 
 // CreateBatchLocations cria múltiplas localizações (sync offline)
-func (s *GeoService) CreateBatchLocations(technicianID uuid.UUID, req *models.BatchLocationRequest) ([]models.BatchLocationResult, error) {
+func (s *GeoService) CreateBatchLocations(technicianID string, req *models.BatchLocationRequest) ([]models.BatchLocationResult, error) {
 	results := make([]models.BatchLocationResult, 0, len(req.Locations))
 
 	for _, item := range req.Locations {
@@ -127,34 +129,27 @@ func (s *GeoService) CreateBatchLocations(technicianID uuid.UUID, req *models.Ba
 
 // GetLastLocations obtém as últimas localizações dos técnicos
 func (s *GeoService) GetLastLocations(userID uuid.UUID, filter repositories.GeoFilter) ([]models.TechnicianLocationResponse, int64, error) {
-	// Obter técnicos que o usuário pode ver (baseado em hierarquia)
-	allowedTechnicianIDs, err := s.getVisibleTechnicianIDs(userID)
+	// Verificar se o usuário é admin
+	user, err := s.userRepo.FindByID(userID.String())
 	if err != nil {
 		return nil, 0, err
 	}
 
-	if len(allowedTechnicianIDs) == 0 {
+	// Por enquanto, apenas admins podem ver
+	if user.Role != "ADMIN" && user.Role != "admin" {
 		return []models.TechnicianLocationResponse{}, 0, nil
 	}
 
-	// Buscar últimas localizações
+	// Buscar últimas localizações (já inclui Technician via Preload)
 	lastLocations, total, err := s.geoRepo.GetAllLastLocations(filter)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	// Filtrar apenas técnicos permitidos e montar resposta
-	responses := make([]models.TechnicianLocationResponse, 0)
-	allowedMap := make(map[uuid.UUID]bool)
-	for _, id := range allowedTechnicianIDs {
-		allowedMap[id] = true
-	}
+	// Montar resposta
+	responses := make([]models.TechnicianLocationResponse, 0, len(lastLocations))
 
 	for _, loc := range lastLocations {
-		if !allowedMap[loc.TechnicianID] {
-			continue
-		}
-
 		response := models.TechnicianLocationResponse{
 			TechnicianID: loc.TechnicianID,
 			TicketID:     loc.TicketID,
@@ -162,7 +157,6 @@ func (s *GeoService) GetLastLocations(userID uuid.UUID, filter repositories.GeoF
 
 		if loc.Technician != nil {
 			response.Name = loc.Technician.FullName
-			// response.AvatarURL = loc.Technician.AvatarURL
 		}
 
 		if loc.StatusSnapshot != nil {
@@ -185,18 +179,9 @@ func (s *GeoService) GetLastLocations(userID uuid.UUID, filter repositories.GeoF
 }
 
 // GetTechnicianHistory obtém o histórico de localizações de um técnico
-func (s *GeoService) GetTechnicianHistory(userID, technicianID uuid.UUID, filter repositories.HistoryFilter) (*models.TechnicianHistoryResponse, int64, error) {
-	// Verificar se o usuário pode ver este técnico
-	canView, err := s.canViewTechnician(userID, technicianID)
-	if err != nil {
-		return nil, 0, err
-	}
-	if !canView {
-		return nil, 0, errors.New("access denied: cannot view this technician's history")
-	}
-
+func (s *GeoService) GetTechnicianHistory(userID uuid.UUID, technicianID string, filter repositories.HistoryFilter) (*models.TechnicianHistoryResponse, int64, error) {
 	// Buscar técnico
-	technician, err := s.userRepo.FindByID(technicianID.String())
+	technician, err := s.technicianRepo.FindByID(technicianID)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -375,7 +360,7 @@ func (s *GeoService) validateCoordinates(lat, lng float64) error {
 	return nil
 }
 
-func (s *GeoService) checkRateLimit(technicianID uuid.UUID, eventType models.EventType) (bool, error) {
+func (s *GeoService) checkRateLimit(technicianID string, eventType models.EventType) (bool, error) {
 	since := time.Now().Add(-time.Minute)
 	count, err := s.geoRepo.CountRecentLocations(technicianID, eventType, since)
 	if err != nil {
@@ -385,15 +370,14 @@ func (s *GeoService) checkRateLimit(technicianID uuid.UUID, eventType models.Eve
 }
 
 func (s *GeoService) updateLastLocation(location *models.TechnicianLocation) {
-	technician, err := s.userRepo.FindByID(location.TechnicianID.String())
+	technician, err := s.technicianRepo.FindByID(location.TechnicianID)
 	if err != nil {
 		return
 	}
 
 	var statusSnapshot *string
 	if technician != nil {
-		// User doesn't have Status field, use Role as snapshot
-		status := technician.Role
+		status := technician.Status
 		statusSnapshot = &status
 	}
 
@@ -410,39 +394,6 @@ func (s *GeoService) updateLastLocation(location *models.TechnicianLocation) {
 	}
 
 	s.geoRepo.UpsertLastLocation(lastLoc)
-}
-
-func (s *GeoService) getVisibleTechnicianIDs(userID uuid.UUID) ([]uuid.UUID, error) {
-	// Primeiro verifica se o usuário é admin - se for, pode ver todos
-	user, err := s.userRepo.FindByID(userID.String())
-	if err != nil {
-		return nil, err
-	}
-
-	// Admin pode ver todos os técnicos
-	if user.Role == "ADMIN" || user.Role == "admin" {
-		users, err := s.userRepo.GetAll()
-		if err != nil {
-			return nil, err
-		}
-
-		ids := make([]uuid.UUID, 0, len(users))
-		for _, u := range users {
-			if uid, err := uuid.Parse(u.ID); err == nil {
-				ids = append(ids, uid)
-			}
-		}
-		return ids, nil
-	}
-
-	// Para outros roles, retorna apenas o próprio usuário por enquanto
-	// TODO: Implementar filtro por hierarquia
-	return []uuid.UUID{userID}, nil
-}
-
-func (s *GeoService) canViewTechnician(userID, technicianID uuid.UUID) (bool, error) {
-	// TODO: Implementar verificação por hierarquia
-	return true, nil
 }
 
 // CalculateDistance calcula a distância entre dois pontos em metros (Haversine)

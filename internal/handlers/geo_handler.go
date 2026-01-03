@@ -68,7 +68,7 @@ func (h *GeoHandler) CreateLocation(c *fiber.Ctx) error {
 	}
 
 	// Criar localização
-	location, err := h.geoService.CreateLocation(userID, &req)
+	location, err := h.geoService.CreateLocation(userID.String(), &req)
 	if err != nil {
 		if err.Error() == "rate limited: too many location updates" {
 			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
@@ -152,7 +152,7 @@ func (h *GeoHandler) CreateBatchLocations(c *fiber.Ctx) error {
 		})
 	}
 
-	results, err := h.geoService.CreateBatchLocations(userID, &req)
+	results, err := h.geoService.CreateBatchLocations(userID.String(), &req)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,
@@ -290,8 +290,8 @@ func (h *GeoHandler) GetTechnicianHistory(c *fiber.Ctx) error {
 
 	// TODO: Verificar permissão TECH_LOCATION_HISTORY_VIEW
 
-	technicianID, err := uuid.Parse(c.Params("id"))
-	if err != nil {
+	technicianID := c.Params("id")
+	if technicianID == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"success": false,
 			"error": fiber.Map{

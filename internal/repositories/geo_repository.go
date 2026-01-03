@@ -1,10 +1,10 @@
 package repositories
 
 import (
-	"github.com/shigake/tech-iq-back/internal/models"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/shigake/tech-iq-back/internal/models"
 	"gorm.io/gorm"
 )
 
@@ -32,7 +32,7 @@ func (r *GeoRepository) UpsertLastLocation(lastLoc *models.TechnicianLastLocatio
 }
 
 // GetLastLocation obtém a última localização de um técnico
-func (r *GeoRepository) GetLastLocation(technicianID uuid.UUID) (*models.TechnicianLastLocation, error) {
+func (r *GeoRepository) GetLastLocation(technicianID string) (*models.TechnicianLastLocation, error) {
 	var lastLoc models.TechnicianLastLocation
 	err := r.db.Preload("Technician").Where("technician_id = ?", technicianID).First(&lastLoc).Error
 	if err != nil {
@@ -42,7 +42,7 @@ func (r *GeoRepository) GetLastLocation(technicianID uuid.UUID) (*models.Technic
 }
 
 // GetLastLocations obtém as últimas localizações de múltiplos técnicos
-func (r *GeoRepository) GetLastLocations(technicianIDs []uuid.UUID) ([]models.TechnicianLastLocation, error) {
+func (r *GeoRepository) GetLastLocations(technicianIDs []string) ([]models.TechnicianLastLocation, error) {
 	var locations []models.TechnicianLastLocation
 	err := r.db.Preload("Technician").Where("technician_id IN ?", technicianIDs).Find(&locations).Error
 	return locations, err
@@ -86,7 +86,7 @@ func (r *GeoRepository) GetAllLastLocations(filter GeoFilter) ([]models.Technici
 }
 
 // GetLocationHistory obtém o histórico de localizações de um técnico
-func (r *GeoRepository) GetLocationHistory(technicianID uuid.UUID, filter HistoryFilter) ([]models.TechnicianLocation, int64, error) {
+func (r *GeoRepository) GetLocationHistory(technicianID string, filter HistoryFilter) ([]models.TechnicianLocation, int64, error) {
 	var locations []models.TechnicianLocation
 	var total int64
 
@@ -141,7 +141,7 @@ func (r *GeoRepository) GetTicketLocations(ticketID uuid.UUID) ([]models.Technic
 }
 
 // CheckDuplicate verifica se já existe um evento similar (para deduplicação)
-func (r *GeoRepository) CheckDuplicate(technicianID uuid.UUID, ticketID *uuid.UUID, eventType models.EventType, deviceTime time.Time) (bool, error) {
+func (r *GeoRepository) CheckDuplicate(technicianID string, ticketID *uuid.UUID, eventType models.EventType, deviceTime time.Time) (bool, error) {
 	var count int64
 	query := r.db.Model(&models.TechnicianLocation{}).
 		Where("technician_id = ?", technicianID).
@@ -157,7 +157,7 @@ func (r *GeoRepository) CheckDuplicate(technicianID uuid.UUID, ticketID *uuid.UU
 }
 
 // GetHistorySummary obtém resumo do histórico
-func (r *GeoRepository) GetHistorySummary(technicianID uuid.UUID, from, to time.Time) (*models.HistorySummary, error) {
+func (r *GeoRepository) GetHistorySummary(technicianID string, from, to time.Time) (*models.HistorySummary, error) {
 	var summary models.HistorySummary
 
 	// Total de eventos
@@ -233,7 +233,7 @@ func (r *GeoRepository) DeleteOldLocations(retentionDays int) (int64, error) {
 }
 
 // CountRecentLocations conta localizações recentes (para rate limiting)
-func (r *GeoRepository) CountRecentLocations(technicianID uuid.UUID, eventType models.EventType, since time.Time) (int64, error) {
+func (r *GeoRepository) CountRecentLocations(technicianID string, eventType models.EventType, since time.Time) (int64, error) {
 	var count int64
 	err := r.db.Model(&models.TechnicianLocation{}).
 		Where("technician_id = ? AND event_type = ? AND server_time >= ?", technicianID, eventType, since).

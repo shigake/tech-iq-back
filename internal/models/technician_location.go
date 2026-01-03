@@ -18,8 +18,8 @@ const (
 // TechnicianLocation representa um registro de localização do técnico
 type TechnicianLocation struct {
 	ID           uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	TechnicianID uuid.UUID  `json:"technicianId" gorm:"type:uuid;not null;index:idx_tech_loc_technician_time,priority:1"`
-	TicketID     *uuid.UUID `json:"ticketId,omitempty" gorm:"type:uuid;index:idx_tech_loc_ticket"`
+	TechnicianID string     `json:"technicianId" gorm:"type:varchar(36);not null;index:idx_tech_loc_technician_time,priority:1"`
+	TicketID     *uuid.UUID `json:"ticketId,omitempty" gorm:"type:uuid;index:idx_tech_loc_ticket"``
 
 	// Tipo de evento
 	EventType EventType `json:"eventType" gorm:"type:varchar(20);not null"`
@@ -47,7 +47,7 @@ type TechnicianLocation struct {
 	CreatedAt time.Time `json:"createdAt" gorm:"autoCreateTime"`
 
 	// Relacionamentos
-	Technician *User `json:"technician,omitempty" gorm:"foreignKey:TechnicianID"`
+	Technician *Technician `json:"technician,omitempty" gorm:"foreignKey:TechnicianID"`
 }
 
 func (TechnicianLocation) TableName() string {
@@ -56,7 +56,7 @@ func (TechnicianLocation) TableName() string {
 
 // TechnicianLastLocation representa a última localização conhecida do técnico (cache)
 type TechnicianLastLocation struct {
-	TechnicianID uuid.UUID `json:"technicianId" gorm:"type:uuid;primary_key"`
+	TechnicianID string `json:"technicianId" gorm:"type:varchar(36);primary_key"`
 
 	// Última localização
 	Latitude   float64  `json:"latitude" gorm:"type:double precision;not null"`
@@ -74,7 +74,7 @@ type TechnicianLastLocation struct {
 	UpdatedAt  time.Time  `json:"updatedAt" gorm:"autoUpdateTime"`
 
 	// Relacionamentos
-	Technician *User `json:"technician,omitempty" gorm:"foreignKey:TechnicianID"`
+	Technician *Technician `json:"technician,omitempty" gorm:"foreignKey:TechnicianID"`
 }
 
 func (TechnicianLastLocation) TableName() string {
