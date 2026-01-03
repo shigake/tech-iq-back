@@ -413,22 +413,31 @@ func (s *GeoService) updateLastLocation(location *models.TechnicianLocation) {
 }
 
 func (s *GeoService) getVisibleTechnicianIDs(userID uuid.UUID) ([]uuid.UUID, error) {
-	// Por enquanto, retorna todos os técnicos
-	// TODO: Implementar filtro por hierarquia
-	users, err := s.userRepo.GetAll()
+	// Primeiro verifica se o usuário é admin - se for, pode ver todos
+	user, err := s.userRepo.FindByID(userID.String())
 	if err != nil {
 		return nil, err
 	}
 
-	ids := make([]uuid.UUID, 0, len(users))
-	for _, u := range users {
-		if u.Role == "technician" {
+	// Admin pode ver todos os técnicos
+	if user.Role == "ADMIN" || user.Role == "admin" {
+		users, err := s.userRepo.GetAll()
+		if err != nil {
+			return nil, err
+		}
+
+		ids := make([]uuid.UUID, 0, len(users))
+		for _, u := range users {
 			if uid, err := uuid.Parse(u.ID); err == nil {
 				ids = append(ids, uid)
 			}
 		}
+		return ids, nil
 	}
-	return ids, nil
+
+	// Para outros roles, retorna apenas o próprio usuário por enquanto
+	// TODO: Implementar filtro por hierarquia
+	return []uuid.UUID{userID}, nil
 }
 
 func (s *GeoService) canViewTechnician(userID, technicianID uuid.UUID) (bool, error) {
