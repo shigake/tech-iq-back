@@ -171,15 +171,15 @@ func (s *SkillsMap) Scan(value interface{}) error {
 }
 
 type Technician struct {
-	ID        string    `json:"id" gorm:"primaryKey;type:varchar(36)"`
-	FullName  string    `json:"fullName" gorm:"not null;type:varchar(255)"`
-	TradeName string    `json:"tradeName" gorm:"type:varchar(255)"`
-	CPF       string    `json:"cpf" gorm:"type:varchar(14);index"`
-	CNPJ      string    `json:"cnpj" gorm:"type:varchar(18);index"`
-	RG        string    `json:"rg" gorm:"type:varchar(20)"`
-	Contact   string    `json:"contact" gorm:"type:varchar(255)"`
-	Status    string    `json:"status" gorm:"type:varchar(20);default:ATIVO;index"`
-	Type      string    `json:"type" gorm:"type:varchar(20);default:PARCERIA"` // PARCERIA, PONTUAL
+	ID        string `json:"id" gorm:"primaryKey;type:varchar(36)"`
+	FullName  string `json:"fullName" gorm:"not null;type:varchar(255)"`
+	TradeName string `json:"tradeName" gorm:"type:varchar(255)"`
+	CPF       string `json:"cpf" gorm:"type:varchar(14);index"`
+	CNPJ      string `json:"cnpj" gorm:"type:varchar(18);index"`
+	RG        string `json:"rg" gorm:"type:varchar(20)"`
+	Contact   string `json:"contact" gorm:"type:varchar(255)"`
+	Status    string `json:"status" gorm:"type:varchar(20);default:ATIVO;index"`
+	Type      string `json:"type" gorm:"type:varchar(20);default:PARCERIA"` // PARCERIA, PONTUAL
 
 	// User link - associates technician with a system user
 	UserID *string `json:"userId" gorm:"type:varchar(36);index"`
@@ -215,8 +215,8 @@ type Technician struct {
 	Skills SkillsMap `json:"skills" gorm:"type:jsonb;default:'{}'"`
 
 	// Knowledge descriptions
-	KnowledgeDescription  string `json:"knowledgeDescription" gorm:"type:text"`
-	EquipmentDescription  string `json:"equipmentDescription" gorm:"type:text"`
+	KnowledgeDescription string `json:"knowledgeDescription" gorm:"type:text"`
+	EquipmentDescription string `json:"equipmentDescription" gorm:"type:text"`
 
 	// Other Info
 	Vehicle string `json:"vehicle" gorm:"type:varchar(20);default:NONE"` // NONE, CAR, MOTORBIKE
@@ -279,38 +279,38 @@ func (t *Technician) ToDTO() TechnicianDTO {
 
 // CreateTechnicianRequest is the request body for creating a technician
 type CreateTechnicianRequest struct {
-	FullName             string            `json:"fullName" validate:"required,min=2"`
-	TradeName            string            `json:"tradeName"`
-	CPF                  string            `json:"cpf"`
-	CNPJ                 string            `json:"cnpj"`
-	RG                   string            `json:"rg"`
-	Contact              string            `json:"contact"`
-	Status               string            `json:"status"`
-	Type                 string            `json:"type"`
-	UserID               *string           `json:"userId"`
-	Emails               FlexEmailArray    `json:"emails"`
-	Phones               FlexPhoneArray    `json:"phones"`
-	MinCallValue         string            `json:"minCallValue"`
-	Observation          string            `json:"observation"`
-	Street               string            `json:"street"`
-	Number               string            `json:"number"`
-	Complement           string            `json:"complement"`
-	Neighborhood         string            `json:"neighborhood"`
-	City                 string            `json:"city"`
-	State                string            `json:"state"`
-	ZipCode              string            `json:"zipCode"`
-	BankName             string            `json:"bankName"`
-	Agency               string            `json:"agency"`
-	AccountNumber        string            `json:"accountNumber"`
-	AccountType          string            `json:"accountType"`
-	AccountDigit         string            `json:"accountDigit"`
-	AccountHolder        string            `json:"accountHolder"`
-	HolderCPF            string            `json:"holderCpf"`
-	PixKey               string            `json:"pixKey"`
-	Skills               map[string]bool   `json:"skills"`
-	KnowledgeDescription string            `json:"knowledgeDescription"`
-	EquipmentDescription string            `json:"equipmentDescription"`
-	Vehicle              string            `json:"vehicle"`
+	FullName             string          `json:"fullName" validate:"required,min=2"`
+	TradeName            string          `json:"tradeName"`
+	CPF                  string          `json:"cpf"`
+	CNPJ                 string          `json:"cnpj"`
+	RG                   string          `json:"rg"`
+	Contact              string          `json:"contact"`
+	Status               string          `json:"status"`
+	Type                 string          `json:"type"`
+	UserID               *string         `json:"userId"`
+	Emails               FlexEmailArray  `json:"emails"`
+	Phones               FlexPhoneArray  `json:"phones"`
+	MinCallValue         string          `json:"minCallValue"`
+	Observation          string          `json:"observation"`
+	Street               string          `json:"street"`
+	Number               string          `json:"number"`
+	Complement           string          `json:"complement"`
+	Neighborhood         string          `json:"neighborhood"`
+	City                 string          `json:"city"`
+	State                string          `json:"state"`
+	ZipCode              string          `json:"zipCode"`
+	BankName             string          `json:"bankName"`
+	Agency               string          `json:"agency"`
+	AccountNumber        string          `json:"accountNumber"`
+	AccountType          string          `json:"accountType"`
+	AccountDigit         string          `json:"accountDigit"`
+	AccountHolder        string          `json:"accountHolder"`
+	HolderCPF            string          `json:"holderCpf"`
+	PixKey               string          `json:"pixKey"`
+	Skills               map[string]bool `json:"skills"`
+	KnowledgeDescription string          `json:"knowledgeDescription"`
+	EquipmentDescription string          `json:"equipmentDescription"`
+	Vehicle              string          `json:"vehicle"`
 }
 
 func (r *CreateTechnicianRequest) ToModel() *Technician {
