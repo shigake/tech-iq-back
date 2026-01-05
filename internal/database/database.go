@@ -83,6 +83,8 @@ func Migrate(db *gorm.DB) error {
 		&models.TechnicianLocation{},
 		&models.TechnicianLastLocation{},
 		&models.GeoSettings{},
+		// Cities (Brazilian municipalities)
+		&models.City{},
 		// Security and Metrics
 		&models.SecurityLog{},
 		&models.RequestMetric{},

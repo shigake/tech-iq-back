@@ -573,6 +573,62 @@ func (h *GeoHandler) GetGeoCacheStatus(c *fiber.Ctx) error {
 	})
 }
 
+// LoadCities godoc
+// @Summary Carrega cidades do IBGE
+// @Description Baixa e popula a tabela de cidades brasileiras com coordenadas
+// @Tags Geo
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Security BearerAuth
+// @Router /api/geo/cities/load [post]
+func (h *GeoHandler) LoadCities(c *fiber.Ctx) error {
+	count, err := h.geoService.LoadCities()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"success": false,
+			"error": fiber.Map{
+				"code":    "CITIES_LOAD_ERROR",
+				"message": err.Error(),
+			},
+		})
+	}
+
+	// Refresh cache after loading cities
+	h.geoService.RefreshGeoCache()
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"success": true,
+		"message": "Cities loaded successfully",
+		"count":   count,
+	})
+}
+
+// GetCityCount godoc
+// @Summary Conta cidades no banco
+// @Description Retorna o número de cidades cadastradas
+// @Tags Geo
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Security BearerAuth
+// @Router /api/geo/cities/count [get]
+func (h *GeoHandler) GetCityCount(c *fiber.Ctx) error {
+	count, err := h.geoService.GetCityCount()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"success": false,
+			"error": fiber.Map{
+				"code":    "CITY_COUNT_ERROR",
+				"message": err.Error(),
+			},
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"success": true,
+		"count":   count,
+	})
+}
+
 // GeocodeAllTechnicians godoc
 // @Summary Geocodifica endereços dos técnicos
 // @Description Converte os endereços dos técnicos em coordenadas usando Nominatim

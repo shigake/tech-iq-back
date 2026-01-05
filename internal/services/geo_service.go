@@ -21,9 +21,10 @@ type GeoService struct {
 	ticketRepo       repositories.TicketRepository
 	hierarchyService *HierarchyService
 	redisClient      *cache.RedisClient
+	cityService      *CityService
 }
 
-func NewGeoService(geoRepo *repositories.GeoRepository, userRepo repositories.UserRepository, technicianRepo repositories.TechnicianRepository, ticketRepo repositories.TicketRepository, hierarchyService *HierarchyService, redisClient *cache.RedisClient) *GeoService {
+func NewGeoService(geoRepo *repositories.GeoRepository, userRepo repositories.UserRepository, technicianRepo repositories.TechnicianRepository, ticketRepo repositories.TicketRepository, hierarchyService *HierarchyService, redisClient *cache.RedisClient, cityService *CityService) *GeoService {
 	svc := &GeoService{
 		geoRepo:          geoRepo,
 		userRepo:         userRepo,
@@ -31,6 +32,7 @@ func NewGeoService(geoRepo *repositories.GeoRepository, userRepo repositories.Us
 		ticketRepo:       ticketRepo,
 		hierarchyService: hierarchyService,
 		redisClient:      redisClient,
+		cityService:      cityService,
 	}
 
 	// Carregar cache de técnicos em background
@@ -663,11 +665,11 @@ func (s *GeoService) loadTechniciansToCache() {
 			data.Longitude = *tech.Longitude
 			data.HasRealLocation = true // Marca como real pois é a localização correta do endereço
 		} else {
-			// Usar coordenadas da cidade/estado com offset para evitar sobreposição
-			lat, lng, _ := GetCoordinatesForLocationWithOffset(tech.City, tech.State, tech.ID)
+			// Usar coordenadas da cidade/estado do banco de cidades
+			lat, lng, found := s.getCoordinatesFromCityDB(tech.City, tech.State, tech.ID)
 			data.Latitude = lat
 			data.Longitude = lng
-			data.HasRealLocation = false
+			data.HasRealLocation = found
 		}
 
 		geoData = append(geoData, data)
@@ -781,10 +783,10 @@ func (s *GeoService) loadTechniciansDirectly() ([]cache.TechnicianGeoData, error
 				data.LastUpdateTime = &ts
 			}
 		} else {
-			lat, lng, _ := GetCoordinatesForLocationWithOffset(tech.City, tech.State, tech.ID)
+			lat, lng, found := s.getCoordinatesFromCityDB(tech.City, tech.State, tech.ID)
 			data.Latitude = lat
 			data.Longitude = lng
-			data.HasRealLocation = false
+			data.HasRealLocation = found
 		}
 
 		geoData = append(geoData, data)
@@ -853,4 +855,38 @@ func (s *GeoService) GetGeoCacheStats() (map[string]interface{}, error) {
 		"withRealLocation":      withRealLocation,
 		"withEstimatedLocation": withEstimatedLocation,
 	}, nil
+}
+
+// getCoordinatesFromCityDB busca coordenadas do banco de cidades
+// Aplica um pequeno offset baseado no ID para evitar sobreposição
+func (s *GeoService) getCoordinatesFromCityDB(city, state, technicianID string) (lat, lng float64, found bool) {
+	// Primeiro tenta usar o CityService se disponível
+	if s.cityService != nil {
+		lat, lng, found = s.cityService.GetCoordinates(city, state)
+		if found {
+			// Aplica pequeno offset para não sobrepor marcadores
+			offset := generateDeterministicOffset(technicianID)
+			return lat + offset.latOffset*0.2, lng + offset.lngOffset*0.2, found
+		}
+	}
+
+	// Fallback para o mapa estático
+	lat, lng, found = GetCoordinatesForLocationWithOffset(city, state, technicianID)
+	return lat, lng, found
+}
+
+// LoadCities carrega as cidades do IBGE para o banco de dados
+func (s *GeoService) LoadCities() (int, error) {
+	if s.cityService == nil {
+		return 0, errors.New("city service not available")
+	}
+	return s.cityService.LoadCitiesFromIBGE()
+}
+
+// GetCityCount retorna o número de cidades no banco
+func (s *GeoService) GetCityCount() (int64, error) {
+	if s.cityService == nil {
+		return 0, errors.New("city service not available")
+	}
+	return s.cityService.GetCount()
 }

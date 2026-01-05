@@ -103,6 +103,7 @@ func main() {
 	financialRepo := repositories.NewFinancialRepository(db)
 	stockRepo := repositories.NewStockRepository(db)
 	errorLogRepo := repositories.NewErrorLogRepository(db)
+	cityRepo := repositories.NewCityRepository(db)
 
 	// Initialize services
 	authService := services.NewAuthService(userRepo, securityLogRepo, hierarchyRepo, cfg)
@@ -111,7 +112,8 @@ func main() {
 	dashboardService := services.NewDashboardService(technicianRepo, ticketRepo, clientRepo)
 	activityLogService := services.NewActivityLogService(activityLogRepo)
 	hierarchyService := services.NewHierarchyService(hierarchyRepo)
-	geoService := services.NewGeoService(geoRepo, userRepo, technicianRepo, ticketRepo, hierarchyService, redisClient)
+	cityService := services.NewCityService(cityRepo)
+	geoService := services.NewGeoService(geoRepo, userRepo, technicianRepo, ticketRepo, hierarchyService, redisClient, cityService)
 	geocodingService := services.NewGeocodingService(technicianRepo)
 	securityLogService := services.NewSecurityLogService(securityLogRepo)
 	systemMetricsService := services.NewSystemMetricsService(db, redisClient, userRepo, ticketRepo, securityLogRepo)
@@ -332,6 +334,9 @@ func main() {
 	geo.Post("/geocode/batch", middleware.AdminOnly(), geoHandler.GeocodeAllTechnicians)
 	geo.Get("/geocode/status", geoHandler.GetGeocodingStatus)
 	geo.Post("/geocode/:id", middleware.WriteAccess(), geoHandler.GeocodeSingleTechnician)
+	// Cities endpoints
+	geo.Post("/cities/load", middleware.AdminOnly(), geoHandler.LoadCities)
+	geo.Get("/cities/count", geoHandler.GetCityCount)
 
 	// ==================== Admin Routes ====================
 	admin := protected.Group("/admin")
