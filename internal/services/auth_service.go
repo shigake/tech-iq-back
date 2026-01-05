@@ -78,6 +78,11 @@ func (s *authService) SignIn(req *models.SignInRequest, ipAddress, userAgent str
 		return nil, err
 	}
 
+	refreshToken, err := s.generateRefreshToken(user)
+	if err != nil {
+		return nil, err
+	}
+
 	// Log successful login
 	s.logSecurityEvent(user.ID, user.Email, "login_success", ipAddress, userAgent, "", true)
 
@@ -96,12 +101,14 @@ func (s *authService) SignIn(req *models.SignInRequest, ipAddress, userAgent str
 	}
 
 	return &models.AuthResponse{
-		Token:       token,
-		FirstName:   user.FirstName,
-		LastName:    user.LastName,
-		Email:       user.Email,
-		Role:        user.Role,
-		Permissions: permissions,
+		Token:        token,
+		RefreshToken: refreshToken,
+		ExpiresIn:    int64(s.config.JWTExpiration.Seconds()),
+		FirstName:    user.FirstName,
+		LastName:     user.LastName,
+		Email:        user.Email,
+		Role:         user.Role,
+		Permissions:  permissions,
 	}, nil
 }
 
@@ -136,18 +143,26 @@ func (s *authService) SignUp(req *models.SignUpRequest) (*models.AuthResponse, e
 		return nil, err
 	}
 
+	refreshToken, err := s.generateRefreshToken(user)
+	if err != nil {
+		return nil, err
+	}
+
 	// New users have no permissions until assigned
 	return &models.AuthResponse{
-		Token:       token,
-		FirstName:   user.FirstName,
-		LastName:    user.LastName,
-		Email:       user.Email,
-		Role:        user.Role,
-		Permissions: []string{},
+		Token:        token,
+		RefreshToken: refreshToken,
+		ExpiresIn:    int64(s.config.JWTExpiration.Seconds()),
+		FirstName:    user.FirstName,
+		LastName:     user.LastName,
+		Email:        user.Email,
+		Role:         user.Role,
+		Permissions:  []string{},
 	}, nil
 }
 
 func (s *authService) RefreshToken(tokenString string) (*models.AuthResponse, error) {
+	// Parse the token - could be access token (for backwards compatibility) or refresh token
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return []byte(s.config.JWTSecret), nil
 	})
@@ -159,6 +174,13 @@ func (s *authService) RefreshToken(tokenString string) (*models.AuthResponse, er
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
 		return nil, errors.New("invalid token claims")
+	}
+
+	// Check if this is a refresh token (has "type": "refresh")
+	// If it's an access token without type, we still allow it for backwards compatibility
+	tokenType, hasType := claims["type"].(string)
+	if hasType && tokenType != "refresh" {
+		return nil, errors.New("invalid token type, expected refresh token")
 	}
 
 	// Handle both string and float64 user IDs from JWT
@@ -178,9 +200,26 @@ func (s *authService) RefreshToken(tokenString string) (*models.AuthResponse, er
 		return nil, errors.New("user not found")
 	}
 
+	// Check if user is still active
+	if !user.Active {
+		return nil, errors.New("user account is deactivated")
+	}
+
 	newToken, err := s.generateToken(user)
 	if err != nil {
 		return nil, err
+	}
+
+	// Generate new refresh token only if the old one is about to expire (less than 1 day left)
+	var newRefreshToken string
+	if exp, ok := claims["exp"].(float64); ok {
+		expTime := time.Unix(int64(exp), 0)
+		if time.Until(expTime) < 24*time.Hour {
+			newRefreshToken, err = s.generateRefreshToken(user)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	// Get user permissions
@@ -196,12 +235,14 @@ func (s *authService) RefreshToken(tokenString string) (*models.AuthResponse, er
 	}
 
 	return &models.AuthResponse{
-		Token:       newToken,
-		FirstName:   user.FirstName,
-		LastName:    user.LastName,
-		Email:       user.Email,
-		Role:        user.Role,
-		Permissions: permissions,
+		Token:        newToken,
+		RefreshToken: newRefreshToken, // Empty if not renewed
+		ExpiresIn:    int64(s.config.JWTExpiration.Seconds()),
+		FirstName:    user.FirstName,
+		LastName:     user.LastName,
+		Email:        user.Email,
+		Role:         user.Role,
+		Permissions:  permissions,
 	}, nil
 }
 
@@ -211,9 +252,23 @@ func (s *authService) generateToken(user *models.User) (string, error) {
 		"email":     user.Email,
 		"role":      user.Role,
 		"roles":     []string{user.Role},
+		"type":      "access",
 		"createdAt": time.Now().UnixMilli(),
 		"iat":       time.Now().Unix(),
 		"exp":       time.Now().Add(s.config.JWTExpiration).Unix(),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(s.config.JWTSecret))
+}
+
+func (s *authService) generateRefreshToken(user *models.User) (string, error) {
+	claims := jwt.MapClaims{
+		"userId": user.ID,
+		"email":  user.Email,
+		"type":   "refresh",
+		"iat":    time.Now().Unix(),
+		"exp":    time.Now().Add(s.config.JWTRefreshExpiration).Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

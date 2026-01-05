@@ -41,14 +41,14 @@ func Connect(cfg *config.Config) (*gorm.DB, error) {
 
 // dropOldConstraints removes old unique constraints that block empty values
 // PostgreSQL allows multiple NULLs in UNIQUE columns, but not multiple empty strings
-// We use partial indexes (WHERE field <> '') in the model to allow empty values
+// We use partial indexes (WHERE field <> ”) in the model to allow empty values
 func dropOldConstraints(db *gorm.DB) {
 	constraints := []string{
 		"ALTER TABLE clients DROP CONSTRAINT IF EXISTS clients_cnpj_key",
 		"ALTER TABLE clients DROP CONSTRAINT IF EXISTS clients_cpf_key",
 		"ALTER TABLE technicians DROP CONSTRAINT IF EXISTS technicians_cpf_key",
 	}
-	
+
 	for _, sql := range constraints {
 		if err := db.Exec(sql).Error; err != nil {
 			log.Printf("⚠️ Could not drop constraint: %v", err)
@@ -105,10 +105,10 @@ func Migrate(db *gorm.DB) error {
 
 	// Seed default permissions and roles
 	SeedAccessControl(db)
-	
+
 	// Seed default admin user
 	SeedAdminUser(db)
-	
+
 	// Seed default financial categories
 	SeedFinancialCategories(db)
 
@@ -228,7 +228,7 @@ func SeedAccessControl(db *gorm.DB) {
 				IsSystem:    false,
 			},
 			Permissions: []string{
-				"tickets.view", // Only own tickets (filtered by user)
+				"tickets.view",  // Only own tickets (filtered by user)
 				"settings.view", // Can view settings/profile
 			},
 		},

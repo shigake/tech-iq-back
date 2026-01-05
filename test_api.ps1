@@ -164,23 +164,60 @@ $loginBody = @{
 try {
     $response = Invoke-WebRequest -Uri "$ApiUrl/auth/signin" -Method POST -Body ($loginBody | ConvertTo-Json) -ContentType "application/json" -UseBasicParsing
     $content = $response.Content | ConvertFrom-Json
-    # API retorna "token" não "access_token"
+    # API returns "token" and optionally "refreshToken"
     if ($content.token) {
         $script:AccessToken = $content.token
     } elseif ($content.access_token) {
         $script:AccessToken = $content.access_token
     }
-    $script:RefreshToken = $content.refresh_token
+    # Try camelCase first (new format), then snake_case (old format)
+    if ($content.refreshToken) {
+        $script:RefreshToken = $content.refreshToken
+    } elseif ($content.refresh_token) {
+        $script:RefreshToken = $content.refresh_token
+    }
     Write-Pass "POST /auth/signin (HTTP $($response.StatusCode))"
     Write-Info "Token obtained: $($script:AccessToken.Substring(0, [Math]::Min(50, $script:AccessToken.Length)))..."
+    if ($script:RefreshToken) {
+        Write-Info "Refresh token obtained: $($script:RefreshToken.Substring(0, [Math]::Min(50, $script:RefreshToken.Length)))..."
+    }
 } catch {
     Write-Fail "POST /auth/signin - Cannot continue without token"
     Write-Host $_.Exception.Message
     exit 1
 }
 
-# Refresh Token (API uses single JWT, no refresh token support)
-Write-Skip "POST /auth/refresh (API uses single JWT token)"
+# Refresh Token
+Write-Info "Testing Refresh Token..."
+try {
+    if ($script:RefreshToken) {
+        # Use refresh token in body (new method)
+        $refreshBody = @{ refreshToken = $script:RefreshToken }
+        $response = Invoke-WebRequest -Uri "$ApiUrl/auth/refresh" -Method POST -Body ($refreshBody | ConvertTo-Json) -ContentType "application/json" -UseBasicParsing
+    } else {
+        # Fallback: use access token in header (backwards compatibility)
+        $headers = @{ Authorization = "Bearer $script:AccessToken" }
+        $response = Invoke-WebRequest -Uri "$ApiUrl/auth/refresh" -Method POST -Headers $headers -ContentType "application/json" -UseBasicParsing
+    }
+    $content = $response.Content | ConvertFrom-Json
+    Write-Pass "POST /auth/refresh (HTTP $($response.StatusCode))"
+    # Update token if new one is returned
+    if ($content.token) {
+        $script:AccessToken = $content.token
+        Write-Info "Token refreshed successfully"
+    }
+    # Update refresh token if rotated
+    if ($content.refreshToken) {
+        $script:RefreshToken = $content.refreshToken
+        Write-Info "Refresh token rotated"
+    }
+} catch {
+    $statusCode = 0
+    if ($_.Exception.Response) {
+        $statusCode = [int]$_.Exception.Response.StatusCode
+    }
+    Write-Fail "POST /auth/refresh (HTTP $statusCode)"
+}
 
 Write-Skip "POST /auth/change-password (Would change password)"
 

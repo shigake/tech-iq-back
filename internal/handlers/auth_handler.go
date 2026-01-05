@@ -99,12 +99,31 @@ func (h *AuthHandler) SignUp(c *fiber.Ctx) error {
 // @Tags Auth
 // @Accept json
 // @Produce json
-// @Param Authorization header string true "Current JWT token"
+// @Param Authorization header string false "Current JWT token (legacy)"
+// @Param request body object false "Refresh token in body { refreshToken: string }"
 // @Success 200 {object} models.AuthResponse
 // @Failure 401 {object} map[string]string
 // @Router /api/v1/auth/refresh [post]
 func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
-	token := c.Get("Authorization")
+	var token string
+	
+	// Try to get refresh token from body first (preferred)
+	var body struct {
+		RefreshToken string `json:"refreshToken"`
+	}
+	if err := c.BodyParser(&body); err == nil && body.RefreshToken != "" {
+		token = body.RefreshToken
+	}
+	
+	// Fallback to Authorization header (backwards compatibility)
+	if token == "" {
+		token = c.Get("Authorization")
+		// Remove "Bearer " prefix if present
+		if len(token) > 7 && token[:7] == "Bearer " {
+			token = token[7:]
+		}
+	}
+	
 	if token == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Missing token",

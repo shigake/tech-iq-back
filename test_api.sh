@@ -156,21 +156,59 @@ body=$(get_body "$response")
 
 if [ "$status" -eq 200 ]; then
     log_success "POST /auth/signin (HTTP $status)"
-    # API pode retornar "token" ou "access_token"
+    # API returns "token" and optionally "refreshToken"
     ACCESS_TOKEN=$(echo "$body" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
     if [ -z "$ACCESS_TOKEN" ]; then
         ACCESS_TOKEN=$(echo "$body" | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4)
     fi
-    REFRESH_TOKEN=$(echo "$body" | grep -o '"refresh_token":"[^"]*"' | cut -d'"' -f4)
+    # Try camelCase first (new format), then snake_case (old format)
+    REFRESH_TOKEN=$(echo "$body" | grep -o '"refreshToken":"[^"]*"' | cut -d'"' -f4)
+    if [ -z "$REFRESH_TOKEN" ]; then
+        REFRESH_TOKEN=$(echo "$body" | grep -o '"refresh_token":"[^"]*"' | cut -d'"' -f4)
+    fi
     log_info "Token obtained: ${ACCESS_TOKEN:0:50}..."
+    if [ -n "$REFRESH_TOKEN" ]; then
+        log_info "Refresh token obtained: ${REFRESH_TOKEN:0:50}..."
+    fi
 else
     log_fail "POST /auth/signin (HTTP $status) - Cannot continue without token"
     echo "$body"
     exit 1
 fi
 
-# Refresh Token (API uses single JWT, no refresh token support)
-log_skip "POST /auth/refresh (API uses single JWT token)"
+# Refresh Token
+log_info "Testing Refresh Token..."
+if [ -n "$REFRESH_TOKEN" ]; then
+    # Use refresh token in body (new method)
+    response=$(curl -s -w "\n%{http_code}" -X POST "$BASE_URL/auth/refresh" \
+        -H "Content-Type: application/json" \
+        -d "{\"refreshToken\": \"$REFRESH_TOKEN\"}")
+else
+    # Fallback: use access token in header (backwards compatibility)
+    response=$(curl -s -w "\n%{http_code}" -X POST "$BASE_URL/auth/refresh" \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $ACCESS_TOKEN")
+fi
+status=$(get_status "$response")
+body=$(get_body "$response")
+if [ "$status" -eq 200 ]; then
+    log_success "POST /auth/refresh (HTTP $status)"
+    # Update token if new one is returned
+    NEW_TOKEN=$(echo "$body" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
+    if [ -n "$NEW_TOKEN" ]; then
+        ACCESS_TOKEN="$NEW_TOKEN"
+        log_info "Token refreshed successfully"
+    fi
+    # Update refresh token if rotated
+    NEW_REFRESH=$(echo "$body" | grep -o '"refreshToken":"[^"]*"' | cut -d'"' -f4)
+    if [ -n "$NEW_REFRESH" ]; then
+        REFRESH_TOKEN="$NEW_REFRESH"
+        log_info "Refresh token rotated"
+    fi
+else
+    log_fail "POST /auth/refresh (HTTP $status)"
+    echo "$body"
+fi
 
 # Change Password (skip - would change the password)
 log_skip "POST /auth/change-password (Would change password)"
