@@ -241,8 +241,8 @@ func (s *GeocodingService) GeocodeAllTechnicians(forceAll bool) (*GeocodingStats
 		Results:   []GeocodingResult{},
 	}
 
-	// Get all technicians
-	technicians, _, err := s.technicianRepo.FindAll(1, 10000)
+	// Get all technicians (page 0 for offset 0)
+	technicians, _, err := s.technicianRepo.FindAll(0, 10000)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get technicians: %w", err)
 	}
