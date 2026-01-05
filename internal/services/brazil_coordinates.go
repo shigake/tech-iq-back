@@ -301,5 +301,3 @@ func GetCoordinatesForLocation(city, state string) (lat, lng float64, hasExact b
 func GetCoordinatesForLocationWithOffset(city, state, technicianID string) (lat, lng float64, hasExact bool) {
 	return GetCoordinatesForLocation(city, state)
 }
-
-

@@ -232,8 +232,8 @@ func (h *GeoHandler) GetTechniciansLastLocations(c *fiber.Ctx) error {
 
 	page, _ := strconv.Atoi(c.Query("page", "1"))
 	limit, _ := strconv.Atoi(c.Query("limit", "500"))
-	if limit > 1000 {
-		limit = 1000
+	if limit > 10000 {
+		limit = 10000
 	}
 	filter.Limit = limit
 	filter.Offset = (page - 1) * limit
@@ -361,8 +361,8 @@ func (h *GeoHandler) GetTechnicianHistory(c *fiber.Ctx) error {
 
 	page, _ := strconv.Atoi(c.Query("page", "1"))
 	limit, _ := strconv.Atoi(c.Query("limit", "100"))
-	if limit > 1000 {
-		limit = 1000
+	if limit > 10000 {
+		limit = 10000
 	}
 	filter.Limit = limit
 	filter.Offset = (page - 1) * limit
