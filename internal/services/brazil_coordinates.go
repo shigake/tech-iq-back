@@ -297,48 +297,9 @@ func GetCoordinatesForLocation(city, state string) (lat, lng float64, hasExact b
 	return -15.7942, -47.8822, false
 }
 
-// GetCoordinatesForLocationWithOffset retorna coordenadas com offset para evitar sobreposição
-// O offset é determinístico baseado no technicianID para consistência
+// Legacy function - kept for compatibility but now just calls GetCoordinatesForLocation
 func GetCoordinatesForLocationWithOffset(city, state, technicianID string) (lat, lng float64, hasExact bool) {
-	baseLat, baseLng, exact := GetCoordinatesForLocation(city, state)
-
-	if exact {
-		// Se temos coordenadas exatas da cidade, não precisamos de offset grande
-		return baseLat, baseLng, exact
-	}
-
-	// Gerar offset determinístico baseado no technicianID
-	// Isso garante que o mesmo técnico sempre aparece no mesmo lugar
-	offset := generateDeterministicOffset(technicianID)
-
-	// Offset de até ~5km (0.05 graus ≈ 5km)
-	return baseLat + offset.latOffset, baseLng + offset.lngOffset, exact
+	return GetCoordinatesForLocation(city, state)
 }
 
-type coordinateOffset struct {
-	latOffset float64
-	lngOffset float64
-}
 
-// generateDeterministicOffset gera um offset baseado no hash do ID
-func generateDeterministicOffset(id string) coordinateOffset {
-	if id == "" {
-		return coordinateOffset{0, 0}
-	}
-
-	// Usar hash simples do ID para gerar offset
-	hash := uint32(0)
-	for _, c := range id {
-		hash = hash*31 + uint32(c)
-	}
-
-	// Converter para offset entre -0.05 e 0.05 (aproximadamente -5km a +5km)
-	// Usamos diferentes partes do hash para lat e lng
-	latHash := hash & 0xFFFF
-	lngHash := (hash >> 16) & 0xFFFF
-
-	latOffset := (float64(latHash)/65535.0 - 0.5) * 0.1 // -0.05 a 0.05
-	lngOffset := (float64(lngHash)/65535.0 - 0.5) * 0.1 // -0.05 a 0.05
-
-	return coordinateOffset{latOffset, lngOffset}
-}

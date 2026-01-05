@@ -858,20 +858,17 @@ func (s *GeoService) GetGeoCacheStats() (map[string]interface{}, error) {
 }
 
 // getCoordinatesFromCityDB busca coordenadas do banco de cidades
-// Aplica um pequeno offset baseado no ID para evitar sobreposição
 func (s *GeoService) getCoordinatesFromCityDB(city, state, technicianID string) (lat, lng float64, found bool) {
 	// Primeiro tenta usar o CityService se disponível
 	if s.cityService != nil {
 		lat, lng, found = s.cityService.GetCoordinates(city, state)
 		if found {
-			// Aplica pequeno offset para não sobrepor marcadores
-			offset := generateDeterministicOffset(technicianID)
-			return lat + offset.latOffset*0.2, lng + offset.lngOffset*0.2, found
+			return lat, lng, found
 		}
 	}
 
 	// Fallback para o mapa estático
-	lat, lng, found = GetCoordinatesForLocationWithOffset(city, state, technicianID)
+	lat, lng, found = GetCoordinatesForLocation(city, state)
 	return lat, lng, found
 }
 
