@@ -86,6 +86,11 @@ func (s *CityService) LoadCitiesFromIBGE() (int, error) {
 		return 0, fmt.Errorf("failed to read response: %w", err)
 	}
 
+	// Remove BOM if present (UTF-8 BOM: 0xEF, 0xBB, 0xBF)
+	if len(body) >= 3 && body[0] == 0xEF && body[1] == 0xBB && body[2] == 0xBF {
+		body = body[3:]
+	}
+
 	var ibgeCities []IBGECity
 	if err := json.Unmarshal(body, &ibgeCities); err != nil {
 		return 0, fmt.Errorf("failed to parse JSON: %w", err)
