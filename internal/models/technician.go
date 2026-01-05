@@ -201,6 +201,10 @@ type Technician struct {
 	State        string `json:"state" gorm:"type:varchar(50);index"`
 	ZipCode      string `json:"zipCode" gorm:"type:varchar(10)"`
 
+	// Geocoded Coordinates (from address)
+	Latitude  *float64 `json:"latitude" gorm:"type:decimal(10,8)"`
+	Longitude *float64 `json:"longitude" gorm:"type:decimal(11,8)"`
+
 	// Bank Info
 	BankName      string `json:"bankName" gorm:"type:varchar(200)"`
 	Agency        string `json:"agency" gorm:"type:varchar(50)"`

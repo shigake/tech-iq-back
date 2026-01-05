@@ -641,8 +641,13 @@ func (s *GeoService) loadTechniciansToCache() {
 			Status:       tech.Status,
 		}
 
-		// Verificar se tem localização real
+		// Prioridade de coordenadas:
+		// 1. Última localização GPS real (tracking)
+		// 2. Coordenadas geocodificadas do endereço (Latitude/Longitude do técnico)
+		// 3. Coordenadas da cidade/estado com offset
+
 		if lastLoc, ok := locMap[tech.ID]; ok {
+			// Tem localização GPS real do tracking
 			data.Latitude = lastLoc.Latitude
 			data.Longitude = lastLoc.Longitude
 			data.AccuracyM = lastLoc.AccuracyM
@@ -652,6 +657,11 @@ func (s *GeoService) loadTechniciansToCache() {
 				ts := lastLoc.ServerTime.Unix()
 				data.LastUpdateTime = &ts
 			}
+		} else if tech.Latitude != nil && tech.Longitude != nil {
+			// Tem coordenadas geocodificadas do endereço
+			data.Latitude = *tech.Latitude
+			data.Longitude = *tech.Longitude
+			data.HasRealLocation = true // Marca como real pois é a localização correta do endereço
 		} else {
 			// Usar coordenadas da cidade/estado com offset para evitar sobreposição
 			lat, lng, _ := GetCoordinatesForLocationWithOffset(tech.City, tech.State, tech.ID)

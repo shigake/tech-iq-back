@@ -112,6 +112,7 @@ func main() {
 	activityLogService := services.NewActivityLogService(activityLogRepo)
 	hierarchyService := services.NewHierarchyService(hierarchyRepo)
 	geoService := services.NewGeoService(geoRepo, userRepo, technicianRepo, ticketRepo, hierarchyService, redisClient)
+	geocodingService := services.NewGeocodingService(technicianRepo)
 	securityLogService := services.NewSecurityLogService(securityLogRepo)
 	systemMetricsService := services.NewSystemMetricsService(db, redisClient, userRepo, ticketRepo, securityLogRepo)
 	financialService := services.NewFinancialService(financialRepo, categoryRepo)
@@ -130,7 +131,7 @@ func main() {
 	hierarchyHandler := handlers.NewHierarchyHandler(hierarchyRepo)
 	userHandler := handlers.NewUserHandler(userRepo)
 	activityLogHandler := handlers.NewActivityLogHandler(activityLogService)
-	geoHandler := handlers.NewGeoHandler(geoService)
+	geoHandler := handlers.NewGeoHandler(geoService, geocodingService)
 	securityLogHandler := handlers.NewSecurityLogHandler(securityLogService)
 	adminHandler := handlers.NewAdminHandler(systemMetricsService)
 	financialHandler := handlers.NewFinancialHandler(financialService, categoryRepo)
@@ -327,6 +328,10 @@ func main() {
 	geo.Put("/settings", middleware.WriteAccess(), geoHandler.UpdateGeoSettings)
 	geo.Post("/cache/refresh", middleware.WriteAccess(), geoHandler.RefreshGeoCache)
 	geo.Get("/cache/status", geoHandler.GetGeoCacheStatus)
+	// Geocoding endpoints
+	geo.Post("/geocode/batch", middleware.AdminOnly(), geoHandler.GeocodeAllTechnicians)
+	geo.Get("/geocode/status", geoHandler.GetGeocodingStatus)
+	geo.Post("/geocode/:id", middleware.WriteAccess(), geoHandler.GeocodeSingleTechnician)
 
 	// ==================== Admin Routes ====================
 	admin := protected.Group("/admin")

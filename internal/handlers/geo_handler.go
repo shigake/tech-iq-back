@@ -13,11 +13,15 @@ import (
 )
 
 type GeoHandler struct {
-	geoService *services.GeoService
+	geoService        *services.GeoService
+	geocodingService  *services.GeocodingService
 }
 
-func NewGeoHandler(geoService *services.GeoService) *GeoHandler {
-	return &GeoHandler{geoService: geoService}
+func NewGeoHandler(geoService *services.GeoService, geocodingService *services.GeocodingService) *GeoHandler {
+	return &GeoHandler{
+		geoService:       geoService,
+		geocodingService: geocodingService,
+	}
 }
 
 // CreateLocation godoc
@@ -566,6 +570,109 @@ func (h *GeoHandler) GetGeoCacheStatus(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"success": true,
 		"data":    stats,
+	})
+}
+
+// GeocodeAllTechnicians godoc
+// @Summary Geocodifica endereços dos técnicos
+// @Description Converte os endereços dos técnicos em coordenadas usando Nominatim
+// @Tags Geo
+// @Produce json
+// @Param forceAll query bool false "Regeocodificar todos, mesmo os que já têm coordenadas"
+// @Success 200 {object} map[string]interface{}
+// @Security BearerAuth
+// @Router /api/geo/geocode/batch [post]
+func (h *GeoHandler) GeocodeAllTechnicians(c *fiber.Ctx) error {
+	forceAll := c.Query("forceAll") == "true"
+
+	// Run geocoding in background
+	go func() {
+		stats, err := h.geocodingService.GeocodeAllTechnicians(forceAll)
+		if err != nil {
+			// Log error but don't affect the response
+			return
+		}
+		
+		// Refresh geo cache after geocoding completes
+		if stats.SuccessCount > 0 {
+			h.geoService.RefreshGeoCache()
+		}
+	}()
+
+	return c.Status(fiber.StatusAccepted).JSON(fiber.Map{
+		"success": true,
+		"message": "Geocoding started in background. Use GET /api/geo/geocode/status to check progress.",
+	})
+}
+
+// GetGeocodingStatus godoc
+// @Summary Status do job de geocodificação
+// @Description Verifica se há um job de geocodificação em andamento
+// @Tags Geo
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Security BearerAuth
+// @Router /api/geo/geocode/status [get]
+func (h *GeoHandler) GetGeocodingStatus(c *fiber.Ctx) error {
+	isRunning := h.geocodingService.GetGeocodingStatus()
+	
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"success":   true,
+		"isRunning": isRunning,
+	})
+}
+
+// GeocodeSingleTechnician godoc
+// @Summary Geocodifica um único técnico
+// @Description Converte o endereço de um técnico específico em coordenadas
+// @Tags Geo
+// @Produce json
+// @Param id path string true "ID do técnico"
+// @Success 200 {object} map[string]interface{}
+// @Security BearerAuth
+// @Router /api/geo/geocode/{id} [post]
+func (h *GeoHandler) GeocodeSingleTechnician(c *fiber.Ctx) error {
+	technicianID := c.Params("id")
+	if technicianID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"success": false,
+			"error": fiber.Map{
+				"code":    "MISSING_ID",
+				"message": "Technician ID is required",
+			},
+		})
+	}
+
+	// Geocode using the service (it will find the technician)
+	result, err := h.geocodingService.GeocodeTechnicianByID(technicianID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"success": false,
+			"error": fiber.Map{
+				"code":    "GEOCODING_ERROR",
+				"message": err.Error(),
+			},
+		})
+	}
+
+	if result == nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"success": false,
+			"error": fiber.Map{
+				"code":    "NOT_FOUND",
+				"message": "Technician not found",
+			},
+		})
+	}
+
+	// Refresh cache if successful
+	if result.Success {
+		h.geoService.RefreshGeoCache()
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"success": true,
+		"data":    result,
 	})
 }
 
