@@ -369,12 +369,18 @@ func (s *GeoService) GetTicketLocations(ticketID uuid.UUID) (*models.TicketLocat
 	response := &models.TicketLocationsResponse{
 		TicketID:   ticketID,
 		Heartbeats: make([]models.HeartbeatInfo, 0),
+		Sessions:   make([]models.AttendanceSession, 0),
 	}
+
+	// Mapa para agrupar sessões por técnico + ordem temporal
+	var sessions []models.AttendanceSession
+	var currentSession *models.AttendanceSession
+	sessionCount := 0
 
 	for _, loc := range locations {
 		switch loc.EventType {
 		case models.EventTypeCheckin:
-			response.Checkin = &models.CheckinoutInfo{
+			checkinInfo := &models.CheckinoutInfo{
 				TechnicianID: loc.TechnicianID,
 				Latitude:     loc.Latitude,
 				Longitude:    loc.Longitude,
@@ -382,10 +388,29 @@ func (s *GeoService) GetTicketLocations(ticketID uuid.UUID) (*models.TicketLocat
 				ServerTime:   loc.ServerTime,
 			}
 			if loc.Technician != nil {
-				response.Checkin.TechnicianName = loc.Technician.FullName
+				checkinInfo.TechnicianName = loc.Technician.FullName
 			}
+
+			// Manter compatibilidade: último check-in como principal
+			response.Checkin = checkinInfo
+
+			// Criar nova sessão
+			sessionCount++
+			techName := ""
+			if loc.Technician != nil {
+				techName = loc.Technician.FullName
+			}
+			currentSession = &models.AttendanceSession{
+				ID:             fmt.Sprintf("%s-%d", loc.TechnicianID, sessionCount),
+				TechnicianID:   loc.TechnicianID,
+				TechnicianName: techName,
+				Checkin:        checkinInfo,
+				Status:         "in_progress",
+			}
+			sessions = append(sessions, *currentSession)
+
 		case models.EventTypeCheckout:
-			response.Checkout = &models.CheckinoutInfo{
+			checkoutInfo := &models.CheckinoutInfo{
 				TechnicianID: loc.TechnicianID,
 				Latitude:     loc.Latitude,
 				Longitude:    loc.Longitude,
@@ -393,8 +418,24 @@ func (s *GeoService) GetTicketLocations(ticketID uuid.UUID) (*models.TicketLocat
 				ServerTime:   loc.ServerTime,
 			}
 			if loc.Technician != nil {
-				response.Checkout.TechnicianName = loc.Technician.FullName
+				checkoutInfo.TechnicianName = loc.Technician.FullName
 			}
+
+			// Manter compatibilidade: último checkout como principal
+			response.Checkout = checkoutInfo
+
+			// Fechar a última sessão aberta do mesmo técnico
+			for i := len(sessions) - 1; i >= 0; i-- {
+				if sessions[i].TechnicianID == loc.TechnicianID && sessions[i].Checkout == nil {
+					sessions[i].Checkout = checkoutInfo
+					sessions[i].Status = "completed"
+					// Calcular duração
+					duration := int64(checkoutInfo.ServerTime.Sub(sessions[i].Checkin.ServerTime).Seconds())
+					sessions[i].Duration = &duration
+					break
+				}
+			}
+
 		case models.EventTypeHeartbeat:
 			response.Heartbeats = append(response.Heartbeats, models.HeartbeatInfo{
 				Latitude:   loc.Latitude,
@@ -404,6 +445,7 @@ func (s *GeoService) GetTicketLocations(ticketID uuid.UUID) (*models.TicketLocat
 		}
 	}
 
+	response.Sessions = sessions
 	return response, nil
 }
 

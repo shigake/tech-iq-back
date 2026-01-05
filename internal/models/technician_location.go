@@ -251,12 +251,24 @@ type LocationHistoryItem struct {
 }
 
 type TicketLocationsResponse struct {
-	TicketID           uuid.UUID       `json:"ticketId"`
-	TicketNumber       string          `json:"ticketNumber"`
-	Checkin            *CheckinoutInfo `json:"checkin,omitempty"`
-	Checkout           *CheckinoutInfo `json:"checkout,omitempty"`
-	Heartbeats         []HeartbeatInfo `json:"heartbeats,omitempty"`
-	DistanceFromClient *DistanceInfo   `json:"distanceFromClient,omitempty"`
+	TicketID           uuid.UUID          `json:"ticketId"`
+	TicketNumber       string             `json:"ticketNumber"`
+	Checkin            *CheckinoutInfo    `json:"checkin,omitempty"`
+	Checkout           *CheckinoutInfo    `json:"checkout,omitempty"`
+	Heartbeats         []HeartbeatInfo    `json:"heartbeats,omitempty"`
+	DistanceFromClient *DistanceInfo      `json:"distanceFromClient,omitempty"`
+	Sessions           []AttendanceSession `json:"sessions,omitempty"`
+}
+
+// AttendanceSession representa uma sessão de atendimento (check-in + checkout)
+type AttendanceSession struct {
+	ID             string          `json:"id"`
+	TechnicianID   string          `json:"technicianId"`
+	TechnicianName string          `json:"technicianName"`
+	Checkin        *CheckinoutInfo `json:"checkin"`
+	Checkout       *CheckinoutInfo `json:"checkout,omitempty"`
+	Duration       *int64          `json:"durationSeconds,omitempty"`
+	Status         string          `json:"status"` // "in_progress", "completed"
 }
 
 type CheckinoutInfo struct {

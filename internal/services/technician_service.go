@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
-	
+
 	"github.com/redis/go-redis/v9"
 	"github.com/shigake/tech-iq-back/internal/cache"
 	"github.com/shigake/tech-iq-back/internal/models"
@@ -42,16 +42,16 @@ func (s *technicianService) Create(req *models.CreateTechnicianRequest) (*models
 	if err := s.repo.Create(technician); err != nil {
 		return nil, err
 	}
-	
+
 	// Invalidate cache patterns after creating
 	s.invalidateTechnicianCaches()
-	
+
 	return technician, nil
 }
 
 func (s *technicianService) GetAll(page, size int) (*models.PaginatedResponse, error) {
 	fmt.Printf(">>> GetAll called: page=%d, size=%d, cache_enabled=%v\n", page, size, s.cache != nil)
-	
+
 	// Try cache first
 	cacheKey := cache.TechnicianCacheKey(page, size, "")
 	if s.cache != nil {
@@ -157,13 +157,13 @@ func (s *technicianService) Delete(id string) error {
 	if err := s.repo.Delete(id); err != nil {
 		return err
 	}
-	
+
 	// Invalidate caches after delete
 	s.invalidateTechnicianCaches()
 	if s.cache != nil {
 		s.cache.Delete(cache.TechnicianDetailCacheKey(id))
 	}
-	
+
 	return nil
 }
 
@@ -220,9 +220,9 @@ func (s *technicianService) Search(query string, page, size int) (*models.Pagina
 
 func (s *technicianService) SearchWithFilters(query, status, techType, city, state string, page, size int) (*models.PaginatedResponse, error) {
 	// Build cache key with all filter parameters
-	cacheKey := fmt.Sprintf("technicians:filter:q=%s:s=%s:t=%s:c=%s:st=%s:p=%d:sz=%d", 
+	cacheKey := fmt.Sprintf("technicians:filter:q=%s:s=%s:t=%s:c=%s:st=%s:p=%d:sz=%d",
 		query, status, techType, city, state, page, size)
-	
+
 	if s.cache != nil {
 		var cachedResult models.PaginatedResponse
 		cacheErr := s.cache.Get(cacheKey, &cachedResult)
@@ -285,11 +285,11 @@ func (s *technicianService) FindByIDs(idsParam string) (*models.PaginatedRespons
 
 	if len(ids) == 0 {
 		return &models.PaginatedResponse{
-			Content:      []models.TechnicianDTO{},
-			TotalPages:   0,
+			Content:       []models.TechnicianDTO{},
+			TotalPages:    0,
 			TotalElements: 0,
-			Size:         0,
-			Page:         0,
+			Size:          0,
+			Page:          0,
 		}, nil
 	}
 
@@ -309,7 +309,7 @@ func (s *technicianService) FindByIDs(idsParam string) (*models.PaginatedRespons
 		TotalPages:    1,
 		TotalElements: int64(len(dtos)),
 		Size:          len(dtos),
-		Page:         0,
+		Page:          0,
 	}, nil
 }
 
@@ -465,25 +465,25 @@ func (s *technicianService) invalidateTechnicianCaches() {
 	if err := s.cache.DeletePattern("technicians:list:*"); err != nil {
 		log.Printf("Failed to clear list cache: %v", err)
 	}
-	
+
 	// Clear search caches
 	if err := s.cache.DeletePattern("technicians:search:*"); err != nil {
 		log.Printf("Failed to clear search cache: %v", err)
 	}
-	
+
 	// Clear filter caches
 	if err := s.cache.DeletePattern("technicians:city:*"); err != nil {
 		log.Printf("Failed to clear city cache: %v", err)
 	}
-	
+
 	if err := s.cache.DeletePattern("technicians:state:*"); err != nil {
 		log.Printf("Failed to clear state cache: %v", err)
 	}
-	
+
 	// Clear cities list cache
 	if err := s.cache.Delete("technicians:cities:list"); err != nil {
 		log.Printf("Failed to clear cities list cache: %v", err)
 	}
-	
+
 	log.Printf("Cache invalidation completed")
 }
