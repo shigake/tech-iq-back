@@ -42,15 +42,15 @@ type GeocodingResult struct {
 
 // GeocodingStats represents statistics from a batch geocoding operation
 type GeocodingStats struct {
-	TotalProcessed   int                `json:"totalProcessed"`
-	SuccessCount     int                `json:"successCount"`
-	FailedCount      int                `json:"failedCount"`
-	SkippedCount     int                `json:"skippedCount"`
-	AlreadyGeocoded  int                `json:"alreadyGeocoded"`
-	Results          []GeocodingResult  `json:"results"`
-	StartTime        time.Time          `json:"startTime"`
-	EndTime          time.Time          `json:"endTime"`
-	Duration         string             `json:"duration"`
+	TotalProcessed  int               `json:"totalProcessed"`
+	SuccessCount    int               `json:"successCount"`
+	FailedCount     int               `json:"failedCount"`
+	SkippedCount    int               `json:"skippedCount"`
+	AlreadyGeocoded int               `json:"alreadyGeocoded"`
+	Results         []GeocodingResult `json:"results"`
+	StartTime       time.Time         `json:"startTime"`
+	EndTime         time.Time         `json:"endTime"`
+	Duration        string            `json:"duration"`
 }
 
 // GeocodingService handles geocoding operations using Nominatim
@@ -278,7 +278,7 @@ func (s *GeocodingService) GeocodeAllTechnicians(forceAll bool) (*GeocodingStats
 			stats.FailedCount++
 		} else if result.Success {
 			stats.SuccessCount++
-			log.Printf("[GEOCODING] Successfully geocoded %s: %s -> (%f, %f)", 
+			log.Printf("[GEOCODING] Successfully geocoded %s: %s -> (%f, %f)",
 				tech.FullName, result.Address, *result.Latitude, *result.Longitude)
 		} else {
 			stats.FailedCount++

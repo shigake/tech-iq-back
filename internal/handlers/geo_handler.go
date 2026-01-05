@@ -13,8 +13,8 @@ import (
 )
 
 type GeoHandler struct {
-	geoService        *services.GeoService
-	geocodingService  *services.GeocodingService
+	geoService       *services.GeoService
+	geocodingService *services.GeocodingService
 }
 
 func NewGeoHandler(geoService *services.GeoService, geocodingService *services.GeocodingService) *GeoHandler {
@@ -592,7 +592,7 @@ func (h *GeoHandler) GeocodeAllTechnicians(c *fiber.Ctx) error {
 			// Log error but don't affect the response
 			return
 		}
-		
+
 		// Refresh geo cache after geocoding completes
 		if stats.SuccessCount > 0 {
 			h.geoService.RefreshGeoCache()
@@ -615,7 +615,7 @@ func (h *GeoHandler) GeocodeAllTechnicians(c *fiber.Ctx) error {
 // @Router /api/geo/geocode/status [get]
 func (h *GeoHandler) GetGeocodingStatus(c *fiber.Ctx) error {
 	isRunning := h.geocodingService.GetGeocodingStatus()
-	
+
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"success":   true,
 		"isRunning": isRunning,
