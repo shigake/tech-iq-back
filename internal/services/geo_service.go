@@ -797,3 +797,50 @@ func (s *GeoService) RefreshGeoCache() error {
 
 	return nil
 }
+
+// GetGeoCacheStats retorna estatísticas do cache de geolocalização
+func (s *GeoService) GetGeoCacheStats() (map[string]interface{}, error) {
+	if s.redisClient == nil {
+		return nil, errors.New("redis client not available")
+	}
+
+	// Quantidade de técnicos no cache
+	count, err := s.redisClient.GetGeoCacheCount()
+	if err != nil {
+		count = 0
+	}
+
+	// Verificar se o cache está marcado como loaded
+	isLoaded := s.redisClient.IsGeoCacheLoaded()
+
+	// Buscar todos do cache para estatísticas
+	technicians, _ := s.redisClient.GetAllTechniciansGeo()
+	
+	// Contar técnicos por status
+	statusCounts := make(map[string]int)
+	withRealLocation := 0
+	withEstimatedLocation := 0
+	
+	for _, tech := range technicians {
+		statusCounts[tech.Status]++
+		if tech.HasRealLocation {
+			withRealLocation++
+		} else {
+			withEstimatedLocation++
+		}
+	}
+
+	// Quantidade de técnicos no banco (para comparar)
+	dbTechnicians, _ := s.technicianRepo.GetAll()
+	dbCount := len(dbTechnicians)
+
+	return map[string]interface{}{
+		"cacheLoaded":           isLoaded,
+		"cachedCount":           count,
+		"databaseCount":         dbCount,
+		"mismatch":              dbCount != int(count),
+		"statusCounts":          statusCounts,
+		"withRealLocation":      withRealLocation,
+		"withEstimatedLocation": withEstimatedLocation,
+	}, nil
+}

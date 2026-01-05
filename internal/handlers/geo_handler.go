@@ -518,6 +518,57 @@ func (h *GeoHandler) UpdateGeoSettings(c *fiber.Ctx) error {
 	})
 }
 
+// RefreshGeoCache godoc
+// @Summary Força recarga do cache de geolocalização
+// @Description Invalida e recarrega o cache de técnicos para o mapa
+// @Tags Geo
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Security BearerAuth
+// @Router /api/geo/cache/refresh [post]
+func (h *GeoHandler) RefreshGeoCache(c *fiber.Ctx) error {
+	if err := h.geoService.RefreshGeoCache(); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"success": false,
+			"error": fiber.Map{
+				"code":    "CACHE_REFRESH_ERROR",
+				"message": err.Error(),
+			},
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"success": true,
+		"message": "Geo cache refreshed successfully",
+	})
+}
+
+// GetGeoCacheStatus godoc
+// @Summary Status do cache de geolocalização
+// @Description Retorna estatísticas do cache de técnicos
+// @Tags Geo
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Security BearerAuth
+// @Router /api/geo/cache/status [get]
+func (h *GeoHandler) GetGeoCacheStatus(c *fiber.Ctx) error {
+	stats, err := h.geoService.GetGeoCacheStats()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"success": false,
+			"error": fiber.Map{
+				"code":    "CACHE_STATUS_ERROR",
+				"message": err.Error(),
+			},
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"success": true,
+		"data":    stats,
+	})
+}
+
 // Helper para obter userID do contexto JWT
 func getUserIDFromContext(c *fiber.Ctx) (uuid.UUID, error) {
 	userIDStr := c.Locals("userId")

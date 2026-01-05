@@ -322,9 +322,11 @@ func main() {
 	geo.Get("/technicians/last", geoHandler.GetTechniciansLastLocations)
 	geo.Get("/technicians/:id/history", geoHandler.GetTechnicianHistory)
 	geo.Get("/tickets/:id/locations", geoHandler.GetTicketLocations)
-	// Admin endpoints (settings)
+	// Admin endpoints (settings and cache)
 	geo.Get("/settings", geoHandler.GetGeoSettings)
 	geo.Put("/settings", middleware.WriteAccess(), geoHandler.UpdateGeoSettings)
+	geo.Post("/cache/refresh", middleware.WriteAccess(), geoHandler.RefreshGeoCache)
+	geo.Get("/cache/status", geoHandler.GetGeoCacheStatus)
 
 	// ==================== Admin Routes ====================
 	admin := protected.Group("/admin")
