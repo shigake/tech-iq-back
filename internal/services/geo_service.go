@@ -653,8 +653,8 @@ func (s *GeoService) loadTechniciansToCache() {
 				data.LastUpdateTime = &ts
 			}
 		} else {
-			// Usar coordenadas da cidade/estado
-			lat, lng, _ := GetCoordinatesForLocation(tech.City, tech.State)
+			// Usar coordenadas da cidade/estado com offset para evitar sobreposição
+			lat, lng, _ := GetCoordinatesForLocationWithOffset(tech.City, tech.State, tech.ID)
 			data.Latitude = lat
 			data.Longitude = lng
 			data.HasRealLocation = false
@@ -771,7 +771,7 @@ func (s *GeoService) loadTechniciansDirectly() ([]cache.TechnicianGeoData, error
 				data.LastUpdateTime = &ts
 			}
 		} else {
-			lat, lng, _ := GetCoordinatesForLocation(tech.City, tech.State)
+			lat, lng, _ := GetCoordinatesForLocationWithOffset(tech.City, tech.State, tech.ID)
 			data.Latitude = lat
 			data.Longitude = lng
 			data.HasRealLocation = false
@@ -815,12 +815,12 @@ func (s *GeoService) GetGeoCacheStats() (map[string]interface{}, error) {
 
 	// Buscar todos do cache para estatísticas
 	technicians, _ := s.redisClient.GetAllTechniciansGeo()
-	
+
 	// Contar técnicos por status
 	statusCounts := make(map[string]int)
 	withRealLocation := 0
 	withEstimatedLocation := 0
-	
+
 	for _, tech := range technicians {
 		statusCounts[tech.Status]++
 		if tech.HasRealLocation {
