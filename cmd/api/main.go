@@ -57,7 +57,7 @@ func main() {
 			Password: cfg.RedisPassword,
 			DB:       cfg.RedisDB,
 		})
-		
+
 		if err := redisClient.Ping(); err != nil {
 			log.Printf("⚠️  Failed to connect to Redis, running without cache: %v", err)
 			redisClient = nil
@@ -126,7 +126,7 @@ func main() {
 	clientHandler := handlers.NewClientHandler(clientRepo)
 	categoryHandler := handlers.NewCategoryHandler(categoryRepo)
 	termsHandler := handlers.NewTermsHandler()
-	exportHandler := handlers.NewExportHandler(clientRepo, technicianRepo, ticketRepo)
+	exportHandler := handlers.NewExportHandler(clientRepo, technicianRepo, ticketRepo, stockRepo, financialRepo, categoryRepo)
 	hierarchyHandler := handlers.NewHierarchyHandler(hierarchyRepo)
 	userHandler := handlers.NewUserHandler(userRepo)
 	activityLogHandler := handlers.NewActivityLogHandler(activityLogService)
@@ -256,6 +256,11 @@ func main() {
 	export.Get("/technicians", exportHandler.ExportTechnicians)
 	export.Get("/tickets", exportHandler.ExportTickets)
 	export.Get("/all", exportHandler.ExportAll)
+	export.Get("/stock/items", exportHandler.ExportStockItems)
+	export.Get("/stock/locations", exportHandler.ExportStockLocations)
+	export.Get("/stock/movements", exportHandler.ExportStockMovements)
+	export.Get("/financial/entries", exportHandler.ExportFinancialEntries)
+	export.Get("/categories", exportHandler.ExportCategories)
 
 	// ==================== Hierarchy Access Control Routes ====================
 	// Hierarchies
@@ -333,7 +338,7 @@ func main() {
 	// ==================== Error Logs Routes ====================
 	// Frontend errors (any authenticated user can submit)
 	protected.Post("/errors/frontend", errorLogHandler.CreateFromFrontend)
-	
+
 	// Admin routes for managing error logs
 	errors := protected.Group("/errors", middleware.AdminOnly())
 	errors.Get("/", errorLogHandler.GetAll)
