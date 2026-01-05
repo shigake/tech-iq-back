@@ -222,9 +222,9 @@ func (h *GeoHandler) GetTechniciansLastLocations(c *fiber.Ctx) error {
 	}
 
 	page, _ := strconv.Atoi(c.Query("page", "1"))
-	limit, _ := strconv.Atoi(c.Query("limit", "50"))
-	if limit > 200 {
-		limit = 200
+	limit, _ := strconv.Atoi(c.Query("limit", "500"))
+	if limit > 1000 {
+		limit = 1000
 	}
 	filter.Limit = limit
 	filter.Offset = (page - 1) * limit
