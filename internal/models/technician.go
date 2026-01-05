@@ -287,6 +287,7 @@ type CreateTechnicianRequest struct {
 	Contact              string            `json:"contact"`
 	Status               string            `json:"status"`
 	Type                 string            `json:"type"`
+	UserID               *string           `json:"userId"`
 	Emails               FlexEmailArray    `json:"emails"`
 	Phones               FlexPhoneArray    `json:"phones"`
 	MinCallValue         string            `json:"minCallValue"`
@@ -335,6 +336,7 @@ func (r *CreateTechnicianRequest) ToModel() *Technician {
 		Contact:              r.Contact,
 		Status:               status,
 		Type:                 techType,
+		UserID:               r.UserID,
 		Emails:               r.Emails.ToEmailArray(),
 		Phones:               r.Phones.ToPhoneArray(),
 		MinCallValue:         r.MinCallValue,
