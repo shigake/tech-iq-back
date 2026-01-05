@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"fmt"
-	
-	"github.com/gofiber/fiber/v2"
+
 	"github.com/go-playground/validator/v10"
+	"github.com/gofiber/fiber/v2"
 	"github.com/shigake/tech-iq-back/internal/models"
 	"github.com/shigake/tech-iq-back/internal/services"
 )
@@ -106,7 +106,7 @@ func (h *AuthHandler) SignUp(c *fiber.Ctx) error {
 // @Router /api/v1/auth/refresh [post]
 func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
 	var token string
-	
+
 	// Try to get refresh token from body first (preferred)
 	var body struct {
 		RefreshToken string `json:"refreshToken"`
@@ -114,7 +114,7 @@ func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
 	if err := c.BodyParser(&body); err == nil && body.RefreshToken != "" {
 		token = body.RefreshToken
 	}
-	
+
 	// Fallback to Authorization header (backwards compatibility)
 	if token == "" {
 		token = c.Get("Authorization")
@@ -123,7 +123,7 @@ func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
 			token = token[7:]
 		}
 	}
-	
+
 	if token == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Missing token",

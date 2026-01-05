@@ -21,6 +21,32 @@ func (r *GeoRepository) CreateLocation(location *models.TechnicianLocation) erro
 	return r.db.Create(location).Error
 }
 
+// HasOpenCheckin verifica se existe um check-in aberto (sem checkout) para o ticket
+func (r *GeoRepository) HasOpenCheckin(ticketID uuid.UUID) (bool, *models.TechnicianLocation, error) {
+	// Buscar último check-in do ticket
+	var checkin models.TechnicianLocation
+	err := r.db.Where("ticket_id = ? AND event_type = ?", ticketID, models.EventTypeCheckin).
+		Order("server_time DESC").
+		First(&checkin).Error
+
+	if err == gorm.ErrRecordNotFound {
+		return false, nil, nil
+	}
+	if err != nil {
+		return false, nil, err
+	}
+
+	// Verificar se existe checkout depois do checkin
+	var checkoutCount int64
+	r.db.Model(&models.TechnicianLocation{}).
+		Where("ticket_id = ? AND event_type = ? AND server_time > ?",
+			ticketID, models.EventTypeCheckout, checkin.ServerTime).
+		Count(&checkoutCount)
+
+	// Se não há checkout, o check-in está aberto
+	return checkoutCount == 0, &checkin, nil
+}
+
 // CreateLocations cria múltiplos registros de localização
 func (r *GeoRepository) CreateLocations(locations []models.TechnicianLocation) error {
 	return r.db.Create(&locations).Error

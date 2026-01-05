@@ -7,24 +7,24 @@ import (
 )
 
 type Config struct {
-	AppEnv      string
-	AppPort     string
-	AppName     string
-	
+	AppEnv  string
+	AppPort string
+	AppName string
+
 	DBHost     string
 	DBPort     string
 	DBUser     string
 	DBPassword string
 	DBName     string
 	DBSSLMode  string
-	
-	JWTSecret           string
-	JWTExpiration       time.Duration
+
+	JWTSecret            string
+	JWTExpiration        time.Duration
 	JWTRefreshExpiration time.Duration
-	
+
 	CorsOrigins string
 	LogLevel    string
-	
+
 	// Redis Cache Configuration
 	RedisHost     string
 	RedisPort     string
@@ -35,24 +35,24 @@ type Config struct {
 
 func Load() *Config {
 	return &Config{
-		AppEnv:      getEnv("APP_ENV", "development"),
-		AppPort:     getEnv("APP_PORT", "8080"),
-		AppName:     getEnv("APP_NAME", "tech-erp-api"),
-		
+		AppEnv:  getEnv("APP_ENV", "development"),
+		AppPort: getEnv("APP_PORT", "8080"),
+		AppName: getEnv("APP_NAME", "tech-erp-api"),
+
 		DBHost:     getEnv("DB_HOST", "localhost"),
 		DBPort:     getEnv("DB_PORT", "5432"),
 		DBUser:     getEnv("DB_USER", "erp"),
 		DBPassword: getEnv("DB_PASSWORD", "erp123"),
 		DBName:     getEnv("DB_NAME", "tech_erp"),
 		DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
-		
-		JWTSecret:           getEnv("JWT_SECRET", "your-super-secret-key"),
-		JWTExpiration:       parseDuration(getEnv("JWT_EXPIRATION", "8h")),
-		JWTRefreshExpiration: parseDuration(getEnv("JWT_REFRESH_EXPIRATION", "168h")),
-		
+
+		JWTSecret:            getEnv("JWT_SECRET", "your-super-secret-key"),
+		JWTExpiration:        parseDuration(getEnv("JWT_EXPIRATION", "15m")),
+		JWTRefreshExpiration: parseDuration(getEnv("JWT_REFRESH_EXPIRATION", "1h")),
+
 		CorsOrigins: getEnv("CORS_ORIGINS", "*"),
 		LogLevel:    getEnv("LOG_LEVEL", "debug"),
-		
+
 		// Redis Cache Configuration
 		RedisHost:     getEnv("REDIS_HOST", "redis-service"),
 		RedisPort:     getEnv("REDIS_PORT", "6379"),

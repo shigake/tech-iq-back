@@ -56,7 +56,7 @@ type SignUpRequest struct {
 type AuthResponse struct {
 	Token        string   `json:"token"`
 	RefreshToken string   `json:"refreshToken,omitempty"`
-	ExpiresIn    int64    `json:"expiresIn"`    // Token expiration in seconds
+	ExpiresIn    int64    `json:"expiresIn"` // Token expiration in seconds
 	FirstName    string   `json:"firstName"`
 	LastName     string   `json:"lastName"`
 	Email        string   `json:"email"`

@@ -54,7 +54,7 @@ func (s *authService) logSecurityEvent(userID, email, action, ipAddress, userAge
 
 func (s *authService) SignIn(req *models.SignInRequest, ipAddress, userAgent string) (*models.AuthResponse, error) {
 	log.Printf("SignIn attempt for email: %s", req.Email)
-	
+
 	user, err := s.userRepo.FindByEmail(req.Email)
 	if err != nil {
 		s.logSecurityEvent("", req.Email, "login_failed", ipAddress, userAgent, "User not found", false)

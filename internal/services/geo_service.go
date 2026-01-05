@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"math"
 	"strings"
@@ -17,15 +18,17 @@ type GeoService struct {
 	geoRepo          *repositories.GeoRepository
 	userRepo         repositories.UserRepository
 	technicianRepo   repositories.TechnicianRepository
+	ticketRepo       repositories.TicketRepository
 	hierarchyService *HierarchyService
 	redisClient      *cache.RedisClient
 }
 
-func NewGeoService(geoRepo *repositories.GeoRepository, userRepo repositories.UserRepository, technicianRepo repositories.TechnicianRepository, hierarchyService *HierarchyService, redisClient *cache.RedisClient) *GeoService {
+func NewGeoService(geoRepo *repositories.GeoRepository, userRepo repositories.UserRepository, technicianRepo repositories.TechnicianRepository, ticketRepo repositories.TicketRepository, hierarchyService *HierarchyService, redisClient *cache.RedisClient) *GeoService {
 	svc := &GeoService{
 		geoRepo:          geoRepo,
 		userRepo:         userRepo,
 		technicianRepo:   technicianRepo,
+		ticketRepo:       ticketRepo,
 		hierarchyService: hierarchyService,
 		redisClient:      redisClient,
 	}
@@ -52,6 +55,30 @@ func (s *GeoService) CreateLocation(technicianID string, req *models.CreateLocat
 		}
 	}
 
+	// Validar check-in: não permitir se já existe um aberto para este ticket
+	if req.EventType == models.EventTypeCheckin && req.TicketID != nil {
+		hasOpen, existingCheckin, err := s.geoRepo.HasOpenCheckin(*req.TicketID)
+		if err != nil {
+			return nil, err
+		}
+		if hasOpen {
+			// Retornar erro informativo
+			return nil, fmt.Errorf("já existe um check-in aberto para este ticket (técnico: %s, desde: %s)",
+				existingCheckin.TechnicianID, existingCheckin.ServerTime.Format("02/01/2006 15:04"))
+		}
+	}
+
+	// Validar checkout: só permitir se existe check-in aberto
+	if req.EventType == models.EventTypeCheckout && req.TicketID != nil {
+		hasOpen, _, err := s.geoRepo.HasOpenCheckin(*req.TicketID)
+		if err != nil {
+			return nil, err
+		}
+		if !hasOpen {
+			return nil, errors.New("não é possível fazer check-out sem um check-in aberto")
+		}
+	}
+
 	// Criar localização
 	location := &models.TechnicianLocation{
 		TechnicianID: technicianID,
@@ -71,6 +98,23 @@ func (s *GeoService) CreateLocation(technicianID string, req *models.CreateLocat
 
 	if err := s.geoRepo.CreateLocation(location); err != nil {
 		return nil, err
+	}
+
+	// Atualizar status do ticket automaticamente
+	if req.TicketID != nil {
+		ticketID := req.TicketID.String()
+		switch req.EventType {
+		case models.EventTypeCheckin:
+			// Check-in: mudar status para EM_ATENDIMENTO
+			if err := s.ticketRepo.UpdateStatus(ticketID, string(models.TicketStatusInProgress)); err != nil {
+				log.Printf("Erro ao atualizar status do ticket %s para EM_ATENDIMENTO: %v", ticketID, err)
+			}
+		case models.EventTypeCheckout:
+			// Check-out: mudar status para PARA_FECHAMENTO
+			if err := s.ticketRepo.UpdateStatus(ticketID, string(models.TicketStatusForClosing)); err != nil {
+				log.Printf("Erro ao atualizar status do ticket %s para PARA_FECHAMENTO: %v", ticketID, err)
+			}
+		}
 	}
 
 	// Atualizar última localização
