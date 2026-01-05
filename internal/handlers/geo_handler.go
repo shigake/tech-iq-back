@@ -2,10 +2,11 @@ package handlers
 
 import (
 	"strconv"
+	"time"
+
 	"github.com/shigake/tech-iq-back/internal/models"
 	"github.com/shigake/tech-iq-back/internal/repositories"
 	"github.com/shigake/tech-iq-back/internal/services"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -187,6 +188,8 @@ func (h *GeoHandler) CreateBatchLocations(c *fiber.Ctx) error {
 // @Param scopeId query string false "Filtrar por escopo"
 // @Param status query string false "Filtrar por status (AVAILABLE, IN_SERVICE)"
 // @Param q query string false "Buscar por nome"
+// @Param state query string false "Filtrar por estado (UF)"
+// @Param city query string false "Filtrar por cidade"
 // @Param updatedSince query string false "Apenas atualizados após (ISO8601)"
 // @Param page query int false "Página" default(1)
 // @Param limit query int false "Limite" default(50)
@@ -212,6 +215,8 @@ func (h *GeoHandler) GetTechniciansLastLocations(c *fiber.Ctx) error {
 	filter := repositories.GeoFilter{
 		Status: c.Query("status"),
 		Query:  c.Query("q"),
+		State:  c.Query("state"),
+		City:   c.Query("city"),
 	}
 
 	if updatedSince := c.Query("updatedSince"); updatedSince != "" {

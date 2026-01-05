@@ -29,10 +29,10 @@ func NewGeoService(geoRepo *repositories.GeoRepository, userRepo repositories.Us
 		hierarchyService: hierarchyService,
 		redisClient:      redisClient,
 	}
-	
+
 	// Carregar cache de técnicos em background
 	go svc.loadTechniciansToCache()
-	
+
 	return svc
 }
 
@@ -163,6 +163,14 @@ func (s *GeoService) GetLastLocations(userID uuid.UUID, filter repositories.GeoF
 		if filter.Status != "" && tech.Status != filter.Status {
 			continue
 		}
+		// Filtro por estado (UF)
+		if filter.State != "" && !strings.EqualFold(tech.State, filter.State) {
+			continue
+		}
+		// Filtro por cidade
+		if filter.City != "" && !containsIgnoreCase(tech.City, filter.City) {
+			continue
+		}
 		// Filtro por busca (nome)
 		if filter.Query != "" {
 			// Busca case-insensitive no nome
@@ -197,6 +205,8 @@ func (s *GeoService) GetLastLocations(userID uuid.UUID, filter repositories.GeoF
 		response := models.TechnicianLocationResponse{
 			TechnicianID: tech.TechnicianID,
 			Name:         tech.Name,
+			City:         tech.City,
+			State:        tech.State,
 			Status:       tech.Status,
 		}
 
@@ -334,9 +344,9 @@ func (s *GeoService) GetGeoSettings() (*models.GeoSettingsResponse, error) {
 
 	response := &models.GeoSettingsResponse{
 		Global: models.GeoSettingsInfo{
-			RetentionDays:        90,
-			HeartbeatIntervalMin: 5,
-			HeartbeatEnabled:     false,
+			RetentionDays:          90,
+			HeartbeatIntervalMin:   5,
+			HeartbeatEnabled:       false,
 			RequireLocationCheckin: false,
 		},
 		Scopes: make([]models.ScopeGeoSettings, 0),
@@ -345,17 +355,17 @@ func (s *GeoService) GetGeoSettings() (*models.GeoSettingsResponse, error) {
 	for _, s := range settings {
 		if s.ScopeID == nil {
 			response.Global = models.GeoSettingsInfo{
-				RetentionDays:        s.RetentionDays,
-				HeartbeatIntervalMin: s.HeartbeatIntervalMin,
-				HeartbeatEnabled:     s.HeartbeatEnabled,
+				RetentionDays:          s.RetentionDays,
+				HeartbeatIntervalMin:   s.HeartbeatIntervalMin,
+				HeartbeatEnabled:       s.HeartbeatEnabled,
 				RequireLocationCheckin: s.RequireLocationCheckin,
 			}
 		} else {
 			response.Scopes = append(response.Scopes, models.ScopeGeoSettings{
-				ScopeID:              *s.ScopeID,
-				RetentionDays:        s.RetentionDays,
-				HeartbeatIntervalMin: s.HeartbeatIntervalMin,
-				HeartbeatEnabled:     s.HeartbeatEnabled,
+				ScopeID:                *s.ScopeID,
+				RetentionDays:          s.RetentionDays,
+				HeartbeatIntervalMin:   s.HeartbeatIntervalMin,
+				HeartbeatEnabled:       s.HeartbeatEnabled,
 				RequireLocationCheckin: s.RequireLocationCheckin,
 			})
 		}
@@ -445,7 +455,7 @@ func (s *GeoService) updateLastLocation(location *models.TechnicianLocation) {
 	}
 
 	s.geoRepo.UpsertLastLocation(lastLoc)
-	
+
 	// Atualizar também no Redis cache
 	go s.updateTechnicianInCache(location.TechnicianID)
 }
@@ -473,35 +483,35 @@ func (s *GeoService) loadTechniciansToCache() {
 		log.Println("⚠️ Redis client not available, skipping geo cache load")
 		return
 	}
-	
+
 	// Verificar se já foi carregado recentemente
 	if s.redisClient.IsGeoCacheLoaded() {
 		count, _ := s.redisClient.GetGeoCacheCount()
 		log.Printf("✅ Geo cache already loaded with %d technicians", count)
 		return
 	}
-	
+
 	log.Println("🔄 Loading all technicians to geo cache...")
-	
+
 	// Buscar todos os técnicos ativos
 	technicians, err := s.technicianRepo.GetAll()
 	if err != nil {
 		log.Printf("❌ Error loading technicians: %v", err)
 		return
 	}
-	
+
 	// Buscar últimas localizações conhecidas
 	lastLocations, _, _ := s.geoRepo.GetAllLastLocations(repositories.GeoFilter{Limit: 10000})
-	
+
 	// Criar mapa de últimas localizações
 	locMap := make(map[string]models.TechnicianLastLocation)
 	for _, loc := range lastLocations {
 		locMap[loc.TechnicianID] = loc
 	}
-	
+
 	// Preparar dados para cache
 	geoData := make([]cache.TechnicianGeoData, 0, len(technicians))
-	
+
 	for _, tech := range technicians {
 		data := cache.TechnicianGeoData{
 			TechnicianID: tech.ID,
@@ -510,7 +520,7 @@ func (s *GeoService) loadTechniciansToCache() {
 			State:        tech.State,
 			Status:       tech.Status,
 		}
-		
+
 		// Verificar se tem localização real
 		if lastLoc, ok := locMap[tech.ID]; ok {
 			data.Latitude = lastLoc.Latitude
@@ -529,16 +539,16 @@ func (s *GeoService) loadTechniciansToCache() {
 			data.Longitude = lng
 			data.HasRealLocation = false
 		}
-		
+
 		geoData = append(geoData, data)
 	}
-	
+
 	// Salvar no Redis
 	if err := s.redisClient.SetAllTechniciansGeo(geoData); err != nil {
 		log.Printf("❌ Error saving technicians to cache: %v", err)
 		return
 	}
-	
+
 	log.Printf("✅ Loaded %d technicians to geo cache", len(geoData))
 }
 
@@ -547,19 +557,19 @@ func (s *GeoService) updateTechnicianInCache(technicianID string) {
 	if s.redisClient == nil {
 		return
 	}
-	
+
 	// Buscar técnico
 	tech, err := s.technicianRepo.FindByID(technicianID)
 	if err != nil || tech == nil {
 		return
 	}
-	
+
 	// Buscar última localização
 	lastLoc, err := s.geoRepo.GetLastLocation(technicianID)
 	if err != nil {
 		return
 	}
-	
+
 	data := cache.TechnicianGeoData{
 		TechnicianID:    tech.ID,
 		Name:            tech.FullName,
@@ -572,12 +582,12 @@ func (s *GeoService) updateTechnicianInCache(technicianID string) {
 		EventType:       string(lastLoc.EventType),
 		HasRealLocation: true,
 	}
-	
+
 	if !lastLoc.ServerTime.IsZero() {
 		ts := lastLoc.ServerTime.Unix()
 		data.LastUpdateTime = &ts
 	}
-	
+
 	s.redisClient.UpdateTechnicianLocation(data)
 }
 
@@ -587,7 +597,7 @@ func (s *GeoService) GetAllTechniciansFromCache() ([]cache.TechnicianGeoData, er
 	if s.redisClient == nil {
 		return s.loadTechniciansDirectly()
 	}
-	
+
 	// Tentar buscar do cache
 	technicians, err := s.redisClient.GetAllTechniciansGeo()
 	if err != nil || len(technicians) == 0 {
@@ -596,7 +606,7 @@ func (s *GeoService) GetAllTechniciansFromCache() ([]cache.TechnicianGeoData, er
 		go s.loadTechniciansToCache()
 		return s.loadTechniciansDirectly()
 	}
-	
+
 	return technicians, nil
 }
 
@@ -606,15 +616,15 @@ func (s *GeoService) loadTechniciansDirectly() ([]cache.TechnicianGeoData, error
 	if err != nil {
 		return nil, err
 	}
-	
+
 	lastLocations, _, _ := s.geoRepo.GetAllLastLocations(repositories.GeoFilter{Limit: 10000})
 	locMap := make(map[string]models.TechnicianLastLocation)
 	for _, loc := range lastLocations {
 		locMap[loc.TechnicianID] = loc
 	}
-	
+
 	geoData := make([]cache.TechnicianGeoData, 0, len(technicians))
-	
+
 	for _, tech := range technicians {
 		data := cache.TechnicianGeoData{
 			TechnicianID: tech.ID,
@@ -623,7 +633,7 @@ func (s *GeoService) loadTechniciansDirectly() ([]cache.TechnicianGeoData, error
 			State:        tech.State,
 			Status:       tech.Status,
 		}
-		
+
 		if lastLoc, ok := locMap[tech.ID]; ok {
 			data.Latitude = lastLoc.Latitude
 			data.Longitude = lastLoc.Longitude
@@ -640,10 +650,10 @@ func (s *GeoService) loadTechniciansDirectly() ([]cache.TechnicianGeoData, error
 			data.Longitude = lng
 			data.HasRealLocation = false
 		}
-		
+
 		geoData = append(geoData, data)
 	}
-	
+
 	return geoData, nil
 }
 
@@ -652,12 +662,12 @@ func (s *GeoService) RefreshGeoCache() error {
 	if s.redisClient == nil {
 		return errors.New("redis client not available")
 	}
-	
+
 	// Deletar flag de cache carregado para forçar recarga
 	s.redisClient.Delete(cache.GeoCacheLoadedKey)
-	
+
 	// Recarregar
 	s.loadTechniciansToCache()
-	
+
 	return nil
 }

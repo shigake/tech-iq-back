@@ -39,8 +39,29 @@ func Connect(cfg *config.Config) (*gorm.DB, error) {
 	return db, nil
 }
 
+// dropOldConstraints removes old unique constraints that block empty values
+// PostgreSQL allows multiple NULLs in UNIQUE columns, but not multiple empty strings
+// We use partial indexes (WHERE field <> '') in the model to allow empty values
+func dropOldConstraints(db *gorm.DB) {
+	constraints := []string{
+		"ALTER TABLE clients DROP CONSTRAINT IF EXISTS clients_cnpj_key",
+		"ALTER TABLE clients DROP CONSTRAINT IF EXISTS clients_cpf_key",
+		"ALTER TABLE technicians DROP CONSTRAINT IF EXISTS technicians_cpf_key",
+	}
+	
+	for _, sql := range constraints {
+		if err := db.Exec(sql).Error; err != nil {
+			log.Printf("⚠️ Could not drop constraint: %v", err)
+		}
+	}
+}
+
 func Migrate(db *gorm.DB) error {
 	log.Println("🔄 Running database migrations...")
+
+	// Drop old unique constraints that don't allow empty values
+	// These will be replaced by partial unique indexes (where field <> '')
+	dropOldConstraints(db)
 
 	err := db.AutoMigrate(
 		&models.User{},

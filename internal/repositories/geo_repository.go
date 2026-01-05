@@ -204,9 +204,9 @@ func (r *GeoRepository) GetGeoSettings(scopeID *uuid.UUID) (*models.GeoSettings,
 	if err == gorm.ErrRecordNotFound {
 		// Retornar configurações padrão
 		return &models.GeoSettings{
-			RetentionDays:         90,
-			HeartbeatIntervalMin:  5,
-			HeartbeatEnabled:      false,
+			RetentionDays:          90,
+			HeartbeatIntervalMin:   5,
+			HeartbeatEnabled:       false,
 			RequireLocationCheckin: false,
 		}, nil
 	}
@@ -247,6 +247,8 @@ type GeoFilter struct {
 	ScopeIDs     []uuid.UUID
 	Status       string
 	Query        string
+	State        string // Filtro por estado (UF)
+	City         string // Filtro por cidade
 	UpdatedSince *time.Time
 	Limit        int
 	Offset       int

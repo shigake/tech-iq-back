@@ -59,9 +59,9 @@ type TechnicianLastLocation struct {
 	TechnicianID string `json:"technicianId" gorm:"type:varchar(36);primary_key"`
 
 	// Última localização
-	Latitude   float64  `json:"latitude" gorm:"type:double precision;not null"`
-	Longitude  float64  `json:"longitude" gorm:"type:double precision;not null"`
-	AccuracyM  *float64 `json:"accuracyM,omitempty" gorm:"type:double precision"`
+	Latitude  float64  `json:"latitude" gorm:"type:double precision;not null"`
+	Longitude float64  `json:"longitude" gorm:"type:double precision;not null"`
+	AccuracyM *float64 `json:"accuracyM,omitempty" gorm:"type:double precision"`
 
 	// Contexto
 	EventType      EventType  `json:"eventType" gorm:"type:varchar(20);not null"`
@@ -87,9 +87,9 @@ type GeoSettings struct {
 	ScopeID *uuid.UUID `json:"scopeId,omitempty" gorm:"type:uuid;uniqueIndex"`
 
 	// Configurações
-	RetentionDays         int  `json:"retentionDays" gorm:"not null;default:90"`
-	HeartbeatIntervalMin  int  `json:"heartbeatIntervalMin" gorm:"not null;default:5"`
-	HeartbeatEnabled      bool `json:"heartbeatEnabled" gorm:"not null;default:false"`
+	RetentionDays          int  `json:"retentionDays" gorm:"not null;default:90"`
+	HeartbeatIntervalMin   int  `json:"heartbeatIntervalMin" gorm:"not null;default:5"`
+	HeartbeatEnabled       bool `json:"heartbeatEnabled" gorm:"not null;default:false"`
 	RequireLocationCheckin bool `json:"requireLocationCheckin" gorm:"not null;default:false"`
 
 	// Audit
@@ -144,13 +144,15 @@ type BatchLocationResult struct {
 }
 
 type TechnicianLocationResponse struct {
-	TechnicianID        string     `json:"technicianId"`
-	TicketID            *uuid.UUID `json:"ticketId,omitempty"`
-	Name                string     `json:"name"`
-	AvatarURL           *string    `json:"avatarUrl,omitempty"`
-	Status              string     `json:"status"`
-	CurrentTicketID     *uuid.UUID `json:"currentTicketId,omitempty"`
-	CurrentTicketNumber *string    `json:"currentTicketNumber,omitempty"`
+	TechnicianID        string        `json:"technicianId"`
+	TicketID            *uuid.UUID    `json:"ticketId,omitempty"`
+	Name                string        `json:"name"`
+	City                string        `json:"city,omitempty"`
+	State               string        `json:"state,omitempty"`
+	AvatarURL           *string       `json:"avatarUrl,omitempty"`
+	Status              string        `json:"status"`
+	CurrentTicketID     *uuid.UUID    `json:"currentTicketId,omitempty"`
+	CurrentTicketNumber *string       `json:"currentTicketNumber,omitempty"`
 	Location            *LocationInfo `json:"location,omitempty"`
 }
 
@@ -164,10 +166,10 @@ type LocationInfo struct {
 }
 
 type TechnicianHistoryResponse struct {
-	TechnicianID   string              `json:"technicianId"`
-	TechnicianName string              `json:"technicianName"`
-	Period         PeriodInfo          `json:"period"`
-	Summary        HistorySummary      `json:"summary"`
+	TechnicianID   string                `json:"technicianId"`
+	TechnicianName string                `json:"technicianName"`
+	Period         PeriodInfo            `json:"period"`
+	Summary        HistorySummary        `json:"summary"`
 	Locations      []LocationHistoryItem `json:"locations"`
 }
 
@@ -230,30 +232,30 @@ type DistanceInfo struct {
 }
 
 type GeoSettingsResponse struct {
-	Global GeoSettingsInfo   `json:"global"`
+	Global GeoSettingsInfo    `json:"global"`
 	Scopes []ScopeGeoSettings `json:"scopes,omitempty"`
 }
 
 type GeoSettingsInfo struct {
-	RetentionDays         int  `json:"retentionDays"`
-	HeartbeatIntervalMin  int  `json:"heartbeatIntervalMin"`
-	HeartbeatEnabled      bool `json:"heartbeatEnabled"`
+	RetentionDays          int  `json:"retentionDays"`
+	HeartbeatIntervalMin   int  `json:"heartbeatIntervalMin"`
+	HeartbeatEnabled       bool `json:"heartbeatEnabled"`
 	RequireLocationCheckin bool `json:"requireLocationCheckin"`
 }
 
 type ScopeGeoSettings struct {
-	ScopeID               uuid.UUID `json:"scopeId"`
-	ScopeName             string    `json:"scopeName"`
-	RetentionDays         int       `json:"retentionDays"`
-	HeartbeatIntervalMin  int       `json:"heartbeatIntervalMin"`
-	HeartbeatEnabled      bool      `json:"heartbeatEnabled"`
+	ScopeID                uuid.UUID `json:"scopeId"`
+	ScopeName              string    `json:"scopeName"`
+	RetentionDays          int       `json:"retentionDays"`
+	HeartbeatIntervalMin   int       `json:"heartbeatIntervalMin"`
+	HeartbeatEnabled       bool      `json:"heartbeatEnabled"`
 	RequireLocationCheckin bool      `json:"requireLocationCheckin"`
 }
 
 type UpdateGeoSettingsRequest struct {
-	ScopeID               *uuid.UUID `json:"scopeId"`
-	RetentionDays         *int       `json:"retentionDays"`
-	HeartbeatIntervalMin  *int       `json:"heartbeatIntervalMin"`
-	HeartbeatEnabled      *bool      `json:"heartbeatEnabled"`
+	ScopeID                *uuid.UUID `json:"scopeId"`
+	RetentionDays          *int       `json:"retentionDays"`
+	HeartbeatIntervalMin   *int       `json:"heartbeatIntervalMin"`
+	HeartbeatEnabled       *bool      `json:"heartbeatEnabled"`
 	RequireLocationCheckin *bool      `json:"requireLocationCheckin"`
 }
