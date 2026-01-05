@@ -202,6 +202,9 @@ type TechnicianLocationResponse struct {
 	Name                string        `json:"name"`
 	City                string        `json:"city,omitempty"`
 	State               string        `json:"state,omitempty"`
+	Street              string        `json:"street,omitempty"`
+	Number              string        `json:"number,omitempty"`
+	Neighborhood        string        `json:"neighborhood,omitempty"`
 	AvatarURL           *string       `json:"avatarUrl,omitempty"`
 	Status              string        `json:"status"`
 	CurrentTicketID     *uuid.UUID    `json:"currentTicketId,omitempty"`
@@ -251,12 +254,12 @@ type LocationHistoryItem struct {
 }
 
 type TicketLocationsResponse struct {
-	TicketID           uuid.UUID          `json:"ticketId"`
-	TicketNumber       string             `json:"ticketNumber"`
-	Checkin            *CheckinoutInfo    `json:"checkin,omitempty"`
-	Checkout           *CheckinoutInfo    `json:"checkout,omitempty"`
-	Heartbeats         []HeartbeatInfo    `json:"heartbeats,omitempty"`
-	DistanceFromClient *DistanceInfo      `json:"distanceFromClient,omitempty"`
+	TicketID           uuid.UUID           `json:"ticketId"`
+	TicketNumber       string              `json:"ticketNumber"`
+	Checkin            *CheckinoutInfo     `json:"checkin,omitempty"`
+	Checkout           *CheckinoutInfo     `json:"checkout,omitempty"`
+	Heartbeats         []HeartbeatInfo     `json:"heartbeats,omitempty"`
+	DistanceFromClient *DistanceInfo       `json:"distanceFromClient,omitempty"`
 	Sessions           []AttendanceSession `json:"sessions,omitempty"`
 }
 

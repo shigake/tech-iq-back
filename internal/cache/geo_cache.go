@@ -11,10 +11,10 @@ const (
 	// Key para armazenar todos os técnicos com localização
 	// Estrutura: Hash com technicianId -> TechnicianGeoData (JSON)
 	AllTechniciansGeoKey = "geo:technicians:all"
-	
+
 	// Key para armazenar última localização de um técnico específico
 	TechnicianLastLocationKeyPrefix = "geo:technician:last:"
-	
+
 	// Key para sinalizar que o cache foi carregado
 	GeoCacheLoadedKey = "geo:cache:loaded"
 )
@@ -23,27 +23,30 @@ const (
 const (
 	// TTL para o cache geral de todos os técnicos
 	AllTechniciansGeoTTL = 30 * time.Minute
-	
+
 	// TTL para última localização individual (mais curto para dados em tempo real)
 	TechnicianLastLocationTTL = 5 * time.Minute
-	
+
 	// TTL para flag de cache carregado
 	GeoCacheLoadedTTL = 24 * time.Hour
 )
 
 // TechnicianGeoData representa os dados de um técnico para o mapa
 type TechnicianGeoData struct {
-	TechnicianID   string   `json:"technicianId"`
-	Name           string   `json:"name"`
-	City           string   `json:"city"`
-	State          string   `json:"state"`
-	Status         string   `json:"status"`
-	Latitude       float64  `json:"latitude"`
-	Longitude      float64  `json:"longitude"`
-	AccuracyM      *float64 `json:"accuracyM,omitempty"`
-	EventType      string   `json:"eventType,omitempty"`
-	LastUpdateTime *int64   `json:"lastUpdateTime,omitempty"` // Unix timestamp
-	HasRealLocation bool    `json:"hasRealLocation"` // true se tem localização real do app
+	TechnicianID    string   `json:"technicianId"`
+	Name            string   `json:"name"`
+	City            string   `json:"city"`
+	State           string   `json:"state"`
+	Street          string   `json:"street,omitempty"`
+	Number          string   `json:"number,omitempty"`
+	Neighborhood    string   `json:"neighborhood,omitempty"`
+	Status          string   `json:"status"`
+	Latitude        float64  `json:"latitude"`
+	Longitude       float64  `json:"longitude"`
+	AccuracyM       *float64 `json:"accuracyM,omitempty"`
+	EventType       string   `json:"eventType,omitempty"`
+	LastUpdateTime  *int64   `json:"lastUpdateTime,omitempty"` // Unix timestamp
+	HasRealLocation bool     `json:"hasRealLocation"`          // true se tem localização real do app
 }
 
 // TechnicianLastLocationKey retorna a chave Redis para última localização de um técnico
@@ -58,13 +61,13 @@ func (r *RedisClient) SetAllTechniciansGeo(technicians []TechnicianGeoData) erro
 	if len(technicians) == 0 {
 		return nil
 	}
-	
+
 	// Usar pipeline para performance
 	pipe := r.client.Pipeline()
-	
+
 	// Deletar hash anterior
 	pipe.Del(r.ctx, AllTechniciansGeoKey)
-	
+
 	// Adicionar cada técnico como field no hash
 	for _, tech := range technicians {
 		jsonValue, err := json.Marshal(tech)
@@ -73,13 +76,13 @@ func (r *RedisClient) SetAllTechniciansGeo(technicians []TechnicianGeoData) erro
 		}
 		pipe.HSet(r.ctx, AllTechniciansGeoKey, tech.TechnicianID, jsonValue)
 	}
-	
+
 	// Definir TTL
 	pipe.Expire(r.ctx, AllTechniciansGeoKey, AllTechniciansGeoTTL)
-	
+
 	// Marcar cache como carregado
 	pipe.Set(r.ctx, GeoCacheLoadedKey, "1", GeoCacheLoadedTTL)
-	
+
 	_, err := pipe.Exec(r.ctx)
 	return err
 }
@@ -90,7 +93,7 @@ func (r *RedisClient) GetAllTechniciansGeo() ([]TechnicianGeoData, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	technicians := make([]TechnicianGeoData, 0, len(result))
 	for _, jsonValue := range result {
 		var tech TechnicianGeoData
@@ -99,7 +102,7 @@ func (r *RedisClient) GetAllTechniciansGeo() ([]TechnicianGeoData, error) {
 		}
 		technicians = append(technicians, tech)
 	}
-	
+
 	return technicians, nil
 }
 
@@ -109,7 +112,7 @@ func (r *RedisClient) UpdateTechnicianLocation(tech TechnicianGeoData) error {
 	if err != nil {
 		return err
 	}
-	
+
 	// Atualizar no hash geral
 	return r.client.HSet(r.ctx, AllTechniciansGeoKey, tech.TechnicianID, jsonValue).Err()
 }
@@ -120,12 +123,12 @@ func (r *RedisClient) GetTechnicianGeo(technicianID string) (*TechnicianGeoData,
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var tech TechnicianGeoData
 	if err := json.Unmarshal([]byte(jsonValue), &tech); err != nil {
 		return nil, err
 	}
-	
+
 	return &tech, nil
 }
 

@@ -279,6 +279,9 @@ func (s *GeoService) GetLastLocations(userID uuid.UUID, filter repositories.GeoF
 			Name:         tech.Name,
 			City:         tech.City,
 			State:        tech.State,
+			Street:       tech.Street,
+			Number:       tech.Number,
+			Neighborhood: tech.Neighborhood,
 			Status:       tech.Status,
 		}
 
@@ -632,6 +635,9 @@ func (s *GeoService) loadTechniciansToCache() {
 			Name:         tech.FullName,
 			City:         tech.City,
 			State:        tech.State,
+			Street:       tech.Street,
+			Number:       tech.Number,
+			Neighborhood: tech.Neighborhood,
 			Status:       tech.Status,
 		}
 
@@ -689,6 +695,9 @@ func (s *GeoService) updateTechnicianInCache(technicianID string) {
 		Name:            tech.FullName,
 		City:            tech.City,
 		State:           tech.State,
+		Street:          tech.Street,
+		Number:          tech.Number,
+		Neighborhood:    tech.Neighborhood,
 		Status:          tech.Status,
 		Latitude:        lastLoc.Latitude,
 		Longitude:       lastLoc.Longitude,
@@ -745,6 +754,9 @@ func (s *GeoService) loadTechniciansDirectly() ([]cache.TechnicianGeoData, error
 			Name:         tech.FullName,
 			City:         tech.City,
 			State:        tech.State,
+			Street:       tech.Street,
+			Number:       tech.Number,
+			Neighborhood: tech.Neighborhood,
 			Status:       tech.Status,
 		}
 
