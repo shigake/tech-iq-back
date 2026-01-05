@@ -79,6 +79,12 @@ func (s *GeoService) CreateLocation(technicianID string, req *models.CreateLocat
 		}
 	}
 
+	// Converter DeviceTime de FlexibleTime para *time.Time
+	var deviceTime *time.Time
+	if req.DeviceTime != nil {
+		deviceTime = req.DeviceTime.ToTime()
+	}
+
 	// Criar localização
 	location := &models.TechnicianLocation{
 		TechnicianID: technicianID,
@@ -91,7 +97,7 @@ func (s *GeoService) CreateLocation(technicianID string, req *models.CreateLocat
 		SpeedMps:     req.SpeedMps,
 		HeadingDeg:   req.HeadingDeg,
 		Provider:     req.Provider,
-		DeviceTime:   req.DeviceTime,
+		DeviceTime:   deviceTime,
 		ServerTime:   time.Now().UTC(),
 		IsMocked:     req.IsMocked,
 	}
@@ -132,9 +138,15 @@ func (s *GeoService) CreateBatchLocations(technicianID string, req *models.Batch
 			LocalID: item.LocalID,
 		}
 
-		// Verificar duplicata
+		// Converter DeviceTime de FlexibleTime para *time.Time
+		var deviceTime *time.Time
 		if item.DeviceTime != nil {
-			isDup, err := s.geoRepo.CheckDuplicate(technicianID, item.TicketID, item.EventType, *item.DeviceTime)
+			deviceTime = item.DeviceTime.ToTime()
+		}
+
+		// Verificar duplicata
+		if deviceTime != nil {
+			isDup, err := s.geoRepo.CheckDuplicate(technicianID, item.TicketID, item.EventType, *deviceTime)
 			if err != nil {
 				result.Status = "error"
 				result.Error = err.Error()
@@ -160,7 +172,7 @@ func (s *GeoService) CreateBatchLocations(technicianID string, req *models.Batch
 			SpeedMps:      item.SpeedMps,
 			HeadingDeg:    item.HeadingDeg,
 			Provider:      item.Provider,
-			DeviceTime:    item.DeviceTime,
+			DeviceTime:    deviceTime,
 			ServerTime:    time.Now().UTC(),
 			IsMocked:      item.IsMocked,
 			IsOfflineSync: true,

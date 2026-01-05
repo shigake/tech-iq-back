@@ -1,10 +1,63 @@
 package models
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+// FlexibleTime é um tipo de tempo que aceita múltiplos formatos de data
+type FlexibleTime struct {
+	time.Time
+}
+
+// UnmarshalJSON implementa json.Unmarshaler para FlexibleTime
+func (ft *FlexibleTime) UnmarshalJSON(data []byte) error {
+	// Remove as aspas
+	s := string(data)
+	if s == "null" || s == `""` {
+		return nil
+	}
+	s = s[1 : len(s)-1] // Remove quotes
+
+	// Tenta múltiplos formatos
+	formats := []string{
+		time.RFC3339Nano,                // 2006-01-02T15:04:05.999999999Z07:00
+		time.RFC3339,                    // 2006-01-02T15:04:05Z07:00
+		"2006-01-02T15:04:05.999999999", // Sem timezone (assume UTC)
+		"2006-01-02T15:04:05.999",       // Com milissegundos
+		"2006-01-02T15:04:05",           // Sem milissegundos
+		"2006-01-02 15:04:05",           // Espaço ao invés de T
+	}
+
+	var parseErr error
+	for _, format := range formats {
+		t, err := time.Parse(format, s)
+		if err == nil {
+			ft.Time = t
+			return nil
+		}
+		parseErr = err
+	}
+	return parseErr
+}
+
+// MarshalJSON implementa json.Marshaler para FlexibleTime
+func (ft FlexibleTime) MarshalJSON() ([]byte, error) {
+	if ft.Time.IsZero() {
+		return []byte("null"), nil
+	}
+	return json.Marshal(ft.Time.Format(time.RFC3339Nano))
+}
+
+// ToTime retorna o time.Time interno
+func (ft *FlexibleTime) ToTime() *time.Time {
+	if ft == nil || ft.Time.IsZero() {
+		return nil
+	}
+	return &ft.Time
+}
 
 // EventType representa o tipo de evento de localização
 type EventType string
@@ -104,17 +157,17 @@ func (GeoSettings) TableName() string {
 // DTOs para requests/responses
 
 type CreateLocationRequest struct {
-	TicketID   *uuid.UUID `json:"ticketId"`
-	EventType  EventType  `json:"eventType" validate:"required,oneof=CHECKIN CHECKOUT HEARTBEAT"`
-	Latitude   float64    `json:"latitude" validate:"required,min=-90,max=90"`
-	Longitude  float64    `json:"longitude" validate:"required,min=-180,max=180"`
-	AccuracyM  *float64   `json:"accuracyM"`
-	AltitudeM  *float64   `json:"altitudeM"`
-	SpeedMps   *float64   `json:"speedMps"`
-	HeadingDeg *float64   `json:"headingDeg"`
-	Provider   *string    `json:"provider"`
-	DeviceTime *time.Time `json:"deviceTime"`
-	IsMocked   bool       `json:"isMocked"`
+	TicketID   *uuid.UUID    `json:"ticketId"`
+	EventType  EventType     `json:"eventType" validate:"required,oneof=CHECKIN CHECKOUT HEARTBEAT"`
+	Latitude   float64       `json:"latitude" validate:"required,min=-90,max=90"`
+	Longitude  float64       `json:"longitude" validate:"required,min=-180,max=180"`
+	AccuracyM  *float64      `json:"accuracyM"`
+	AltitudeM  *float64      `json:"altitudeM"`
+	SpeedMps   *float64      `json:"speedMps"`
+	HeadingDeg *float64      `json:"headingDeg"`
+	Provider   *string       `json:"provider"`
+	DeviceTime *FlexibleTime `json:"deviceTime"`
+	IsMocked   bool          `json:"isMocked"`
 }
 
 type BatchLocationRequest struct {
@@ -122,18 +175,18 @@ type BatchLocationRequest struct {
 }
 
 type BatchLocationItem struct {
-	LocalID    string     `json:"localId" validate:"required"`
-	TicketID   *uuid.UUID `json:"ticketId"`
-	EventType  EventType  `json:"eventType" validate:"required,oneof=CHECKIN CHECKOUT HEARTBEAT"`
-	Latitude   float64    `json:"latitude" validate:"required,min=-90,max=90"`
-	Longitude  float64    `json:"longitude" validate:"required,min=-180,max=180"`
-	AccuracyM  *float64   `json:"accuracyM"`
-	AltitudeM  *float64   `json:"altitudeM"`
-	SpeedMps   *float64   `json:"speedMps"`
-	HeadingDeg *float64   `json:"headingDeg"`
-	Provider   *string    `json:"provider"`
-	DeviceTime *time.Time `json:"deviceTime"`
-	IsMocked   bool       `json:"isMocked"`
+	LocalID    string        `json:"localId" validate:"required"`
+	TicketID   *uuid.UUID    `json:"ticketId"`
+	EventType  EventType     `json:"eventType" validate:"required,oneof=CHECKIN CHECKOUT HEARTBEAT"`
+	Latitude   float64       `json:"latitude" validate:"required,min=-90,max=90"`
+	Longitude  float64       `json:"longitude" validate:"required,min=-180,max=180"`
+	AccuracyM  *float64      `json:"accuracyM"`
+	AltitudeM  *float64      `json:"altitudeM"`
+	SpeedMps   *float64      `json:"speedMps"`
+	HeadingDeg *float64      `json:"headingDeg"`
+	Provider   *string       `json:"provider"`
+	DeviceTime *FlexibleTime `json:"deviceTime"`
+	IsMocked   bool          `json:"isMocked"`
 }
 
 type BatchLocationResult struct {
