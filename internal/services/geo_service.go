@@ -40,7 +40,15 @@ func NewGeoService(geoRepo *repositories.GeoRepository, userRepo repositories.Us
 }
 
 // CreateLocation cria um registro de localização
-func (s *GeoService) CreateLocation(technicianID string, req *models.CreateLocationRequest) (*models.TechnicianLocation, error) {
+// userID é o ID do usuário logado (do JWT), não do técnico
+func (s *GeoService) CreateLocation(userID string, req *models.CreateLocationRequest) (*models.TechnicianLocation, error) {
+	// Buscar técnico pelo userID
+	technician, err := s.technicianRepo.FindByUserID(userID)
+	if err != nil || technician == nil {
+		return nil, errors.New("usuário não está vinculado a um técnico. Cadastre um técnico com este usuário primeiro")
+	}
+	technicianID := technician.ID
+
 	// Validar coordenadas
 	if err := s.validateCoordinates(req.Latitude, req.Longitude); err != nil {
 		return nil, err
@@ -130,7 +138,15 @@ func (s *GeoService) CreateLocation(technicianID string, req *models.CreateLocat
 }
 
 // CreateBatchLocations cria múltiplas localizações (sync offline)
-func (s *GeoService) CreateBatchLocations(technicianID string, req *models.BatchLocationRequest) ([]models.BatchLocationResult, error) {
+// userID é o ID do usuário logado (do JWT), não do técnico
+func (s *GeoService) CreateBatchLocations(userID string, req *models.BatchLocationRequest) ([]models.BatchLocationResult, error) {
+	// Buscar técnico pelo userID
+	technician, err := s.technicianRepo.FindByUserID(userID)
+	if err != nil || technician == nil {
+		return nil, errors.New("usuário não está vinculado a um técnico. Cadastre um técnico com este usuário primeiro")
+	}
+	technicianID := technician.ID
+
 	results := make([]models.BatchLocationResult, 0, len(req.Locations))
 
 	for _, item := range req.Locations {
