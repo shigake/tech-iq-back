@@ -1,6 +1,8 @@
 package repositories
 
 import (
+	"strings"
+
 	"github.com/shigake/tech-iq-back/internal/models"
 	"gorm.io/gorm"
 )
@@ -128,7 +130,15 @@ func (r *technicianRepository) SearchWithFilters(query, status, techType, city, 
 
 	// Apply filters
 	if status != "" {
-		baseQuery = baseQuery.Where("status = ?", status)
+		// Handle both Portuguese and English status values
+		statusUpper := strings.ToUpper(status)
+		if statusUpper == "ATIVO" || statusUpper == "ACTIVE" {
+			baseQuery = baseQuery.Where("UPPER(status) IN ?", []string{"ATIVO", "ACTIVE"})
+		} else if statusUpper == "INATIVO" || statusUpper == "INACTIVE" {
+			baseQuery = baseQuery.Where("UPPER(status) IN ?", []string{"INATIVO", "INACTIVE"})
+		} else {
+			baseQuery = baseQuery.Where("UPPER(status) = ?", statusUpper)
+		}
 	}
 	if techType != "" {
 		baseQuery = baseQuery.Where("type = ?", techType)
