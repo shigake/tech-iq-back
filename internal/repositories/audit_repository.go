@@ -18,7 +18,7 @@ type AuditRepository interface {
 	GetStats(filter models.AuditLogFilter) (*models.AuditStats, error)
 	GetDistinctEntityTypes() ([]string, error)
 	GetDistinctUsers() ([]models.UserAuditStat, error)
-	
+
 	// Hierarchy-aware queries (respects user access to entities)
 	FindAllWithHierarchy(userID string, accessibleTechnicianIDs []string, filter models.AuditLogFilter) (*models.AuditLogResponse, error)
 }
@@ -221,7 +221,7 @@ func (r *auditRepository) GetStats(filter models.AuditLogFilter) (*models.AuditS
 		Select("action, count(*) as count").
 		Group("action").
 		Find(&actionStats)
-	
+
 	stats.LogsByAction = make(map[string]int64)
 	for _, s := range actionStats {
 		stats.LogsByAction[s.Action] = s.Count
@@ -236,7 +236,7 @@ func (r *auditRepository) GetStats(filter models.AuditLogFilter) (*models.AuditS
 		Select("entity_type, count(*) as count").
 		Group("entity_type").
 		Find(&entityStats)
-	
+
 	stats.LogsByEntity = make(map[string]int64)
 	for _, s := range entityStats {
 		stats.LogsByEntity[s.EntityType] = s.Count
@@ -329,7 +329,7 @@ func NewAuditService(repo AuditRepository) *AuditService {
 // LogCreate logs a create action
 func (s *AuditService) LogCreate(userID, userName, userEmail, entityType, entityID, entityName, ipAddress, userAgent string, newValue interface{}) error {
 	newValueJSON, _ := json.Marshal(newValue)
-	
+
 	log := &models.AuditLog{
 		Action:      models.AuditActionCreate,
 		EntityType:  entityType,
@@ -352,7 +352,7 @@ func (s *AuditService) LogUpdate(userID, userName, userEmail, entityType, entity
 	newValueJSON, _ := json.Marshal(newValue)
 	changes := s.computeChanges(oldValue, newValue)
 	changesJSON, _ := json.Marshal(changes)
-	
+
 	log := &models.AuditLog{
 		Action:      models.AuditActionUpdate,
 		EntityType:  entityType,
@@ -374,7 +374,7 @@ func (s *AuditService) LogUpdate(userID, userName, userEmail, entityType, entity
 // LogDelete logs a delete action
 func (s *AuditService) LogDelete(userID, userName, userEmail, entityType, entityID, entityName, ipAddress, userAgent string, oldValue interface{}) error {
 	oldValueJSON, _ := json.Marshal(oldValue)
-	
+
 	log := &models.AuditLog{
 		Action:      models.AuditActionDelete,
 		EntityType:  entityType,
@@ -400,9 +400,9 @@ func (s *AuditService) LogStatusChange(userID, userName, userEmail, entityType, 
 		},
 	}
 	changesJSON, _ := json.Marshal(changes)
-	
+
 	description := "Status alterado de " + oldStatus + " para " + newStatus
-	
+
 	log := &models.AuditLog{
 		Action:      models.AuditActionUpdate,
 		EntityType:  entityType,
@@ -422,10 +422,10 @@ func (s *AuditService) LogStatusChange(userID, userName, userEmail, entityType, 
 // computeChanges computes the differences between old and new values
 func (s *AuditService) computeChanges(oldValue, newValue interface{}) map[string]interface{} {
 	changes := make(map[string]interface{})
-	
+
 	oldMap := structToMap(oldValue)
 	newMap := structToMap(newValue)
-	
+
 	for key, newVal := range newMap {
 		if oldVal, exists := oldMap[key]; exists {
 			if !reflect.DeepEqual(oldVal, newVal) {
@@ -441,7 +441,7 @@ func (s *AuditService) computeChanges(oldValue, newValue interface{}) map[string
 			}
 		}
 	}
-	
+
 	return changes
 }
 

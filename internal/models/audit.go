@@ -26,20 +26,20 @@ const (
 type AuditLog struct {
 	ID          string          `json:"id" gorm:"type:varchar(36);primaryKey"`
 	Action      AuditAction     `json:"action" gorm:"type:varchar(20);not null;index"`
-	EntityType  string          `json:"entityType" gorm:"type:varchar(50);not null;index"`  // technician, client, ticket, user, etc.
+	EntityType  string          `json:"entityType" gorm:"type:varchar(50);not null;index"` // technician, client, ticket, user, etc.
 	EntityID    string          `json:"entityId" gorm:"type:varchar(36);not null;index"`
-	EntityName  string          `json:"entityName" gorm:"type:varchar(255)"`                // Human-readable name for display
+	EntityName  string          `json:"entityName" gorm:"type:varchar(255)"` // Human-readable name for display
 	UserID      string          `json:"userId" gorm:"type:varchar(36);not null;index"`
 	User        *User           `json:"user,omitempty" gorm:"foreignKey:UserID"`
-	UserName    string          `json:"userName" gorm:"type:varchar(255)"`                  // Cached user name for performance
-	UserEmail   string          `json:"userEmail" gorm:"type:varchar(255)"`                 // Cached email for display
-	OldValue    json.RawMessage `json:"oldValue,omitempty" gorm:"type:jsonb"`               // Previous state
-	NewValue    json.RawMessage `json:"newValue,omitempty" gorm:"type:jsonb"`               // New state
-	Changes     json.RawMessage `json:"changes,omitempty" gorm:"type:jsonb"`                // Diff of changed fields only
-	IPAddress   string          `json:"ipAddress" gorm:"type:varchar(45)"`                  // IPv4 or IPv6
+	UserName    string          `json:"userName" gorm:"type:varchar(255)"`    // Cached user name for performance
+	UserEmail   string          `json:"userEmail" gorm:"type:varchar(255)"`   // Cached email for display
+	OldValue    json.RawMessage `json:"oldValue,omitempty" gorm:"type:jsonb"` // Previous state
+	NewValue    json.RawMessage `json:"newValue,omitempty" gorm:"type:jsonb"` // New state
+	Changes     json.RawMessage `json:"changes,omitempty" gorm:"type:jsonb"`  // Diff of changed fields only
+	IPAddress   string          `json:"ipAddress" gorm:"type:varchar(45)"`    // IPv4 or IPv6
 	UserAgent   string          `json:"userAgent" gorm:"type:text"`
-	Description string          `json:"description" gorm:"type:text"`                       // Optional human-readable description
-	Metadata    json.RawMessage `json:"metadata,omitempty" gorm:"type:jsonb"`               // Extra context (e.g., reason for change)
+	Description string          `json:"description" gorm:"type:text"`         // Optional human-readable description
+	Metadata    json.RawMessage `json:"metadata,omitempty" gorm:"type:jsonb"` // Extra context (e.g., reason for change)
 	CreatedAt   time.Time       `json:"createdAt" gorm:"index"`
 }
 
@@ -80,21 +80,21 @@ type AuditLogResponse struct {
 
 // EntityTypeLabels maps entity types to human-readable labels
 var EntityTypeLabels = map[string]string{
-	"technician":  "Técnico",
-	"client":      "Cliente",
-	"ticket":      "Chamado",
-	"user":        "Usuário",
-	"category":    "Categoria",
-	"stock_item":  "Item de Estoque",
-	"stock":       "Estoque",
-	"financial":   "Financeiro",
-	"hierarchy":   "Hierarquia",
-	"node":        "Nó de Hierarquia",
-	"role":        "Perfil",
-	"membership":  "Permissão de Usuário",
-	"permission":  "Permissão",
-	"geo":         "Geolocalização",
-	"settings":    "Configurações",
+	"technician": "Técnico",
+	"client":     "Cliente",
+	"ticket":     "Chamado",
+	"user":       "Usuário",
+	"category":   "Categoria",
+	"stock_item": "Item de Estoque",
+	"stock":      "Estoque",
+	"financial":  "Financeiro",
+	"hierarchy":  "Hierarquia",
+	"node":       "Nó de Hierarquia",
+	"role":       "Perfil",
+	"membership": "Permissão de Usuário",
+	"permission": "Permissão",
+	"geo":        "Geolocalização",
+	"settings":   "Configurações",
 }
 
 // ActionLabels maps actions to human-readable labels
@@ -123,11 +123,11 @@ type CreateAuditLogRequest struct {
 
 // AuditStats represents statistics for audit logs
 type AuditStats struct {
-	TotalLogs       int64            `json:"totalLogs"`
-	LogsByAction    map[string]int64 `json:"logsByAction"`
-	LogsByEntity    map[string]int64 `json:"logsByEntity"`
-	LogsByUser      []UserAuditStat  `json:"logsByUser"`
-	RecentActivity  []AuditLog       `json:"recentActivity"`
+	TotalLogs      int64            `json:"totalLogs"`
+	LogsByAction   map[string]int64 `json:"logsByAction"`
+	LogsByEntity   map[string]int64 `json:"logsByEntity"`
+	LogsByUser     []UserAuditStat  `json:"logsByUser"`
+	RecentActivity []AuditLog       `json:"recentActivity"`
 }
 
 // UserAuditStat represents audit statistics per user

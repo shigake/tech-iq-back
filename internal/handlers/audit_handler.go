@@ -33,7 +33,7 @@ func NewAuditHandler(db *gorm.DB) *AuditHandler {
 func (h *AuditHandler) GetAuditLogs(c *fiber.Ctx) error {
 	userID, _ := c.Locals("userId").(string)
 	userRole, _ := c.Locals("role").(string)
-	
+
 	// Parse filters
 	filter := models.AuditLogFilter{
 		EntityType:  c.Query("entityType"),
@@ -44,14 +44,14 @@ func (h *AuditHandler) GetAuditLogs(c *fiber.Ctx) error {
 		Page:        0,
 		Size:        20,
 	}
-	
+
 	if page, err := strconv.Atoi(c.Query("page", "0")); err == nil {
 		filter.Page = page
 	}
 	if size, err := strconv.Atoi(c.Query("size", "20")); err == nil {
 		filter.Size = size
 	}
-	
+
 	// Parse dates
 	if startDate := c.Query("startDate"); startDate != "" {
 		if t, err := time.Parse("2006-01-02", startDate); err == nil {
@@ -64,7 +64,7 @@ func (h *AuditHandler) GetAuditLogs(c *fiber.Ctx) error {
 			filter.EndDate = &endOfDay
 		}
 	}
-	
+
 	// Check if user is admin - admins see everything
 	if userRole == "ADMIN" {
 		result, err := h.repo.FindAll(filter)
@@ -73,19 +73,19 @@ func (h *AuditHandler) GetAuditLogs(c *fiber.Ctx) error {
 		}
 		return c.JSON(result)
 	}
-	
+
 	// For non-admins, get accessible technician IDs based on hierarchy
 	accessibleTechIDs, err := h.getAccessibleTechnicianIDs(userID)
 	if err != nil {
 		// If hierarchy check fails, just show user's own actions
 		accessibleTechIDs = []string{}
 	}
-	
+
 	result, err := h.repo.FindAllWithHierarchy(userID, accessibleTechIDs, filter)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch audit logs"})
 	}
-	
+
 	return c.JSON(result)
 }
 
@@ -93,12 +93,12 @@ func (h *AuditHandler) GetAuditLogs(c *fiber.Ctx) error {
 // GET /api/v1/audit/:id
 func (h *AuditHandler) GetAuditLogByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	
+
 	log, err := h.repo.FindByID(id)
 	if err != nil {
 		return c.Status(404).JSON(fiber.Map{"error": "Audit log not found"})
 	}
-	
+
 	return c.JSON(log)
 }
 
@@ -107,20 +107,20 @@ func (h *AuditHandler) GetAuditLogByID(c *fiber.Ctx) error {
 func (h *AuditHandler) GetEntityAuditLogs(c *fiber.Ctx) error {
 	entityType := c.Params("entityType")
 	entityID := c.Params("entityId")
-	
+
 	page, _ := strconv.Atoi(c.Query("page", "0"))
 	size, _ := strconv.Atoi(c.Query("size", "20"))
-	
+
 	logs, total, err := h.repo.FindByEntity(entityType, entityID, page, size)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch entity audit logs"})
 	}
-	
+
 	totalPages := int(total) / size
 	if int(total)%size > 0 {
 		totalPages++
 	}
-	
+
 	return c.JSON(fiber.Map{
 		"items":      logs,
 		"total":      total,
@@ -134,20 +134,20 @@ func (h *AuditHandler) GetEntityAuditLogs(c *fiber.Ctx) error {
 // GET /api/v1/audit/user/:userId
 func (h *AuditHandler) GetUserAuditLogs(c *fiber.Ctx) error {
 	targetUserID := c.Params("userId")
-	
+
 	page, _ := strconv.Atoi(c.Query("page", "0"))
 	size, _ := strconv.Atoi(c.Query("size", "20"))
-	
+
 	logs, total, err := h.repo.FindByUser(targetUserID, page, size)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch user audit logs"})
 	}
-	
+
 	totalPages := int(total) / size
 	if int(total)%size > 0 {
 		totalPages++
 	}
-	
+
 	return c.JSON(fiber.Map{
 		"items":      logs,
 		"total":      total,
@@ -163,7 +163,7 @@ func (h *AuditHandler) GetAuditStats(c *fiber.Ctx) error {
 	filter := models.AuditLogFilter{
 		EntityType: c.Query("entityType"),
 	}
-	
+
 	// Parse dates
 	if startDate := c.Query("startDate"); startDate != "" {
 		if t, err := time.Parse("2006-01-02", startDate); err == nil {
@@ -176,12 +176,12 @@ func (h *AuditHandler) GetAuditStats(c *fiber.Ctx) error {
 			filter.EndDate = &endOfDay
 		}
 	}
-	
+
 	stats, err := h.repo.GetStats(filter)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch audit stats"})
 	}
-	
+
 	return c.JSON(stats)
 }
 
@@ -192,7 +192,7 @@ func (h *AuditHandler) GetEntityTypes(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch entity types"})
 	}
-	
+
 	// Add labels
 	result := make([]map[string]string, len(types))
 	for i, t := range types {
@@ -205,7 +205,7 @@ func (h *AuditHandler) GetEntityTypes(c *fiber.Ctx) error {
 			"label": label,
 		}
 	}
-	
+
 	return c.JSON(result)
 }
 
@@ -216,7 +216,7 @@ func (h *AuditHandler) GetAuditUsers(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch audit users"})
 	}
-	
+
 	return c.JSON(users)
 }
 
@@ -233,7 +233,7 @@ func (h *AuditHandler) GetActionTypes(c *fiber.Ctx) error {
 		{"value": string(models.AuditActionLogin), "label": models.ActionLabels[models.AuditActionLogin]},
 		{"value": string(models.AuditActionLogout), "label": models.ActionLabels[models.AuditActionLogout]},
 	}
-	
+
 	return c.JSON(actions)
 }
 
@@ -244,16 +244,16 @@ func (h *AuditHandler) getAccessibleTechnicianIDs(userID string) ([]string, erro
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if len(memberships) == 0 {
 		return []string{}, nil
 	}
-	
+
 	// Get all node IDs the user has access to (including children)
 	var nodeIDs []uint
 	for _, m := range memberships {
 		nodeIDs = append(nodeIDs, m.NodeID)
-		
+
 		// Get children nodes recursively
 		children, err := h.hierarchyRepo.GetNodeChildren(m.NodeID)
 		if err == nil {
@@ -267,34 +267,34 @@ func (h *AuditHandler) getAccessibleTechnicianIDs(userID string) ([]string, erro
 			}
 		}
 	}
-	
+
 	// Get technicians associated with these nodes
 	// For now, we'll return all technician IDs (to be refined based on actual business logic)
 	// In a real implementation, you'd have a relationship between technicians and nodes
 	var technicianIDs []string
-	
+
 	err = h.db.Model(&models.Technician{}).
 		Pluck("id", &technicianIDs).Error
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return technicianIDs, nil
 }
 
 // RegisterAuditRoutes registers all audit routes
 func RegisterAuditRoutes(app fiber.Router, db *gorm.DB) {
 	handler := NewAuditHandler(db)
-	
+
 	audit := app.Group("/audit")
-	
+
 	// Main endpoints
 	audit.Get("/", handler.GetAuditLogs)
 	audit.Get("/stats", handler.GetAuditStats)
 	audit.Get("/entity-types", handler.GetEntityTypes)
 	audit.Get("/action-types", handler.GetActionTypes)
 	audit.Get("/users", handler.GetAuditUsers)
-	
+
 	// Specific queries
 	audit.Get("/:id", handler.GetAuditLogByID)
 	audit.Get("/entity/:entityType/:entityId", handler.GetEntityAuditLogs)

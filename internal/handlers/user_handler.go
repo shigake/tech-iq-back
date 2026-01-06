@@ -156,6 +156,13 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 		})
 	}
 
+	// SECURITY: Prevent creating ADMIN users via API
+	if req.Role == "ADMIN" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": "Cannot create ADMIN users via API",
+		})
+	}
+
 	// Check if email already exists
 	existingUser, _ := h.repo.FindByEmail(req.Email)
 	if existingUser != nil {
@@ -223,6 +230,13 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error":   "Validation failed",
 			"details": formatValidationErrors(err),
+		})
+	}
+
+	// SECURITY: Prevent assigning ADMIN role via API
+	if req.Role == "ADMIN" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": "Cannot assign ADMIN role via API",
 		})
 	}
 

@@ -71,20 +71,22 @@ type ChangePasswordRequest struct {
 }
 
 // CreateUserRequest represents admin request to create a new user
+// Note: ADMIN role cannot be assigned via API - only EMPLOYEE and USER are allowed
 type CreateUserRequest struct {
 	Email     string `json:"email" validate:"required,email"`
 	Password  string `json:"password" validate:"required,min=6"`
 	FirstName string `json:"firstName" validate:"required,min=2"`
 	LastName  string `json:"lastName" validate:"required,min=2"`
-	Role      string `json:"role" validate:"required,oneof=ADMIN EMPLOYEE USER"`
+	Role      string `json:"role" validate:"required,oneof=EMPLOYEE USER"`
 }
 
 // UpdateUserRequest represents admin request to update a user
+// Note: ADMIN role cannot be assigned via API - only EMPLOYEE and USER are allowed
 type UpdateUserRequest struct {
 	Email     string `json:"email" validate:"omitempty,email"`
 	FirstName string `json:"firstName" validate:"omitempty,min=2"`
 	LastName  string `json:"lastName" validate:"omitempty,min=2"`
-	Role      string `json:"role" validate:"omitempty,oneof=ADMIN EMPLOYEE USER"`
+	Role      string `json:"role" validate:"omitempty,oneof=EMPLOYEE USER"`
 	Active    *bool  `json:"active"`
 }
 

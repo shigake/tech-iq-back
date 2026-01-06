@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/go-playground/validator/v10"
+	"github.com/gofiber/fiber/v2"
 	"github.com/shigake/tech-iq-back/internal/models"
 	"github.com/shigake/tech-iq-back/internal/repositories"
 	"github.com/shigake/tech-iq-back/internal/services"
@@ -53,14 +53,14 @@ func (h *TechnicianHandler) GetAll(c *fiber.Ctx) error {
 	size, _ := strconv.Atoi(c.Query("size", "20"))
 	search := c.Query("search", "")
 	idsParam := c.Query("ids", "")
-	
+
 	// Filter parameters
 	status := c.Query("status", "")
 	techType := c.Query("type", "")
 	city := c.Query("city", "")
 	state := c.Query("state", "")
-	
-	fmt.Printf(">>> GetAll params: page=%d, size=%d, search='%s', status='%s', type='%s', city='%s', state='%s'\n", 
+
+	fmt.Printf(">>> GetAll params: page=%d, size=%d, search='%s', status='%s', type='%s', city='%s', state='%s'\n",
 		page, size, search, status, techType, city, state)
 
 	if size > 1000 {
@@ -112,7 +112,7 @@ func (h *TechnicianHandler) GetAll(c *fiber.Ctx) error {
 // @Router /api/v1/technicians/{id} [get]
 func (h *TechnicianHandler) GetByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	
+
 	technician, err := h.service.GetByID(id)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
@@ -192,10 +192,10 @@ func (h *TechnicianHandler) Create(c *fiber.Ctx) error {
 // @Router /api/v1/technicians/{id} [put]
 func (h *TechnicianHandler) Update(c *fiber.Ctx) error {
 	id := c.Params("id")
-	
+
 	// Get old value for audit
 	oldTechnician, _ := h.service.GetByID(id)
-	
+
 	var req models.CreateTechnicianRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -222,7 +222,7 @@ func (h *TechnicianHandler) Update(c *fiber.Ctx) error {
 		if entityName == "" {
 			entityName = technician.TradeName
 		}
-		
+
 		// Check if status changed
 		if oldTechnician.Status != technician.Status {
 			go h.auditService.LogStatusChange(
@@ -256,10 +256,10 @@ func (h *TechnicianHandler) Update(c *fiber.Ctx) error {
 // @Router /api/v1/technicians/{id} [delete]
 func (h *TechnicianHandler) Delete(c *fiber.Ctx) error {
 	id := c.Params("id")
-	
+
 	// Get technician for audit before delete
 	oldTechnician, _ := h.service.GetByID(id)
-	
+
 	if err := h.service.Delete(id); err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "Technician not found",
@@ -326,7 +326,7 @@ func (h *TechnicianHandler) Search(c *fiber.Ctx) error {
 // @Router /api/v1/technicians/by-city/{city} [get]
 func (h *TechnicianHandler) GetByCity(c *fiber.Ctx) error {
 	city := c.Params("city")
-	
+
 	technicians, err := h.service.GetByCity(city)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -348,7 +348,7 @@ func (h *TechnicianHandler) GetByCity(c *fiber.Ctx) error {
 // @Router /api/v1/technicians/by-state/{state} [get]
 func (h *TechnicianHandler) GetByState(c *fiber.Ctx) error {
 	state := c.Params("state")
-	
+
 	technicians, err := h.service.GetByState(state)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
