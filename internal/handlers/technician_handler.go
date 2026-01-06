@@ -7,18 +7,32 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/go-playground/validator/v10"
 	"github.com/shigake/tech-iq-back/internal/models"
+	"github.com/shigake/tech-iq-back/internal/repositories"
 	"github.com/shigake/tech-iq-back/internal/services"
+	"gorm.io/gorm"
 )
 
 type TechnicianHandler struct {
-	service  services.TechnicianService
-	validate *validator.Validate
+	service      services.TechnicianService
+	validate     *validator.Validate
+	auditService *repositories.AuditService
 }
 
 func NewTechnicianHandler(service services.TechnicianService) *TechnicianHandler {
 	return &TechnicianHandler{
 		service:  service,
 		validate: validator.New(),
+	}
+}
+
+// NewTechnicianHandlerWithAudit creates a new handler with audit support
+func NewTechnicianHandlerWithAudit(service services.TechnicianService, db *gorm.DB) *TechnicianHandler {
+	auditRepo := repositories.NewAuditRepository(db)
+	auditService := repositories.NewAuditService(auditRepo)
+	return &TechnicianHandler{
+		service:      service,
+		validate:     validator.New(),
+		auditService: auditService,
 	}
 }
 
@@ -141,6 +155,26 @@ func (h *TechnicianHandler) Create(c *fiber.Ctx) error {
 		})
 	}
 
+	// Audit log
+	if h.auditService != nil {
+		userID, _ := c.Locals("userId").(string)
+		userName, _ := c.Locals("userName").(string)
+		userEmail, _ := c.Locals("email").(string)
+		if userName == "" {
+			userName = userEmail
+		}
+		entityName := technician.FullName
+		if entityName == "" {
+			entityName = technician.TradeName
+		}
+		go h.auditService.LogCreate(
+			userID, userName, userEmail,
+			"technician", technician.ID, entityName,
+			c.IP(), c.Get("User-Agent"),
+			technician,
+		)
+	}
+
 	return c.Status(fiber.StatusCreated).JSON(technician)
 }
 
@@ -159,6 +193,9 @@ func (h *TechnicianHandler) Create(c *fiber.Ctx) error {
 func (h *TechnicianHandler) Update(c *fiber.Ctx) error {
 	id := c.Params("id")
 	
+	// Get old value for audit
+	oldTechnician, _ := h.service.GetByID(id)
+	
 	var req models.CreateTechnicianRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -171,6 +208,37 @@ func (h *TechnicianHandler) Update(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "Technician not found",
 		})
+	}
+
+	// Audit log
+	if h.auditService != nil && oldTechnician != nil {
+		userID, _ := c.Locals("userId").(string)
+		userName, _ := c.Locals("userName").(string)
+		userEmail, _ := c.Locals("email").(string)
+		if userName == "" {
+			userName = userEmail
+		}
+		entityName := technician.FullName
+		if entityName == "" {
+			entityName = technician.TradeName
+		}
+		
+		// Check if status changed
+		if oldTechnician.Status != technician.Status {
+			go h.auditService.LogStatusChange(
+				userID, userName, userEmail,
+				"technician", technician.ID, entityName,
+				c.IP(), c.Get("User-Agent"),
+				oldTechnician.Status, technician.Status,
+			)
+		} else {
+			go h.auditService.LogUpdate(
+				userID, userName, userEmail,
+				"technician", technician.ID, entityName,
+				c.IP(), c.Get("User-Agent"),
+				oldTechnician, technician,
+			)
+		}
 	}
 
 	return c.JSON(technician)
@@ -189,10 +257,33 @@ func (h *TechnicianHandler) Update(c *fiber.Ctx) error {
 func (h *TechnicianHandler) Delete(c *fiber.Ctx) error {
 	id := c.Params("id")
 	
+	// Get technician for audit before delete
+	oldTechnician, _ := h.service.GetByID(id)
+	
 	if err := h.service.Delete(id); err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "Technician not found",
 		})
+	}
+
+	// Audit log
+	if h.auditService != nil && oldTechnician != nil {
+		userID, _ := c.Locals("userId").(string)
+		userName, _ := c.Locals("userName").(string)
+		userEmail, _ := c.Locals("email").(string)
+		if userName == "" {
+			userName = userEmail
+		}
+		entityName := oldTechnician.FullName
+		if entityName == "" {
+			entityName = oldTechnician.TradeName
+		}
+		go h.auditService.LogDelete(
+			userID, userName, userEmail,
+			"technician", oldTechnician.ID, entityName,
+			c.IP(), c.Get("User-Agent"),
+			oldTechnician,
+		)
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)

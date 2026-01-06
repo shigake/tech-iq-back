@@ -99,6 +99,8 @@ func Migrate(db *gorm.DB) error {
 		&models.StockBalance{},
 		// Error Logs
 		&models.ErrorLog{},
+		// Audit Logs (generic)
+		&models.AuditLog{},
 	)
 	if err != nil {
 		log.Println("⚠️ Migration warning (continuing anyway):", err)

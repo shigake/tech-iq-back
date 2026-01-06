@@ -123,7 +123,7 @@ func main() {
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
-	technicianHandler := handlers.NewTechnicianHandler(technicianService)
+	technicianHandler := handlers.NewTechnicianHandlerWithAudit(technicianService, db)
 	ticketHandler := handlers.NewTicketHandler(ticketService)
 	dashboardHandler := handlers.NewDashboardHandler(dashboardService)
 	clientHandler := handlers.NewClientHandler(clientRepo)
@@ -390,6 +390,9 @@ func main() {
 
 	// ==================== Stock Module Routes ====================
 	stockHandler.RegisterRoutes(app, middleware.JWTProtected(cfg.JWTSecret))
+
+	// ==================== Audit Routes ====================
+	handlers.RegisterAuditRoutes(api.Group("", middleware.JWTProtected(cfg.JWTSecret)), db)
 
 	// Start server
 	port := cfg.AppPort
