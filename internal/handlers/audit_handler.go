@@ -31,8 +31,8 @@ func NewAuditHandler(db *gorm.DB) *AuditHandler {
 // GetAuditLogs returns audit logs with filters (respecting hierarchy)
 // GET /api/v1/audit
 func (h *AuditHandler) GetAuditLogs(c *fiber.Ctx) error {
-	userID := c.Locals("userId").(string)
-	userRole := c.Locals("role").(string)
+	userID, _ := c.Locals("userId").(string)
+	userRole, _ := c.Locals("role").(string)
 	
 	// Parse filters
 	filter := models.AuditLogFilter{
