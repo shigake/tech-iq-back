@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"bytes"
 	"encoding/csv"
 	"fmt"
 	"strings"
@@ -10,7 +9,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/shigake/tech-iq-back/internal/models"
 	"github.com/shigake/tech-iq-back/internal/repositories"
-	"github.com/xuri/excelize/v2"
 )
 
 type ExportHandler struct {
@@ -52,16 +50,14 @@ func (h *ExportHandler) ExportClients(c *fiber.Ctx) error {
 		})
 	}
 
-	// Set headers for CSV download
-	c.Set("Content-Type", "text/csv")
+	c.Set("Content-Type", "text/csv; charset=utf-8")
 	c.Set("Content-Disposition", "attachment; filename=clientes_"+time.Now().Format("20060102_150405")+".csv")
 
-	// Create CSV writer
 	var csvData strings.Builder
+	csvData.WriteString("\xEF\xBB\xBF")
 	writer := csv.NewWriter(&csvData)
 
-	// Write header
-	header := []string{"ID", "Nome Completo", "CPF", "CNPJ", "Email", "Telefone", "Rua", "Número", "Bairro", "Cidade", "Estado", "CEP", "Data de Criação"}
+	header := []string{"ID", "Nome Completo", "CPF", "CNPJ", "Email", "Telefone", "Rua", "Numero", "Bairro", "Cidade", "Estado", "CEP", "Data de Criacao"}
 	writer.Write(header)
 
 	// Write data
@@ -97,7 +93,6 @@ func (h *ExportHandler) ExportClients(c *fiber.Ctx) error {
 	return c.SendString(csvData.String())
 }
 
-// ExportTechnicians exports technicians data as Excel (XLSX)
 func (h *ExportHandler) ExportTechnicians(c *fiber.Ctx) error {
 	technicians, _, err := h.technicianRepo.FindAll(0, 10000)
 	if err != nil {
@@ -108,149 +103,72 @@ func (h *ExportHandler) ExportTechnicians(c *fiber.Ctx) error {
 		})
 	}
 
-	f := excelize.NewFile()
-	defer f.Close()
+	c.Set("Content-Type", "text/csv; charset=utf-8")
+	c.Set("Content-Disposition", "attachment; filename=tecnicos_"+time.Now().Format("20060102_150405")+".csv")
 
-	sheetName := "Técnicos"
-	f.SetSheetName("Sheet1", sheetName)
+	var csvData strings.Builder
+	csvData.WriteString("\xEF\xBB\xBF")
+	writer := csv.NewWriter(&csvData)
 
-	headerStyle, _ := f.NewStyle(&excelize.Style{
-		Font:      &excelize.Font{Bold: true, Size: 11, Color: "FFFFFF"},
-		Fill:      excelize.Fill{Type: "pattern", Color: []string{"4472C4"}, Pattern: 1},
-		Alignment: &excelize.Alignment{Horizontal: "center", Vertical: "center", WrapText: true},
-		Border: []excelize.Border{
-			{Type: "left", Color: "000000", Style: 1},
-			{Type: "top", Color: "000000", Style: 1},
-			{Type: "bottom", Color: "000000", Style: 1},
-			{Type: "right", Color: "000000", Style: 1},
-		},
-	})
-
-	dataStyle, _ := f.NewStyle(&excelize.Style{
-		Alignment: &excelize.Alignment{Vertical: "center", WrapText: true},
-		Border: []excelize.Border{
-			{Type: "left", Color: "D0D0D0", Style: 1},
-			{Type: "top", Color: "D0D0D0", Style: 1},
-			{Type: "bottom", Color: "D0D0D0", Style: 1},
-			{Type: "right", Color: "D0D0D0", Style: 1},
-		},
-	})
-
-	skillStyle, _ := f.NewStyle(&excelize.Style{
-		Font:      &excelize.Font{Bold: true, Size: 10, Color: "FFFFFF"},
-		Fill:      excelize.Fill{Type: "pattern", Color: []string{"70AD47"}, Pattern: 1},
-		Alignment: &excelize.Alignment{Horizontal: "center", Vertical: "center"},
-		Border: []excelize.Border{
-			{Type: "left", Color: "000000", Style: 1},
-			{Type: "top", Color: "000000", Style: 1},
-			{Type: "bottom", Color: "000000", Style: 1},
-			{Type: "right", Color: "000000", Style: 1},
-		},
-	})
-
-	headers := []string{
+	header := []string{
 		"Nome", "Status", "Tipo", "Emails", "Telefones",
-		"Valor Mínimo", "Observação", "CPF", "CNPJ",
-		"Banco", "Agência", "Conta", "Tipo Conta", "Titular", "Chave Pix",
+		"Valor Minimo", "Observacao", "CPF", "CNPJ",
+		"Banco", "Agencia", "Conta", "Tipo Conta", "Titular", "Chave Pix",
 		"Infraestrutura", "Hardware", "Software", "Impressoras", "Help Desk",
 		"CFTV", "Cabeamento", "Banco de Dados", "Redes/Firewall",
-		"Rua", "Número", "Bairro", "Cidade", "Estado", "CEP", "Complemento",
+		"Rua", "Numero", "Bairro", "Cidade", "Estado", "CEP", "Complemento",
 	}
-
-	colWidths := map[string]float64{
-		"A": 30, "B": 10, "C": 12, "D": 35, "E": 20,
-		"F": 15, "G": 25, "H": 15, "I": 20,
-		"J": 20, "K": 10, "L": 15, "M": 12, "N": 25, "O": 25,
-		"P": 12, "Q": 12, "R": 12, "S": 12, "T": 12,
-		"U": 12, "V": 12, "W": 14, "X": 14,
-		"Y": 30, "Z": 10, "AA": 20, "AB": 20, "AC": 8, "AD": 12, "AE": 20,
-	}
-
-	for col, width := range colWidths {
-		f.SetColWidth(sheetName, col, col, width)
-	}
-
-	for i, header := range headers {
-		cell, _ := excelize.CoordinatesToCellName(i+1, 1)
-		f.SetCellValue(sheetName, cell, header)
-		f.SetCellStyle(sheetName, cell, cell, headerStyle)
-	}
-
-	skillCols := []int{16, 17, 18, 19, 20, 21, 22, 23, 24}
-	for _, col := range skillCols {
-		cell, _ := excelize.CoordinatesToCellName(col, 1)
-		f.SetCellStyle(sheetName, cell, cell, skillStyle)
-	}
+	writer.Write(header)
 
 	skillNames := []string{
 		"Infraestrutura", "Hardware", "Software", "Impressoras", "Help Desk",
 		"CFTV", "Cabeamento", "Banco de Dados", "Redes/Firewall",
 	}
 
-	for i, tech := range technicians {
-		row := i + 2
-
+	for _, tech := range technicians {
 		var emailList []string
 		for _, e := range tech.Emails {
 			emailList = append(emailList, e.Email)
 		}
-		emails := strings.Join(emailList, ", ")
+		emails := strings.Join(emailList, "; ")
 
 		var phoneList []string
 		for _, p := range tech.Phones {
 			phoneList = append(phoneList, p.Number)
 		}
-		phones := strings.Join(phoneList, ", ")
+		phones := strings.Join(phoneList, "; ")
 
-		rowData := []interface{}{
+		var skills []string
+		for _, skillName := range skillNames {
+			if tech.Skills[skillName] {
+				skills = append(skills, "Sim")
+			} else {
+				skills = append(skills, "Nao")
+			}
+		}
+
+		record := []string{
 			tech.FullName, tech.Status, tech.Type, emails, phones,
-			tech.MinCallValue, tech.Observation, tech.CPF, tech.CNPJ,
+			fmt.Sprintf("%.2f", tech.MinCallValue), tech.Observation, tech.CPF, tech.CNPJ,
 			tech.BankName, tech.Agency, tech.AccountNumber, tech.AccountType, tech.AccountHolder, tech.PixKey,
 		}
+		record = append(record, skills...)
+		record = append(record, tech.Street, tech.Number, tech.Neighborhood, tech.City, tech.State, tech.ZipCode, tech.Complement)
 
-		for j, value := range rowData {
-			cell, _ := excelize.CoordinatesToCellName(j+1, row)
-			f.SetCellValue(sheetName, cell, value)
-			f.SetCellStyle(sheetName, cell, cell, dataStyle)
-		}
-
-		for j, skillName := range skillNames {
-			cell, _ := excelize.CoordinatesToCellName(16+j, row)
-			hasSkill := tech.Skills[skillName]
-			if hasSkill {
-				f.SetCellValue(sheetName, cell, "Sim")
-			} else {
-				f.SetCellValue(sheetName, cell, "Não")
-			}
-			f.SetCellStyle(sheetName, cell, cell, dataStyle)
-		}
-
-		addressData := []interface{}{
-			tech.Street, tech.Number, tech.Neighborhood, tech.City, tech.State, tech.ZipCode, tech.Complement,
-		}
-
-		for j, value := range addressData {
-			cell, _ := excelize.CoordinatesToCellName(25+j, row)
-			f.SetCellValue(sheetName, cell, value)
-			f.SetCellStyle(sheetName, cell, cell, dataStyle)
-		}
+		writer.Write(record)
 	}
 
-	f.SetRowHeight(sheetName, 1, 25)
+	writer.Flush()
 
-	var buf bytes.Buffer
-	if err := f.Write(&buf); err != nil {
+	if err := writer.Error(); err != nil {
 		return c.Status(500).JSON(fiber.Map{
 			"success": false,
-			"message": "Erro ao gerar Excel",
+			"message": "Erro ao gerar CSV",
 			"error":   err.Error(),
 		})
 	}
 
-	c.Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-	c.Set("Content-Disposition", "attachment; filename=tecnicos_"+time.Now().Format("20060102_150405")+".xlsx")
-
-	return c.Send(buf.Bytes())
+	return c.SendString(csvData.String())
 }
 
 // ExportTickets exports tickets data as CSV
@@ -265,18 +183,16 @@ func (h *ExportHandler) ExportTickets(c *fiber.Ctx) error {
 		})
 	}
 
-	// Set headers for CSV download
-	c.Set("Content-Type", "text/csv")
+	c.Set("Content-Type", "text/csv; charset=utf-8")
 	c.Set("Content-Disposition", "attachment; filename=tickets_"+time.Now().Format("20060102_150405")+".csv")
 
-	// Create CSV writer
 	var csvData strings.Builder
+	csvData.WriteString("\xEF\xBB\xBF")
 	writer := csv.NewWriter(&csvData)
 
-	// Write header
 	header := []string{
-		"ID", "Número OS", "Descrição do Erro", "Status", "Prioridade",
-		"Cliente", "Categoria", "Técnicos", "Data de Criação", "Data de Atualização",
+		"ID", "Numero OS", "Descricao do Erro", "Status", "Prioridade",
+		"Cliente", "Categoria", "Tecnicos", "Data de Criacao", "Data de Atualizacao",
 	}
 	writer.Write(header)
 

@@ -58,7 +58,7 @@ func (h *DashboardHandler) GetChartData(c *fiber.Ctx) error {
 			"error": "Failed to fetch chart data",
 		})
 	}
-	
+
 	// Convert to chart format
 	chartData := make([]fiber.Map, len(data))
 	for i, d := range data {
@@ -67,20 +67,20 @@ func (h *DashboardHandler) GetChartData(c *fiber.Ctx) error {
 			"count": d.Count,
 		}
 	}
-	
+
 	return c.JSON(chartData)
 }
 
 // GetRecentActivity returns recent activity for the dashboard
 func (h *DashboardHandler) GetRecentActivity(c *fiber.Ctx) error {
 	limit := c.QueryInt("limit", 10)
-	
+
 	activities, err := h.service.GetRecentActivity(limit)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to fetch recent activity",
 		})
 	}
-	
+
 	return c.JSON(activities)
 }
