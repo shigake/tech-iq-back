@@ -18,7 +18,7 @@
 	"variable": [
 		{
 			"key": "baseUrl",
-			"value": "https://srv1209774.hstgr.cloud/api/v1",
+			"value": "https://backoffice-api.techiq.com.br/api/v1",
 			"type": "string"
 		},
 		{
@@ -604,6 +604,42 @@
 							]
 						}
 					}
+				},
+				{
+					"name": "Sign Ticket",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"signature\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA...\",\n    \"signedBy\": \"John Doe\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/tickets/:id/sign",
+							"host": ["{{baseUrl}}"],
+							"path": ["tickets", ":id", "sign"],
+							"variable": [
+								{"key": "id", "value": "1"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Signature",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tickets/:id/sign",
+							"host": ["{{baseUrl}}"],
+							"path": ["tickets", ":id", "sign"],
+							"variable": [
+								{"key": "id", "value": "1"}
+							]
+						}
+					}
 				}
 			]
 		},
@@ -918,6 +954,105 @@
 							"path": ["export", "all"]
 						}
 					}
+				},
+				{
+					"name": "Export Stock Items",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/export/stock/items",
+							"host": ["{{baseUrl}}"],
+							"path": ["export", "stock", "items"]
+						}
+					}
+				},
+				{
+					"name": "Export Stock Locations",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/export/stock/locations",
+							"host": ["{{baseUrl}}"],
+							"path": ["export", "stock", "locations"]
+						}
+					}
+				},
+				{
+					"name": "Export Stock Movements",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/export/stock/movements",
+							"host": ["{{baseUrl}}"],
+							"path": ["export", "stock", "movements"]
+						}
+					}
+				},
+				{
+					"name": "Export Financial Entries",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/export/financial/entries",
+							"host": ["{{baseUrl}}"],
+							"path": ["export", "financial", "entries"]
+						}
+					}
+				},
+				{
+					"name": "Export Categories",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/export/categories",
+							"host": ["{{baseUrl}}"],
+							"path": ["export", "categories"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Import",
+			"item": [
+				{
+					"name": "Download Ticket Template",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/import/tickets/template",
+							"host": ["{{baseUrl}}"],
+							"path": ["import", "tickets", "template"]
+						}
+					}
+				},
+				{
+					"name": "Import Tickets",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": ""
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/import/tickets",
+							"host": ["{{baseUrl}}"],
+							"path": ["import", "tickets"]
+						}
+					}
 				}
 			]
 		},
@@ -1075,6 +1210,18 @@
 				{
 					"name": "Nodes",
 					"item": [
+						{
+							"name": "List All Nodes",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/nodes",
+									"host": ["{{baseUrl}}"],
+									"path": ["nodes"]
+								}
+							}
+						},
 						{
 							"name": "Update Node",
 							"request": {
@@ -2231,6 +2378,434 @@
 							"raw": "{{baseUrl}}/errors/frontend",
 							"host": ["{{baseUrl}}"],
 							"path": ["errors", "frontend"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Activity Logs",
+			"item": [
+				{
+					"name": "List Activity Logs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/activity-logs?page=0&limit=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["activity-logs"],
+							"query": [
+								{"key": "page", "value": "0"},
+								{"key": "limit", "value": "20"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get My Activity Logs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/activity-logs/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["activity-logs", "me"]
+						}
+					}
+				},
+				{
+					"name": "Get Recent Activity Logs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/activity-logs/recent",
+							"host": ["{{baseUrl}}"],
+							"path": ["activity-logs", "recent"]
+						}
+					}
+				},
+				{
+					"name": "Get Activity Log by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/activity-logs/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["activity-logs", ":id"],
+							"variable": [
+								{"key": "id", "value": "1"}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Geolocation",
+			"item": [
+				{
+					"name": "Create Location",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"technicianId\": 1,\n    \"latitude\": -23.5505,\n    \"longitude\": -46.6333,\n    \"accuracy\": 10.0\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/geo/locations",
+							"host": ["{{baseUrl}}"],
+							"path": ["geo", "locations"]
+						}
+					}
+				},
+				{
+					"name": "Create Batch Locations",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"locations\": [\n        {\n            \"technicianId\": 1,\n            \"latitude\": -23.5505,\n            \"longitude\": -46.6333,\n            \"accuracy\": 10.0\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/geo/locations/batch",
+							"host": ["{{baseUrl}}"],
+							"path": ["geo", "locations", "batch"]
+						}
+					}
+				},
+				{
+					"name": "Get Technicians Last Locations",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/geo/technicians/last",
+							"host": ["{{baseUrl}}"],
+							"path": ["geo", "technicians", "last"]
+						}
+					}
+				},
+				{
+					"name": "Get Technician History",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/geo/technicians/:id/history",
+							"host": ["{{baseUrl}}"],
+							"path": ["geo", "technicians", ":id", "history"],
+							"variable": [
+								{"key": "id", "value": "1"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Ticket Locations",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/geo/tickets/:id/locations",
+							"host": ["{{baseUrl}}"],
+							"path": ["geo", "tickets", ":id", "locations"],
+							"variable": [
+								{"key": "id", "value": "1"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Geo Settings",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/geo/settings",
+							"host": ["{{baseUrl}}"],
+							"path": ["geo", "settings"]
+						}
+					}
+				},
+				{
+					"name": "Update Geo Settings",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"trackingEnabled\": true,\n    \"updateIntervalSeconds\": 30\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/geo/settings",
+							"host": ["{{baseUrl}}"],
+							"path": ["geo", "settings"]
+						}
+					}
+				},
+				{
+					"name": "Refresh Geo Cache",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/geo/cache/refresh",
+							"host": ["{{baseUrl}}"],
+							"path": ["geo", "cache", "refresh"]
+						}
+					}
+				},
+				{
+					"name": "Get Geo Cache Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/geo/cache/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["geo", "cache", "status"]
+						}
+					}
+				},
+				{
+					"name": "Geocode All Technicians",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/geo/geocode/batch",
+							"host": ["{{baseUrl}}"],
+							"path": ["geo", "geocode", "batch"]
+						}
+					}
+				},
+				{
+					"name": "Get Geocoding Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/geo/geocode/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["geo", "geocode", "status"]
+						}
+					}
+				},
+				{
+					"name": "Geocode Single Technician",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/geo/geocode/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["geo", "geocode", ":id"],
+							"variable": [
+								{"key": "id", "value": "1"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Load Cities",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/geo/cities/load",
+							"host": ["{{baseUrl}}"],
+							"path": ["geo", "cities", "load"]
+						}
+					}
+				},
+				{
+					"name": "Get City Count",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/geo/cities/count",
+							"host": ["{{baseUrl}}"],
+							"path": ["geo", "cities", "count"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Admin",
+			"item": [
+				{
+					"name": "Get Security Logs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/admin/security-logs?page=0&limit=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["admin", "security-logs"],
+							"query": [
+								{"key": "page", "value": "0"},
+								{"key": "limit", "value": "20"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Recent Security Logs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/admin/security-logs/recent",
+							"host": ["{{baseUrl}}"],
+							"path": ["admin", "security-logs", "recent"]
+						}
+					}
+				},
+				{
+					"name": "Get Security Stats",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/admin/security-logs/stats",
+							"host": ["{{baseUrl}}"],
+							"path": ["admin", "security-logs", "stats"]
+						}
+					}
+				},
+				{
+					"name": "Get System Metrics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/admin/system-metrics",
+							"host": ["{{baseUrl}}"],
+							"path": ["admin", "system-metrics"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "System",
+			"item": [
+				{
+					"name": "Get Version",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/version",
+							"host": ["{{baseUrl}}"],
+							"path": ["version"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Audit",
+			"item": [
+				{
+					"name": "Get Audit Logs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/audit?page=1&limit=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["audit"],
+							"query": [
+								{"key": "page", "value": "1"},
+								{"key": "limit", "value": "20"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Audit Log by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/audit/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["audit", ":id"],
+							"variable": [
+								{"key": "id", "value": "1"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Entity Audit History",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/audit/entity/:entityType/:entityId",
+							"host": ["{{baseUrl}}"],
+							"path": ["audit", "entity", ":entityType", ":entityId"],
+							"variable": [
+								{"key": "entityType", "value": "technician"},
+								{"key": "entityId", "value": "1"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get User Audit History",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/audit/user/:userId",
+							"host": ["{{baseUrl}}"],
+							"path": ["audit", "user", ":userId"],
+							"variable": [
+								{"key": "userId", "value": "1"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Audit Statistics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/audit/stats",
+							"host": ["{{baseUrl}}"],
+							"path": ["audit", "stats"]
+						}
+					}
+				},
+				{
+					"name": "Get Audit Filter Options",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/audit/filter-options",
+							"host": ["{{baseUrl}}"],
+							"path": ["audit", "filter-options"]
 						}
 					}
 				}
