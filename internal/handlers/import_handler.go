@@ -269,8 +269,7 @@ func (h *ImportHandler) ImportTickets(c *fiber.Ctx) error {
 
 		var clientID string
 		if clientEmail != "" {
-			var client models.Client
-			if err := h.clientRepo.FindByEmail(clientEmail, &client); err == nil {
+			if client, err := h.clientRepo.FindByEmail(clientEmail); err == nil {
 				clientID = client.ID
 			}
 		}

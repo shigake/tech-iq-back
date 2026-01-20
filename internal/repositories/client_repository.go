@@ -12,6 +12,7 @@ type ClientRepository interface {
 	Update(client *models.Client) error
 	Delete(id string) error
 	GetByDocument(cpf, cnpj string) (*models.Client, error)
+	FindByEmail(email string) (*models.Client, error)
 	Search(query string, page, size int) ([]models.Client, int64, error)
 	Count() (int64, error)
 }
@@ -68,6 +69,14 @@ func (r *clientRepository) GetByDocument(cpf, cnpj string) (*models.Client, erro
 		query = query.Or("cnpj = ?", cnpj)
 	}
 	if err := query.First(&client).Error; err != nil {
+		return nil, err
+	}
+	return &client, nil
+}
+
+func (r *clientRepository) FindByEmail(email string) (*models.Client, error) {
+	var client models.Client
+	if err := r.db.Where("email = ?", email).First(&client).Error; err != nil {
 		return nil, err
 	}
 	return &client, nil
