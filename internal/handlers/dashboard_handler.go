@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/shigake/tech-iq-back/internal/models"
 	"github.com/shigake/tech-iq-back/internal/services"
 )
 
@@ -31,6 +32,9 @@ func (h *DashboardHandler) GetTicketsByStatus(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to fetch data",
 		})
+	}
+	if data == nil {
+		data = []models.TicketsByStatus{}
 	}
 	return c.JSON(data)
 }
