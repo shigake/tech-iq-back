@@ -130,6 +130,7 @@ func main() {
 	categoryHandler := handlers.NewCategoryHandler(categoryRepo)
 	termsHandler := handlers.NewTermsHandler()
 	exportHandler := handlers.NewExportHandler(clientRepo, technicianRepo, ticketRepo, stockRepo, financialRepo, categoryRepo)
+	importHandler := handlers.NewImportHandler(clientRepo, ticketRepo, categoryRepo)
 	hierarchyHandler := handlers.NewHierarchyHandler(hierarchyRepo)
 	userHandler := handlers.NewUserHandler(userRepo)
 	activityLogHandler := handlers.NewActivityLogHandler(activityLogService)
@@ -264,6 +265,11 @@ func main() {
 	export.Get("/stock/movements", exportHandler.ExportStockMovements)
 	export.Get("/financial/entries", exportHandler.ExportFinancialEntries)
 	export.Get("/categories", exportHandler.ExportCategories)
+
+	// Import routes (admin and employee access)
+	importRoutes := protected.Group("/import", middleware.AdminOrEmployee())
+	importRoutes.Get("/tickets/template", importHandler.DownloadTicketTemplate)
+	importRoutes.Post("/tickets", importHandler.ImportTickets)
 
 	// ==================== Hierarchy Access Control Routes ====================
 	// Hierarchies
