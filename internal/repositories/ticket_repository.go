@@ -61,7 +61,7 @@ func (r *ticketRepository) FindAll(page, size int, filters *models.TicketFilters
 		}
 		if filters.Search != "" {
 			search := "%" + filters.Search + "%"
-			query = query.Where("error_description ILIKE ? OR serial_number ILIKE ? OR computer_brand ILIKE ? OR computer_model ILIKE ?", 
+			query = query.Where("error_description ILIKE ? OR serial_number ILIKE ? OR computer_brand ILIKE ? OR computer_model ILIKE ?",
 				search, search, search, search)
 		}
 		if filters.DateFrom != "" {

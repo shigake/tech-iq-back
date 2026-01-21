@@ -313,19 +313,19 @@ func (h *ImportHandler) ImportTickets(c *fiber.Ctx) error {
 		}
 
 		ticket := &models.Ticket{
-			ExternalReference:   externalRef,
-			StoreCode:           storeCode,
-			StoreName:           storeName,
-			ServiceStreet:       street,
-			ServiceNumber:       number,
-			ServiceCity:         city,
-			ServiceState:        state,
-			ServiceZipCode:      zipCode,
-			ErrorDescription:    errorDesc,
-			ContactName:         contactName,
-			ContactPhone:        contactPhone,
-			Priority:            models.TicketPriority(priority),
-			Status:              models.TicketStatusOpen,
+			ExternalReference: externalRef,
+			StoreCode:         storeCode,
+			StoreName:         storeName,
+			ServiceStreet:     street,
+			ServiceNumber:     number,
+			ServiceCity:       city,
+			ServiceState:      state,
+			ServiceZipCode:    zipCode,
+			ErrorDescription:  errorDesc,
+			ContactName:       contactName,
+			ContactPhone:      contactPhone,
+			Priority:          models.TicketPriority(priority),
+			Status:            models.TicketStatusOpen,
 		}
 
 		if categoryID != "" {

@@ -86,19 +86,8 @@ func (s *authService) SignIn(req *models.SignInRequest, ipAddress, userAgent str
 	// Log successful login
 	s.logSecurityEvent(user.ID, user.Email, "login_success", ipAddress, userAgent, "", true)
 
-	// Get user permissions from hierarchy
-	var permissions []string
-	if user.Role == "ADMIN" {
-		// Admin has all permissions
-		allPerms, _ := s.hierarchyRepo.GetAllPermissions()
-		permissions = make([]string, len(allPerms))
-		for i, p := range allPerms {
-			permissions[i] = p.Code
-		}
-	} else {
-		// Get permissions from user memberships
-		permissions, _ = s.hierarchyRepo.GetUserPermissions(user.ID)
-	}
+	// Get user permissions from hierarchy memberships
+	permissions, _ := s.hierarchyRepo.GetUserPermissions(user.ID)
 
 	return &models.AuthResponse{
 		Token:        token,
@@ -222,17 +211,8 @@ func (s *authService) RefreshToken(tokenString string) (*models.AuthResponse, er
 		}
 	}
 
-	// Get user permissions
-	var permissions []string
-	if user.Role == "ADMIN" {
-		allPerms, _ := s.hierarchyRepo.GetAllPermissions()
-		permissions = make([]string, len(allPerms))
-		for i, p := range allPerms {
-			permissions[i] = p.Code
-		}
-	} else {
-		permissions, _ = s.hierarchyRepo.GetUserPermissions(user.ID)
-	}
+	// Get user permissions from hierarchy memberships
+	permissions, _ := s.hierarchyRepo.GetUserPermissions(user.ID)
 
 	return &models.AuthResponse{
 		Token:        newToken,
