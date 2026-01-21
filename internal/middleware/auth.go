@@ -51,49 +51,26 @@ func JWTProtected(secret string) fiber.Handler {
 	}
 }
 
+// AdminOnly - deprecated, permissions are now handled by the profile system
+// Kept for compatibility, does nothing
 func AdminOnly() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		role := c.Locals("userRole")
-		if role != "ADMIN" {
-			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-				"error": "Admin access required",
-			})
-		}
 		return c.Next()
 	}
 }
 
-// AdminOrEmployee allows ADMIN and EMPLOYEE roles
+// AdminOrEmployee - deprecated, permissions are now handled by the profile system
+// Kept for compatibility, does nothing
 func AdminOrEmployee() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		role := c.Locals("userRole")
-		if role != "ADMIN" && role != "EMPLOYEE" {
-			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-				"error": "Employee or admin access required",
-			})
-		}
 		return c.Next()
 	}
 }
 
-// WriteAccess restricts modification operations to ADMIN and EMPLOYEE
-// Technicians (USER role) can only read
+// WriteAccess - deprecated, permissions are now handled by the profile system
+// Kept for compatibility, does nothing
 func WriteAccess() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		role := c.Locals("userRole")
-		method := c.Method()
-		
-		// GET requests allowed for all authenticated users
-		if method == "GET" {
-			return c.Next()
-		}
-		
-		// POST, PUT, DELETE, PATCH require ADMIN or EMPLOYEE role
-		if role != "ADMIN" && role != "EMPLOYEE" {
-			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-				"error": "Write access denied. Read-only access for technicians.",
-			})
-		}
 		return c.Next()
 	}
 }

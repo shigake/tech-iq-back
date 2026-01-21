@@ -27,14 +27,6 @@ func NewAdminHandler(systemMetricsService services.SystemMetricsService) *AdminH
 // @Security BearerAuth
 // @Router /api/admin/system-metrics [get]
 func (h *AdminHandler) GetSystemMetrics(c *fiber.Ctx) error {
-	// Check if user is admin
-	userRole := getUserRole(c)
-	if userRole != "ADMIN" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": "Only admins can view system metrics",
-		})
-	}
-
 	metrics, err := h.systemMetricsService.GetMetrics()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{

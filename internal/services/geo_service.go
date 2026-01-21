@@ -213,17 +213,6 @@ func (s *GeoService) CreateBatchLocations(userID string, req *models.BatchLocati
 
 // GetLastLocations obtém as últimas localizações de TODOS os técnicos (do cache Redis)
 func (s *GeoService) GetLastLocations(userID uuid.UUID, filter repositories.GeoFilter) ([]models.TechnicianLocationResponse, int64, error) {
-	// Verificar se o usuário é admin
-	user, err := s.userRepo.FindByID(userID.String())
-	if err != nil {
-		return nil, 0, err
-	}
-
-	// Por enquanto, apenas admins podem ver
-	if user.Role != "ADMIN" && user.Role != "admin" {
-		return []models.TechnicianLocationResponse{}, 0, nil
-	}
-
 	// Buscar do cache Redis (ou fallback para banco)
 	allTechnicians, err := s.GetAllTechniciansFromCache()
 	if err != nil {

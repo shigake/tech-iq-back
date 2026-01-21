@@ -53,14 +53,6 @@ func getUserID(c *fiber.Ctx) string {
 // @Success 200 {object} map[string]interface{}
 // @Router /api/v1/users [get]
 func (h *UserHandler) GetUsers(c *fiber.Ctx) error {
-	// Check if user is admin
-	userRole := getUserRole(c)
-	if userRole != "ADMIN" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": "Only admins can list users",
-		})
-	}
-
 	page, _ := strconv.Atoi(c.Query("page", "1"))
 	limit, _ := strconv.Atoi(c.Query("limit", "20"))
 	search := c.Query("search", "")
@@ -103,16 +95,7 @@ func (h *UserHandler) GetUsers(c *fiber.Ctx) error {
 // @Success 200 {object} models.UserResponse
 // @Router /api/v1/users/{id} [get]
 func (h *UserHandler) GetUser(c *fiber.Ctx) error {
-	userRole := getUserRole(c)
-	currentUserID := getUserID(c)
 	requestedID := c.Params("id")
-
-	// Users can view their own profile, admins can view anyone
-	if userRole != "ADMIN" && currentUserID != requestedID {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": "Access denied",
-		})
-	}
 
 	user, err := h.repo.FindByID(requestedID)
 	if err != nil {
@@ -134,14 +117,6 @@ func (h *UserHandler) GetUser(c *fiber.Ctx) error {
 // @Success 201 {object} models.UserResponse
 // @Router /api/v1/users [post]
 func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
-	// Check if user is admin
-	userRole := getUserRole(c)
-	if userRole != "ADMIN" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": "Only admins can create users",
-		})
-	}
-
 	var req models.CreateUserRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -153,13 +128,6 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error":   "Validation failed",
 			"details": formatValidationErrors(err),
-		})
-	}
-
-	// SECURITY: Prevent creating ADMIN users via API
-	if req.Role == "ADMIN" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": "Cannot create ADMIN users via API",
 		})
 	}
 
@@ -208,16 +176,7 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 // @Success 200 {object} models.UserResponse
 // @Router /api/v1/users/{id} [put]
 func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
-	userRole := getUserRole(c)
-	currentUserID := getUserID(c)
 	targetID := c.Params("id")
-
-	// Only admins can update other users
-	if userRole != "ADMIN" && currentUserID != targetID {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": "Access denied",
-		})
-	}
 
 	var req models.UpdateUserRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -233,24 +192,11 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	// SECURITY: Prevent assigning ADMIN role via API
-	if req.Role == "ADMIN" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": "Cannot assign ADMIN role via API",
-		})
-	}
-
 	user, err := h.repo.FindByID(targetID)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "User not found",
 		})
-	}
-
-	// Non-admins cannot change role or active status
-	if userRole != "ADMIN" {
-		req.Role = ""
-		req.Active = nil
 	}
 
 	// Update fields if provided
@@ -287,7 +233,7 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	return c.JSON(user.ToResponse())
 }
 
-// DeleteUser deletes a user (admin only)
+// DeleteUser deletes a user
 // @Summary Delete user
 // @Tags Users
 // @Security BearerAuth
@@ -295,13 +241,6 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 // @Success 204
 // @Router /api/v1/users/{id} [delete]
 func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
-	userRole := getUserRole(c)
-	if userRole != "ADMIN" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": "Only admins can delete users",
-		})
-	}
-
 	currentUserID := getUserID(c)
 	targetID := c.Params("id")
 
@@ -317,16 +256,6 @@ func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "User not found",
 		})
-	}
-
-	// Don't allow deleting the last admin
-	if user.Role == "ADMIN" {
-		count, _ := h.repo.CountByRole("ADMIN")
-		if count <= 1 {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error": "Cannot delete the last admin user",
-			})
-		}
 	}
 
 	if err := h.repo.Delete(targetID); err != nil {
@@ -349,13 +278,6 @@ func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
 // @Success 200 {object} map[string]string
 // @Router /api/v1/users/{id}/reset-password [post]
 func (h *UserHandler) ResetPassword(c *fiber.Ctx) error {
-	userRole := getUserRole(c)
-	if userRole != "ADMIN" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": "Only admins can reset passwords",
-		})
-	}
-
 	targetID := c.Params("id")
 
 	var req models.ResetPasswordRequest
@@ -400,7 +322,7 @@ func (h *UserHandler) ResetPassword(c *fiber.Ctx) error {
 	})
 }
 
-// ToggleUserStatus toggles user active status (admin only)
+// ToggleUserStatus toggles user active status
 // @Summary Toggle user status
 // @Tags Users
 // @Security BearerAuth
@@ -408,13 +330,6 @@ func (h *UserHandler) ResetPassword(c *fiber.Ctx) error {
 // @Success 200 {object} models.UserResponse
 // @Router /api/v1/users/{id}/toggle-status [post]
 func (h *UserHandler) ToggleUserStatus(c *fiber.Ctx) error {
-	userRole := getUserRole(c)
-	if userRole != "ADMIN" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": "Only admins can toggle user status",
-		})
-	}
-
 	currentUserID := getUserID(c)
 	targetID := c.Params("id")
 

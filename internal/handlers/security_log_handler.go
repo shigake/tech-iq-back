@@ -42,14 +42,6 @@ func NewSecurityLogHandler(service services.SecurityLogService) *SecurityLogHand
 // @Security BearerAuth
 // @Router /api/admin/security-logs [get]
 func (h *SecurityLogHandler) GetSecurityLogs(c *fiber.Ctx) error {
-	// Check if user is admin
-	userRole := getUserRole(c)
-	if userRole != "ADMIN" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": "Only admins can view security logs",
-		})
-	}
-
 	// Parse pagination
 	page, _ := strconv.Atoi(c.Query("page", "1"))
 	limit, _ := strconv.Atoi(c.Query("limit", "20"))
@@ -102,14 +94,6 @@ func (h *SecurityLogHandler) GetSecurityLogs(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /api/admin/security-logs/recent [get]
 func (h *SecurityLogHandler) GetRecentSecurityLogs(c *fiber.Ctx) error {
-	// Check if user is admin
-	userRole := getUserRole(c)
-	if userRole != "ADMIN" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": "Only admins can view security logs",
-		})
-	}
-
 	limit, _ := strconv.Atoi(c.Query("limit", "10"))
 	if limit > 100 {
 		limit = 100
@@ -137,14 +121,6 @@ func (h *SecurityLogHandler) GetRecentSecurityLogs(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /api/admin/security-logs/stats [get]
 func (h *SecurityLogHandler) GetSecurityStats(c *fiber.Ctx) error {
-	// Check if user is admin
-	userRole := getUserRole(c)
-	if userRole != "ADMIN" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": "Only admins can view security stats",
-		})
-	}
-
 	successful, failed, err := h.service.GetTodayStats()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{

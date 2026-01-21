@@ -37,14 +37,6 @@ func NewActivityLogHandler(service services.ActivityLogService) *ActivityLogHand
 // @Success 200 {object} models.PaginatedActivityLogs
 // @Router /api/v1/activity-logs [get]
 func (h *ActivityLogHandler) GetActivityLogs(c *fiber.Ctx) error {
-	// Check if user is admin
-	userRole := getUserRole(c)
-	if userRole != "ADMIN" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": "Only admins can view all activity logs",
-		})
-	}
-
 	page, _ := strconv.Atoi(c.Query("page", "1"))
 	limit, _ := strconv.Atoi(c.Query("limit", "20"))
 
@@ -116,14 +108,6 @@ func (h *ActivityLogHandler) GetMyActivityLogs(c *fiber.Ctx) error {
 // @Success 200 {array} models.ActivityLog
 // @Router /api/v1/activity-logs/recent [get]
 func (h *ActivityLogHandler) GetRecentActivityLogs(c *fiber.Ctx) error {
-	// Check if user is admin
-	userRole := getUserRole(c)
-	if userRole != "ADMIN" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": "Only admins can view recent activity logs",
-		})
-	}
-
 	limit, _ := strconv.Atoi(c.Query("limit", "10"))
 
 	logs, err := h.service.GetRecentLogs(limit)
@@ -151,15 +135,6 @@ func (h *ActivityLogHandler) GetActivityLogByID(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "Activity log not found",
-		})
-	}
-
-	// Users can only view their own logs (admins can view all)
-	userRole := getUserRole(c)
-	userID := getUserID(c)
-	if userRole != "ADMIN" && log.UserID != userID {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": "Access denied",
 		})
 	}
 
