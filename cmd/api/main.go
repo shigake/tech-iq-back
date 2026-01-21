@@ -108,7 +108,7 @@ func main() {
 	// Initialize services
 	authService := services.NewAuthService(userRepo, securityLogRepo, hierarchyRepo, cfg)
 	technicianService := services.NewTechnicianService(technicianRepo, redisClient)
-	ticketService := services.NewTicketService(ticketRepo, technicianRepo, clientRepo, categoryRepo)
+	ticketService := services.NewTicketService(ticketRepo, technicianRepo, clientRepo, categoryRepo, hierarchyRepo)
 	dashboardService := services.NewDashboardService(technicianRepo, ticketRepo, clientRepo)
 	activityLogService := services.NewActivityLogService(activityLogRepo)
 	hierarchyService := services.NewHierarchyService(hierarchyRepo)

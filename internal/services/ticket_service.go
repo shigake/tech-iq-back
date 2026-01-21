@@ -26,6 +26,7 @@ type ticketService struct {
 	technicianRepo repositories.TechnicianRepository
 	clientRepo     repositories.ClientRepository
 	categoryRepo   repositories.CategoryRepository
+	hierarchyRepo  repositories.HierarchyRepository
 }
 
 func NewTicketService(
@@ -33,12 +34,14 @@ func NewTicketService(
 	technicianRepo repositories.TechnicianRepository,
 	clientRepo repositories.ClientRepository,
 	categoryRepo repositories.CategoryRepository,
+	hierarchyRepo repositories.HierarchyRepository,
 ) TicketService {
 	return &ticketService{
 		ticketRepo:     ticketRepo,
 		technicianRepo: technicianRepo,
 		clientRepo:     clientRepo,
 		categoryRepo:   categoryRepo,
+		hierarchyRepo:  hierarchyRepo,
 	}
 }
 
@@ -116,28 +119,25 @@ func (s *ticketService) GetAll(page, size int, filters *models.TicketFilters) (*
 	}, nil
 }
 
-// GetAllForUser returns tickets filtered by user role
-// For USER role (technicians), only returns tickets assigned to their technician profile
+// GetAllForUser returns tickets filtered by user hierarchy membership
+// If user has no hierarchy membership, they can see all tickets
+// If user is linked to a technician, they only see their assigned tickets
 func (s *ticketService) GetAllForUser(page, size int, filters *models.TicketFilters, userID string, userRole string) (*models.PaginatedResponse, error) {
-	// If user is ADMIN or EMPLOYEE, show all tickets
-	if userRole == "ADMIN" || userRole == "EMPLOYEE" {
+	// Check if user has any hierarchy membership
+	memberships, _ := s.hierarchyRepo.GetUserMemberships(userID)
+	if len(memberships) == 0 {
+		// User is not in any hierarchy - can see all tickets
 		return s.GetAll(page, size, filters)
 	}
 
-	// For USER role, find the technician linked to this user
+	// User is in a hierarchy - check if they're linked to a technician
 	technician, err := s.technicianRepo.FindByUserID(userID)
 	if err != nil {
-		// User is not linked to any technician - return empty result
-		return &models.PaginatedResponse{
-			Content:       []models.TicketDTO{},
-			Page:          page,
-			Size:          size,
-			TotalElements: 0,
-			TotalPages:    0,
-		}, nil
+		// User is in hierarchy but not a technician - show all tickets
+		return s.GetAll(page, size, filters)
 	}
 
-	// Force filter by this technician
+	// User is a technician - show only their assigned tickets
 	if filters == nil {
 		filters = &models.TicketFilters{}
 	}
