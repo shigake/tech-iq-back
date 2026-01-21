@@ -1,12 +1,46 @@
 package models
 
 import (
+	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
+
+// FlexibleUint accepts both string and number in JSON
+type FlexibleUint struct {
+	Value *uint
+}
+
+func (f *FlexibleUint) UnmarshalJSON(data []byte) error {
+	var strVal string
+	if err := json.Unmarshal(data, &strVal); err == nil {
+		if strVal == "" {
+			f.Value = nil
+			return nil
+		}
+		val, err := strconv.ParseUint(strVal, 10, 64)
+		if err != nil {
+			return err
+		}
+		uintVal := uint(val)
+		f.Value = &uintVal
+		return nil
+	}
+
+	var numVal float64
+	if err := json.Unmarshal(data, &numVal); err == nil {
+		uintVal := uint(numVal)
+		f.Value = &uintVal
+		return nil
+	}
+
+	f.Value = nil
+	return nil
+}
 
 type TicketStatus string
 
@@ -29,7 +63,7 @@ const (
 
 type Ticket struct {
 	ID               string         `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
-	OSNumber         string         `json:"osNumber" gorm:"type:varchar(50);uniqueIndex"`
+	OSNumber         string         `json:"osNumber" gorm:"type:varchar(50);index"`
 	Status           TicketStatus   `json:"status" gorm:"type:varchar(50);default:ABERTO;index"`
 	Priority         TicketPriority `json:"priority" gorm:"type:varchar(20);default:NORMAL"`
 	ErrorDescription string         `json:"errorDescription" gorm:"type:text"`
@@ -201,20 +235,27 @@ func (t *Ticket) ToDTO() TicketDTO {
 }
 
 type CreateTicketRequest struct {
-	ErrorDescription string   `json:"errorDescription" validate:"required"`
-	Priority         string   `json:"priority"`
-	NodeID           *uint    `json:"nodeId"`
-	ClientID         string   `json:"clientId"`
-	CategoryID       string   `json:"categoryId"`
-	TechnicianIDs    []string `json:"technicianIds"`
-	StartDate        string   `json:"startDate"`
-	DueDate          string   `json:"dueDate"`
-	// Accept both old and new field names for compatibility
-	ComputerBrand string `json:"computerBrand"`
-	ComputerModel string `json:"computerModel"`
-	Manufacturer  string `json:"manufacturer"` // alias for ComputerBrand
-	Model         string `json:"model"`        // alias for ComputerModel
-	SerialNumber  string `json:"serialNumber"`
+	OSNumber         string       `json:"osNumber"`
+	Status           string       `json:"status"`
+	ErrorDescription string       `json:"errorDescription" validate:"required"`
+	CustomerFeedback string       `json:"customerFeedback"`
+	Priority         string       `json:"priority"`
+	NodeID           FlexibleUint `json:"nodeId"`
+	ClientID         string       `json:"clientId"`
+	CategoryID       string       `json:"categoryId"`
+	TechnicianIDs    []string     `json:"technicianIds"`
+	StartDate        string       `json:"startDate"`
+	DueDate          string       `json:"dueDate"`
+	ComputerBrand    string       `json:"computerBrand"`
+	ComputerModel    string       `json:"computerModel"`
+	Manufacturer     string       `json:"manufacturer"`
+	Model            string       `json:"model"`
+	SerialNumber     string       `json:"serialNumber"`
+}
+
+// GetNodeID returns the node ID as *uint
+func (r *CreateTicketRequest) GetNodeID() *uint {
+	return r.NodeID.Value
 }
 
 // GetBrand returns computerBrand or manufacturer (for backward compatibility)

@@ -9,6 +9,7 @@ type TicketRepository interface {
 	Create(ticket *models.Ticket) error
 	FindAll(page, size int, filters *models.TicketFilters) ([]models.Ticket, int64, error)
 	FindByID(id string) (*models.Ticket, error)
+	FindByExternalReference(externalRef string) (*models.Ticket, error)
 	Update(ticket *models.Ticket) error
 	Delete(id string) error
 	CountByStatus(status string) (int64, error)
@@ -102,6 +103,15 @@ func (r *ticketRepository) FindByID(id string) (*models.Ticket, error) {
 		Preload("Files").
 		Where("id = ?", id).
 		First(&ticket).Error
+	if err != nil {
+		return nil, err
+	}
+	return &ticket, nil
+}
+
+func (r *ticketRepository) FindByExternalReference(externalRef string) (*models.Ticket, error) {
+	var ticket models.Ticket
+	err := r.db.Where("external_reference = ?", externalRef).First(&ticket).Error
 	if err != nil {
 		return nil, err
 	}
