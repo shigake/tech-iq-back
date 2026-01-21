@@ -86,8 +86,8 @@ func (s *authService) SignIn(req *models.SignInRequest, ipAddress, userAgent str
 	// Log successful login
 	s.logSecurityEvent(user.ID, user.Email, "login_success", ipAddress, userAgent, "", true)
 
-	// Get user permissions from hierarchy memberships
-	permissions, _ := s.hierarchyRepo.GetUserPermissions(user.ID)
+	// Get user permissions from their role profile
+	permissions, _ := s.hierarchyRepo.GetPermissionsByRoleName(user.Role)
 
 	return &models.AuthResponse{
 		Token:        token,
@@ -211,8 +211,8 @@ func (s *authService) RefreshToken(tokenString string) (*models.AuthResponse, er
 		}
 	}
 
-	// Get user permissions from hierarchy memberships
-	permissions, _ := s.hierarchyRepo.GetUserPermissions(user.ID)
+	// Get user permissions from their role profile
+	permissions, _ := s.hierarchyRepo.GetPermissionsByRoleName(user.Role)
 
 	return &models.AuthResponse{
 		Token:        newToken,

@@ -31,7 +31,9 @@ type HierarchyRepository interface {
 	// Role CRUD
 	GetAllRoles() ([]models.Role, error)
 	GetRoleByID(id uint) (*models.Role, error)
+	GetRoleByName(name string) (*models.Role, error)
 	GetRoleWithPermissions(id uint) (*models.Role, error)
+	GetPermissionsByRoleName(roleName string) ([]string, error)
 	CreateRole(role *models.Role) error
 	UpdateRole(role *models.Role) error
 	DeleteRole(id uint) error
@@ -312,6 +314,15 @@ func (r *hierarchyRepository) GetRoleByID(id uint) (*models.Role, error) {
 	return &role, nil
 }
 
+func (r *hierarchyRepository) GetRoleByName(name string) (*models.Role, error) {
+	var role models.Role
+	err := r.db.Where("name = ?", name).First(&role).Error
+	if err != nil {
+		return nil, err
+	}
+	return &role, nil
+}
+
 func (r *hierarchyRepository) GetRoleWithPermissions(id uint) (*models.Role, error) {
 	var role models.Role
 	err := r.db.Preload("Permissions").First(&role, id).Error
@@ -319,6 +330,19 @@ func (r *hierarchyRepository) GetRoleWithPermissions(id uint) (*models.Role, err
 		return nil, err
 	}
 	return &role, nil
+}
+
+func (r *hierarchyRepository) GetPermissionsByRoleName(roleName string) ([]string, error) {
+	var role models.Role
+	err := r.db.Preload("Permissions").Where("name = ?", roleName).First(&role).Error
+	if err != nil {
+		return nil, err
+	}
+	permissions := make([]string, len(role.Permissions))
+	for i, p := range role.Permissions {
+		permissions[i] = p.Code
+	}
+	return permissions, nil
 }
 
 func (r *hierarchyRepository) CreateRole(role *models.Role) error {
