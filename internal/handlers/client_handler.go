@@ -130,9 +130,8 @@ func (h *ClientHandler) Create(c *fiber.Ctx) error {
 		ZipCode:           getStringFromMap(body, "zipCode"),
 	}
 	
-	// Sanitize empty strings to avoid unique constraint issues
-	client.CPF = sanitizeUniqueField(client.CPF)
-	client.CNPJ = sanitizeUniqueField(client.CNPJ)
+	client.CPF = sanitizeDocument(client.CPF)
+	client.CNPJ = sanitizeDocument(client.CNPJ)
 
 	if err := h.repo.Create(&client); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -143,20 +142,20 @@ func (h *ClientHandler) Create(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(client)
 }
 
-// getStringFromMap safely extracts a string from a map
 func getStringFromMap(m map[string]interface{}, key string) string {
 	if v, exists := m[key]; exists && v != nil {
 		if s, ok := v.(string); ok {
-			return s
+			return strings.TrimSpace(s)
 		}
 	}
 	return ""
 }
 
-// sanitizeUniqueField returns empty string as is but trims whitespace
-// For the unique index to work correctly, we need to handle this at DB level
-func sanitizeUniqueField(s string) string {
+func sanitizeDocument(s string) string {
 	s = strings.TrimSpace(s)
+	s = strings.ReplaceAll(s, ".", "")
+	s = strings.ReplaceAll(s, "-", "")
+	s = strings.ReplaceAll(s, "/", "")
 	return s
 }
 
@@ -195,12 +194,11 @@ func (h *ClientHandler) Update(c *fiber.Ctx) error {
 		}
 	}
 
-	// Update other fields
 	if v := getStringFromMap(body, "cpf"); v != "" || body["cpf"] != nil {
-		existing.CPF = sanitizeUniqueField(v)
+		existing.CPF = sanitizeDocument(v)
 	}
 	if v := getStringFromMap(body, "cnpj"); v != "" || body["cnpj"] != nil {
-		existing.CNPJ = sanitizeUniqueField(v)
+		existing.CNPJ = sanitizeDocument(v)
 	}
 	if v := getStringFromMap(body, "inscricaoEstadual"); v != "" || body["inscricaoEstadual"] != nil {
 		existing.InscricaoEstadual = v

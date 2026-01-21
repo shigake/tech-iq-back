@@ -39,14 +39,13 @@ func Connect(cfg *config.Config) (*gorm.DB, error) {
 	return db, nil
 }
 
-// dropOldConstraints removes old unique constraints that block empty values
-// PostgreSQL allows multiple NULLs in UNIQUE columns, but not multiple empty strings
-// We use partial indexes (WHERE field <> ”) in the model to allow empty values
 func dropOldConstraints(db *gorm.DB) {
 	constraints := []string{
 		"ALTER TABLE clients DROP CONSTRAINT IF EXISTS clients_cnpj_key",
 		"ALTER TABLE clients DROP CONSTRAINT IF EXISTS clients_cpf_key",
 		"ALTER TABLE technicians DROP CONSTRAINT IF EXISTS technicians_cpf_key",
+		"DROP INDEX IF EXISTS idx_clients_cpf",
+		"DROP INDEX IF EXISTS idx_clients_cnpj",
 	}
 
 	for _, sql := range constraints {
@@ -54,6 +53,21 @@ func dropOldConstraints(db *gorm.DB) {
 			log.Printf("⚠️ Could not drop constraint: %v", err)
 		}
 	}
+}
+
+func createPartialIndexes(db *gorm.DB) {
+	indexes := []string{
+		"CREATE UNIQUE INDEX IF NOT EXISTS idx_clients_cpf_partial ON clients (cpf) WHERE cpf IS NOT NULL AND cpf <> ''",
+		"CREATE UNIQUE INDEX IF NOT EXISTS idx_clients_cnpj_partial ON clients (cnpj) WHERE cnpj IS NOT NULL AND cnpj <> ''",
+		"CREATE UNIQUE INDEX IF NOT EXISTS idx_technicians_cpf_partial ON technicians (cpf) WHERE cpf IS NOT NULL AND cpf <> ''",
+	}
+
+	for _, sql := range indexes {
+		if err := db.Exec(sql).Error; err != nil {
+			log.Printf("⚠️ Could not create partial index: %v", err)
+		}
+	}
+	log.Println("✅ Partial indexes created")
 }
 
 func Migrate(db *gorm.DB) error {
@@ -115,6 +129,8 @@ func Migrate(db *gorm.DB) error {
 
 	// Seed default financial categories
 	SeedFinancialCategories(db)
+
+	createPartialIndexes(db)
 
 	log.Println("✅ Migrations completed")
 	return nil
