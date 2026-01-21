@@ -2,8 +2,6 @@ package models
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -95,39 +93,31 @@ type Ticket struct {
 }
 
 func (t *Ticket) BeforeCreate(tx *gorm.DB) error {
-	// Generate UUID if not set
 	if t.ID == "" {
 		t.ID = uuid.New().String()
 	}
-	// Generate OS number if not set
 	if t.OSNumber == "" {
-		// Get the highest sequence number for the current year
 		year := time.Now().Year()
-		var maxOS string
-		tx.Model(&Ticket{}).
-			Where("os_number LIKE ?", fmt.Sprintf("%d-%%", year)).
-			Order("os_number DESC").
-			Limit(1).
-			Pluck("os_number", &maxOS)
+		seqName := fmt.Sprintf("os_number_seq_%d", year)
 
-		nextSeq := 1
-		if maxOS != "" {
-			// Extract sequence number from format "YYYY-NNNNNN"
-			parts := strings.Split(maxOS, "-")
-			if len(parts) == 2 {
-				if seq, err := strconv.Atoi(parts[1]); err == nil {
-					nextSeq = seq + 1
-				}
-			}
-		}
+		tx.Exec(fmt.Sprintf(`
+			DO $$ 
+			BEGIN
+				CREATE SEQUENCE IF NOT EXISTS %s START WITH 1 INCREMENT BY 1;
+			EXCEPTION WHEN duplicate_table THEN
+				NULL;
+			END $$;
+		`, seqName))
 
-		t.OSNumber = generateOSNumber(nextSeq)
+		var nextSeq int
+		tx.Raw(fmt.Sprintf("SELECT nextval('%s')", seqName)).Scan(&nextSeq)
+
+		t.OSNumber = generateOSNumber(year, nextSeq)
 	}
 	return nil
 }
 
-func generateOSNumber(seq int) string {
-	year := time.Now().Year()
+func generateOSNumber(year int, seq int) string {
 	return fmt.Sprintf("%d-%06d", year, seq)
 }
 
