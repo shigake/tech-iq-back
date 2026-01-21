@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/shigake/tech-iq-back/internal/models"
@@ -67,13 +66,17 @@ func (h *ImportHandler) DownloadTicketTemplate(c *fiber.Ctx) error {
 	})
 
 	headers := []string{
-		"Descrição do Erro*", "Prioridade", "Email do Cliente", "Categoria",
-		"Data Início", "Data Limite", "Marca", "Modelo", "Número de Série",
+		"Referencia Externa", "Codigo Loja", "Nome Loja",
+		"Rua", "Numero", "Cidade", "Estado", "CEP",
+		"Descricao do Erro*", "Contato", "Telefone Contato",
+		"Prioridade", "Categoria",
 	}
 
 	colWidths := map[string]float64{
-		"A": 40, "B": 15, "C": 30, "D": 20,
-		"E": 15, "F": 15, "G": 15, "H": 20, "I": 20,
+		"A": 20, "B": 15, "C": 25,
+		"D": 35, "E": 10, "F": 20, "G": 8, "H": 12,
+		"I": 50, "J": 25, "K": 18,
+		"L": 12, "M": 20,
 	}
 
 	for col, width := range colWidths {
@@ -87,8 +90,10 @@ func (h *ImportHandler) DownloadTicketTemplate(c *fiber.Ctx) error {
 	}
 
 	instructions := []string{
-		"Obrigatório", "BAIXA, NORMAL, ALTA ou URGENTE", "Email cadastrado", "Nome da categoria",
-		"DD/MM/AAAA", "DD/MM/AAAA", "Ex: Dell, HP", "Ex: Latitude 5520", "Nº de série",
+		"Ex: RITM6261364", "Ex: 7962", "Ex: TIMON",
+		"Ex: AV PRES MEDICI", "Ex: 268", "Ex: TIMON", "Ex: MA", "Ex: 65631-391",
+		"Obrigatorio", "Ex: George Franklin", "Ex: 11999999999",
+		"BAIXA/NORMAL/ALTA/URGENTE", "Nome da categoria",
 	}
 
 	for i, instruction := range instructions {
@@ -98,8 +103,10 @@ func (h *ImportHandler) DownloadTicketTemplate(c *fiber.Ctx) error {
 	}
 
 	exampleData := []string{
-		"Computador não liga após atualização", "ALTA", "cliente@empresa.com", "Hardware",
-		"20/01/2026", "25/01/2026", "Dell", "Latitude 5520", "ABC123XYZ",
+		"RITM6261364", "7962", "TIMON",
+		"AV PRES MEDICI", "268", "TIMON", "MA", "65631-391",
+		"Cabo de rede do Caixa 5 com problemas", "George Franklin", "86999999999",
+		"NORMAL", "Infraestrutura",
 	}
 
 	for i, value := range exampleData {
@@ -109,8 +116,10 @@ func (h *ImportHandler) DownloadTicketTemplate(c *fiber.Ctx) error {
 	}
 
 	exampleData2 := []string{
-		"Impressora não imprime em rede", "NORMAL", "joao@cliente.com", "Impressoras",
-		"21/01/2026", "28/01/2026", "HP", "LaserJet Pro", "HP12345",
+		"RITM6261400", "8100", "TERESINA",
+		"AV FREI SERAFIM", "1500", "TERESINA", "PI", "64001-020",
+		"Impressora nao imprime em rede", "Maria Silva", "86988888888",
+		"ALTA", "Impressoras",
 	}
 
 	for i, value := range exampleData2 {
@@ -125,22 +134,22 @@ func (h *ImportHandler) DownloadTicketTemplate(c *fiber.Ctx) error {
 	instructionsSheet := "Instruções"
 	f.NewSheet(instructionsSheet)
 
-	f.SetCellValue(instructionsSheet, "A1", "INSTRUÇÕES PARA IMPORTAÇÃO DE CHAMADOS")
+	f.SetCellValue(instructionsSheet, "A1", "INSTRUCOES PARA IMPORTACAO DE CHAMADOS")
 	f.SetCellValue(instructionsSheet, "A3", "1. Preencha os dados na aba 'Chamados'")
-	f.SetCellValue(instructionsSheet, "A4", "2. O campo 'Descrição do Erro' é obrigatório")
+	f.SetCellValue(instructionsSheet, "A4", "2. O campo 'Descricao do Erro' e obrigatorio")
 	f.SetCellValue(instructionsSheet, "A5", "3. Para Prioridade, use: BAIXA, NORMAL, ALTA ou URGENTE")
-	f.SetCellValue(instructionsSheet, "A6", "4. O Email do Cliente deve estar cadastrado no sistema")
-	f.SetCellValue(instructionsSheet, "A7", "5. A Categoria deve corresponder a uma categoria existente")
-	f.SetCellValue(instructionsSheet, "A8", "6. Datas no formato DD/MM/AAAA")
-	f.SetCellValue(instructionsSheet, "A9", "7. Apague as linhas de exemplo antes de importar")
-	f.SetCellValue(instructionsSheet, "A11", "CAMPOS:")
-	f.SetCellValue(instructionsSheet, "A12", "- Descrição do Erro*: Descrição detalhada do problema")
-	f.SetCellValue(instructionsSheet, "A13", "- Prioridade: BAIXA, NORMAL, ALTA ou URGENTE (padrão: NORMAL)")
-	f.SetCellValue(instructionsSheet, "A14", "- Email do Cliente: Email do cliente cadastrado")
-	f.SetCellValue(instructionsSheet, "A15", "- Categoria: Nome exato da categoria")
-	f.SetCellValue(instructionsSheet, "A16", "- Data Início: Data de início do chamado")
-	f.SetCellValue(instructionsSheet, "A17", "- Data Limite: Data limite para resolução")
-	f.SetCellValue(instructionsSheet, "A18", "- Marca/Modelo/Série: Informações do equipamento")
+	f.SetCellValue(instructionsSheet, "A6", "4. A Categoria deve corresponder a uma categoria existente")
+	f.SetCellValue(instructionsSheet, "A7", "5. Apague as linhas de exemplo antes de importar")
+	f.SetCellValue(instructionsSheet, "A9", "CAMPOS:")
+	f.SetCellValue(instructionsSheet, "A10", "- Referencia Externa: Numero do chamado do cliente (ex: RITM6261364)")
+	f.SetCellValue(instructionsSheet, "A11", "- Codigo Loja: Codigo identificador da loja")
+	f.SetCellValue(instructionsSheet, "A12", "- Nome Loja: Nome ou cidade da loja")
+	f.SetCellValue(instructionsSheet, "A13", "- Endereco: Rua, Numero, Cidade, Estado, CEP do local de atendimento")
+	f.SetCellValue(instructionsSheet, "A14", "- Descricao do Erro*: Descricao detalhada do problema (OBRIGATORIO)")
+	f.SetCellValue(instructionsSheet, "A15", "- Contato: Nome da pessoa para procurar no local")
+	f.SetCellValue(instructionsSheet, "A16", "- Telefone Contato: Telefone do contato")
+	f.SetCellValue(instructionsSheet, "A17", "- Prioridade: BAIXA, NORMAL, ALTA ou URGENTE (padrao: NORMAL)")
+	f.SetCellValue(instructionsSheet, "A18", "- Categoria: Nome exato da categoria")
 
 	titleStyle, _ := f.NewStyle(&excelize.Style{
 		Font: &excelize.Font{Bold: true, Size: 14, Color: "4472C4"},
@@ -218,60 +227,69 @@ func (h *ImportHandler) ImportTickets(c *fiber.Ctx) error {
 			continue
 		}
 
+		externalRef := ""
+		storeCode := ""
+		storeName := ""
+		street := ""
+		number := ""
+		city := ""
+		state := ""
+		zipCode := ""
 		errorDesc := ""
+		contactName := ""
+		contactPhone := ""
 		priority := "NORMAL"
-		clientEmail := ""
 		categoryName := ""
-		startDate := ""
-		dueDate := ""
-		brand := ""
-		model := ""
-		serialNumber := ""
 
 		if len(row) > 0 {
-			errorDesc = strings.TrimSpace(row[0])
+			externalRef = strings.TrimSpace(row[0])
 		}
-		if len(row) > 1 && row[1] != "" {
-			priority = strings.ToUpper(strings.TrimSpace(row[1]))
+		if len(row) > 1 {
+			storeCode = strings.TrimSpace(row[1])
 		}
 		if len(row) > 2 {
-			clientEmail = strings.TrimSpace(row[2])
+			storeName = strings.TrimSpace(row[2])
 		}
 		if len(row) > 3 {
-			categoryName = strings.TrimSpace(row[3])
+			street = strings.TrimSpace(row[3])
 		}
 		if len(row) > 4 {
-			startDate = strings.TrimSpace(row[4])
+			number = strings.TrimSpace(row[4])
 		}
 		if len(row) > 5 {
-			dueDate = strings.TrimSpace(row[5])
+			city = strings.TrimSpace(row[5])
 		}
 		if len(row) > 6 {
-			brand = strings.TrimSpace(row[6])
+			state = strings.TrimSpace(row[6])
 		}
 		if len(row) > 7 {
-			model = strings.TrimSpace(row[7])
+			zipCode = strings.TrimSpace(row[7])
 		}
 		if len(row) > 8 {
-			serialNumber = strings.TrimSpace(row[8])
+			errorDesc = strings.TrimSpace(row[8])
+		}
+		if len(row) > 9 {
+			contactName = strings.TrimSpace(row[9])
+		}
+		if len(row) > 10 {
+			contactPhone = strings.TrimSpace(row[10])
+		}
+		if len(row) > 11 && row[11] != "" {
+			priority = strings.ToUpper(strings.TrimSpace(row[11]))
+		}
+		if len(row) > 12 {
+			categoryName = strings.TrimSpace(row[12])
 		}
 
 		if errorDesc == "" {
 			errCount++
-			errorDetails = append(errorDetails, fmt.Sprintf("Linha %d: Descrição do erro é obrigatória", i+1))
+			errorDetails = append(errorDetails, fmt.Sprintf("Linha %d: Descricao do erro e obrigatoria", i+1))
 			continue
 		}
 
 		validPriorities := map[string]bool{"BAIXA": true, "NORMAL": true, "ALTA": true, "URGENTE": true}
 		if !validPriorities[priority] {
 			priority = "NORMAL"
-		}
-
-		var clientID string
-		if clientEmail != "" {
-			if client, err := h.clientRepo.FindByEmail(clientEmail); err == nil {
-				clientID = client.ID
-			}
 		}
 
 		var categoryID string
@@ -292,32 +310,23 @@ func (h *ImportHandler) ImportTickets(c *fiber.Ctx) error {
 		}
 
 		ticket := &models.Ticket{
-			ErrorDescription: errorDesc,
-			Priority:         models.TicketPriority(priority),
-			Status:           models.TicketStatusOpen,
-			ComputerBrand:    brand,
-			ComputerModel:    model,
-			SerialNumber:     serialNumber,
-		}
-
-		if clientID != "" {
-			ticket.ClientID = &clientID
+			ExternalReference:   externalRef,
+			StoreCode:           storeCode,
+			StoreName:           storeName,
+			ServiceStreet:       street,
+			ServiceNumber:       number,
+			ServiceCity:         city,
+			ServiceState:        state,
+			ServiceZipCode:      zipCode,
+			ErrorDescription:    errorDesc,
+			ContactName:         contactName,
+			ContactPhone:        contactPhone,
+			Priority:            models.TicketPriority(priority),
+			Status:              models.TicketStatusOpen,
 		}
 
 		if categoryID != "" {
 			ticket.CategoryID = &categoryID
-		}
-
-		if startDate != "" {
-			if t, err := time.Parse("02/01/2006", startDate); err == nil {
-				ticket.StartDate = &t
-			}
-		}
-
-		if dueDate != "" {
-			if t, err := time.Parse("02/01/2006", dueDate); err == nil {
-				ticket.DueDate = &t
-			}
 		}
 
 		if err := h.ticketRepo.Create(ticket); err != nil {
@@ -331,7 +340,7 @@ func (h *ImportHandler) ImportTickets(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"success":    true,
-		"message":    fmt.Sprintf("Importação concluída: %d chamados criados, %d erros", created, errCount),
+		"message":    fmt.Sprintf("Importacao concluida: %d chamados criados, %d erros", created, errCount),
 		"imported":   created,
 		"errorCount": errCount,
 		"errors":     errorDetails,

@@ -13,10 +13,10 @@ import (
 type TicketStatus string
 
 const (
-	TicketStatusOpen       TicketStatus = "ABERTO"
-	TicketStatusInProgress TicketStatus = "EM_ATENDIMENTO"
-	TicketStatusForClosing TicketStatus = "PARA_FECHAMENTO"
-	TicketStatusClosed     TicketStatus = "FECHADO"
+	TicketStatusOpen         TicketStatus = "ABERTO"
+	TicketStatusInProgress   TicketStatus = "EM_ATENDIMENTO"
+	TicketStatusForClosing   TicketStatus = "PARA_FECHAMENTO"
+	TicketStatusClosed       TicketStatus = "FECHADO"
 	TicketStatusUnproductive TicketStatus = "IMPRODUTIVO"
 )
 
@@ -60,6 +60,25 @@ type Ticket struct {
 	ComputerModel string `json:"computerModel" gorm:"column:computer_model;type:varchar(100)"`
 	SerialNumber  string `json:"serialNumber" gorm:"column:serial_number;type:varchar(100)"`
 
+	// External Reference (e.g., RITM6261364)
+	ExternalReference string `json:"externalReference" gorm:"column:external_reference;type:varchar(100);index"`
+
+	// Store/Location Info
+	StoreCode string `json:"storeCode" gorm:"column:store_code;type:varchar(50);index"`
+	StoreName string `json:"storeName" gorm:"column:store_name;type:varchar(255)"`
+
+	// Service Location Address
+	ServiceStreet       string `json:"serviceStreet" gorm:"column:service_street;type:varchar(255)"`
+	ServiceNumber       string `json:"serviceNumber" gorm:"column:service_number;type:varchar(20)"`
+	ServiceNeighborhood string `json:"serviceNeighborhood" gorm:"column:service_neighborhood;type:varchar(100)"`
+	ServiceCity         string `json:"serviceCity" gorm:"column:service_city;type:varchar(100)"`
+	ServiceState        string `json:"serviceState" gorm:"column:service_state;type:varchar(2)"`
+	ServiceZipCode      string `json:"serviceZipCode" gorm:"column:service_zipcode;type:varchar(10)"`
+
+	// Contact at location
+	ContactName  string `json:"contactName" gorm:"column:contact_name;type:varchar(255)"`
+	ContactPhone string `json:"contactPhone" gorm:"column:contact_phone;type:varchar(50)"`
+
 	// Signatures (base64 encoded images)
 	TechnicianSignature string     `json:"technicianSignature" gorm:"column:technician_signature;type:text"`
 	ClientSignature     string     `json:"clientSignature" gorm:"column:client_signature;type:text"`
@@ -90,7 +109,7 @@ func (t *Ticket) BeforeCreate(tx *gorm.DB) error {
 			Order("os_number DESC").
 			Limit(1).
 			Pluck("os_number", &maxOS)
-		
+
 		nextSeq := 1
 		if maxOS != "" {
 			// Extract sequence number from format "YYYY-NNNNNN"
@@ -101,7 +120,7 @@ func (t *Ticket) BeforeCreate(tx *gorm.DB) error {
 				}
 			}
 		}
-		
+
 		t.OSNumber = generateOSNumber(nextSeq)
 	}
 	return nil
@@ -201,11 +220,11 @@ type CreateTicketRequest struct {
 	StartDate        string   `json:"startDate"`
 	DueDate          string   `json:"dueDate"`
 	// Accept both old and new field names for compatibility
-	ComputerBrand    string   `json:"computerBrand"`
-	ComputerModel    string   `json:"computerModel"`
-	Manufacturer     string   `json:"manufacturer"`    // alias for ComputerBrand
-	Model            string   `json:"model"`           // alias for ComputerModel
-	SerialNumber     string   `json:"serialNumber"`
+	ComputerBrand string `json:"computerBrand"`
+	ComputerModel string `json:"computerModel"`
+	Manufacturer  string `json:"manufacturer"` // alias for ComputerBrand
+	Model         string `json:"model"`        // alias for ComputerModel
+	SerialNumber  string `json:"serialNumber"`
 }
 
 // GetBrand returns computerBrand or manufacturer (for backward compatibility)
