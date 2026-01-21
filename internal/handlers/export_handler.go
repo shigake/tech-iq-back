@@ -173,7 +173,6 @@ func (h *ExportHandler) ExportTechnicians(c *fiber.Ctx) error {
 
 // ExportTickets exports tickets data as CSV
 func (h *ExportHandler) ExportTickets(c *fiber.Ctx) error {
-	// Get all tickets with large page size
 	tickets, _, err := h.ticketRepo.FindAll(0, 10000, nil)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
@@ -191,42 +190,35 @@ func (h *ExportHandler) ExportTickets(c *fiber.Ctx) error {
 	writer := csv.NewWriter(&csvData)
 
 	header := []string{
-		"ID", "Numero OS", "Descricao do Erro", "Status", "Prioridade",
-		"Cliente", "Categoria", "Tecnicos", "Data de Criacao", "Data de Atualizacao",
+		"Referencia Externa", "Codigo Loja", "Nome Loja", "Rua", "Numero",
+		"Cidade", "Estado", "CEP", "Descricao do Erro", "Contato", "Telefone Contato",
+		"Prioridade", "Categoria", "Numero OS", "Status", "Data de Criacao",
 	}
 	writer.Write(header)
 
-	// Write data
 	for _, ticket := range tickets {
-		clientName := ""
-		if ticket.Client != nil {
-			clientName = ticket.Client.FullName
-		}
-
-		technicianNames := ""
-		for i, tech := range ticket.Technicians {
-			if i > 0 {
-				technicianNames += ", "
-			}
-			technicianNames += tech.FullName
-		}
-
 		categoryName := ""
 		if ticket.Category != nil {
 			categoryName = ticket.Category.Name
 		}
 
 		record := []string{
-			ticket.ID,
-			ticket.OSNumber,
+			ticket.ExternalReference,
+			ticket.StoreCode,
+			ticket.StoreName,
+			ticket.ServiceStreet,
+			ticket.ServiceNumber,
+			ticket.ServiceCity,
+			ticket.ServiceState,
+			ticket.ServiceZipCode,
 			ticket.ErrorDescription,
-			string(ticket.Status),
+			ticket.ContactName,
+			ticket.ContactPhone,
 			string(ticket.Priority),
-			clientName,
 			categoryName,
-			technicianNames,
+			ticket.OSNumber,
+			string(ticket.Status),
 			ticket.CreatedAt.Format("02/01/2006 15:04:05"),
-			ticket.UpdatedAt.Format("02/01/2006 15:04:05"),
 		}
 		writer.Write(record)
 	}
