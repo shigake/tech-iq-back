@@ -251,7 +251,7 @@ func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
 		})
 	}
 
-	user, err := h.repo.FindByID(targetID)
+	_, err = h.repo.FindByID(targetID)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "User not found",
