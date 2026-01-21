@@ -218,7 +218,7 @@ func (h *ImportHandler) ImportTickets(c *fiber.Ctx) error {
 		})
 	}
 
-	var created, updated, errCount int
+	var created, errCount int
 	var errorDetails []string
 
 	for i, row := range rows {
