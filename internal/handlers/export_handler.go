@@ -149,7 +149,7 @@ func (h *ExportHandler) ExportTechnicians(c *fiber.Ctx) error {
 
 		record := []string{
 			tech.FullName, tech.Status, tech.Type, emails, phones,
-			fmt.Sprintf("%.2f", tech.MinCallValue), tech.Observation, tech.CPF, tech.CNPJ,
+			tech.MinCallValue, tech.Observation, tech.CPF, tech.CNPJ,
 			tech.BankName, tech.Agency, tech.AccountNumber, tech.AccountType, tech.AccountHolder, tech.PixKey,
 		}
 		record = append(record, skills...)
