@@ -330,10 +330,10 @@ func (h *ImportHandler) ImportTickets(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"success":      true,
-		"message":      fmt.Sprintf("Importação concluída: %d chamados criados, %d erros", created, errCount),
-		"created":      created,
-		"errors":       errCount,
-		"errorDetails": errorDetails,
+		"success":    true,
+		"message":    fmt.Sprintf("Importação concluída: %d chamados criados, %d erros", created, errCount),
+		"imported":   created,
+		"errorCount": errCount,
+		"errors":     errorDetails,
 	})
 }
