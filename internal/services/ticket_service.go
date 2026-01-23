@@ -188,7 +188,21 @@ func (s *ticketService) Update(id string, req *models.CreateTicketRequest) (*mod
 		return nil, err
 	}
 
-	return existing, nil
+	if err := s.ticketRepo.AssignTechnicians(id, []models.Technician{}); err != nil {
+		return nil, err
+	}
+
+	if len(req.TechnicianIDs) > 0 {
+		technicians, err := s.technicianRepo.FindByIDs(req.TechnicianIDs)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.ticketRepo.AssignTechnicians(id, technicians); err != nil {
+			return nil, err
+		}
+	}
+
+	return s.ticketRepo.FindByID(id)
 }
 
 func (s *ticketService) Delete(id string) error {
