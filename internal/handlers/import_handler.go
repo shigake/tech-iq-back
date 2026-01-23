@@ -57,17 +57,6 @@ func (h *ImportHandler) DownloadTicketTemplate(c *fiber.Ctx) error {
 		Alignment: &excelize.Alignment{WrapText: true},
 	})
 
-	exampleStyle, _ := f.NewStyle(&excelize.Style{
-		Fill:      excelize.Fill{Type: "pattern", Color: []string{"E2EFDA"}, Pattern: 1},
-		Alignment: &excelize.Alignment{WrapText: true},
-		Border: []excelize.Border{
-			{Type: "left", Color: "D0D0D0", Style: 1},
-			{Type: "top", Color: "D0D0D0", Style: 1},
-			{Type: "bottom", Color: "D0D0D0", Style: 1},
-			{Type: "right", Color: "D0D0D0", Style: 1},
-		},
-	})
-
 	headers := []string{
 		"Referencia Externa", "Codigo Loja", "Nome Loja",
 		"Rua", "Numero", "Cidade", "Estado", "CEP",
@@ -105,32 +94,6 @@ func (h *ImportHandler) DownloadTicketTemplate(c *fiber.Ctx) error {
 		f.SetCellStyle(sheetName, cell, cell, instructionStyle)
 	}
 
-	exampleData := []string{
-		"RITM6261364", "7962", "TIMON",
-		"AV PRES MEDICI", "268", "TIMON", "MA", "65631-391",
-		"Cabo de rede do Caixa 5 com problemas", "George Franklin", "86999999999",
-		"NORMAL", "Infraestrutura",
-	}
-
-	for i, value := range exampleData {
-		cell, _ := excelize.CoordinatesToCellName(i+1, 3)
-		f.SetCellValue(sheetName, cell, value)
-		f.SetCellStyle(sheetName, cell, cell, exampleStyle)
-	}
-
-	exampleData2 := []string{
-		"RITM6261400", "8100", "TERESINA",
-		"AV FREI SERAFIM", "1500", "TERESINA", "PI", "64001-020",
-		"Impressora nao imprime em rede", "Maria Silva", "86988888888",
-		"ALTA", "Impressoras",
-	}
-
-	for i, value := range exampleData2 {
-		cell, _ := excelize.CoordinatesToCellName(i+1, 4)
-		f.SetCellValue(sheetName, cell, value)
-		f.SetCellStyle(sheetName, cell, cell, exampleStyle)
-	}
-
 	f.SetRowHeight(sheetName, 1, 25)
 	f.SetRowHeight(sheetName, 2, 20)
 
@@ -138,11 +101,11 @@ func (h *ImportHandler) DownloadTicketTemplate(c *fiber.Ctx) error {
 	f.NewSheet(instructionsSheet)
 
 	f.SetCellValue(instructionsSheet, "A1", "INSTRUCOES PARA IMPORTACAO DE CHAMADOS")
-	f.SetCellValue(instructionsSheet, "A3", "1. Preencha os dados na aba 'Chamados'")
+	f.SetCellValue(instructionsSheet, "A3", "1. Preencha os dados na aba 'Chamados' a partir da linha 3")
 	f.SetCellValue(instructionsSheet, "A4", "2. O campo 'Descricao do Erro' e obrigatorio")
 	f.SetCellValue(instructionsSheet, "A5", "3. Para Prioridade, use: BAIXA, NORMAL, ALTA ou URGENTE")
 	f.SetCellValue(instructionsSheet, "A6", "4. A Categoria deve corresponder a uma categoria existente")
-	f.SetCellValue(instructionsSheet, "A7", "5. Apague as linhas de exemplo antes de importar")
+	f.SetCellValue(instructionsSheet, "A7", "5. A linha 2 contem exemplos de preenchimento (nao sera importada)")
 	f.SetCellValue(instructionsSheet, "A9", "CAMPOS:")
 	f.SetCellValue(instructionsSheet, "A10", "- Referencia Externa: Numero do chamado do cliente (ex: RITM6261364)")
 	f.SetCellValue(instructionsSheet, "A11", "- Codigo Loja: Codigo identificador da loja")
