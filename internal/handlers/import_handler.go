@@ -82,9 +82,9 @@ func (h *ImportHandler) DownloadTicketTemplate(c *fiber.Ctx) error {
 	}
 
 	instructions := []string{
-		"Ex: RITM6261364", "Ex: 7962", "Ex: TIMON",
-		"Ex: AV PRES MEDICI", "Ex: 268", "Ex: TIMON", "Ex: MA", "Ex: 65631-391",
-		"Obrigatorio", "Ex: George Franklin", "Ex: 11999999999",
+		"Max 100 chars", "Max 50 chars", "Max 255 chars",
+		"Max 255 chars", "Max 20 chars", "Max 100 chars", "2 chars (UF)", "Max 10 chars",
+		"Obrigatorio", "Max 255 chars", "Max 50 chars",
 		"BAIXA/NORMAL/ALTA/URGENTE", "Nome da categoria",
 	}
 
@@ -97,6 +97,34 @@ func (h *ImportHandler) DownloadTicketTemplate(c *fiber.Ctx) error {
 	f.SetRowHeight(sheetName, 1, 25)
 	f.SetRowHeight(sheetName, 2, 20)
 
+	maxRows := 1000
+	dvPriority := excelize.NewDataValidation(true)
+	dvPriority.Sqref = fmt.Sprintf("L3:L%d", maxRows)
+	dvPriority.SetDropList([]string{"BAIXA", "NORMAL", "ALTA", "URGENTE"})
+	dvPriority.SetError(excelize.DataValidationErrorStyleStop, "Valor invalido", "Use: BAIXA, NORMAL, ALTA ou URGENTE")
+	f.AddDataValidation(sheetName, dvPriority)
+
+	dvState := excelize.NewDataValidation(true)
+	dvState.Sqref = fmt.Sprintf("G3:G%d", maxRows)
+	dvState.SetDropList([]string{"AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"})
+	dvState.SetError(excelize.DataValidationErrorStyleStop, "UF invalida", "Selecione uma UF valida")
+	f.AddDataValidation(sheetName, dvState)
+
+	fieldLimits := map[string]int{
+		"A": 100, "B": 50, "C": 255,
+		"D": 255, "E": 20, "F": 100, "H": 10,
+		"J": 255, "K": 50, "M": 100,
+	}
+	for col, maxLen := range fieldLimits {
+		dv := excelize.NewDataValidation(true)
+		dv.Sqref = fmt.Sprintf("%s3:%s%d", col, col, maxRows)
+		dv.Type = "textLength"
+		dv.Operator = "lessThanOrEqual"
+		dv.Formula1 = fmt.Sprintf("%d", maxLen)
+		dv.SetError(excelize.DataValidationErrorStyleWarning, "Texto muito longo", fmt.Sprintf("Maximo de %d caracteres", maxLen))
+		f.AddDataValidation(sheetName, dv)
+	}
+
 	instructionsSheet := "Instruções"
 	f.NewSheet(instructionsSheet)
 
@@ -105,17 +133,21 @@ func (h *ImportHandler) DownloadTicketTemplate(c *fiber.Ctx) error {
 	f.SetCellValue(instructionsSheet, "A4", "2. O campo 'Descricao do Erro' e obrigatorio")
 	f.SetCellValue(instructionsSheet, "A5", "3. Para Prioridade, use: BAIXA, NORMAL, ALTA ou URGENTE")
 	f.SetCellValue(instructionsSheet, "A6", "4. A Categoria deve corresponder a uma categoria existente")
-	f.SetCellValue(instructionsSheet, "A7", "5. A linha 2 contem exemplos de preenchimento (nao sera importada)")
-	f.SetCellValue(instructionsSheet, "A9", "CAMPOS:")
-	f.SetCellValue(instructionsSheet, "A10", "- Referencia Externa: Numero do chamado do cliente (ex: RITM6261364)")
-	f.SetCellValue(instructionsSheet, "A11", "- Codigo Loja: Codigo identificador da loja")
-	f.SetCellValue(instructionsSheet, "A12", "- Nome Loja: Nome ou cidade da loja")
-	f.SetCellValue(instructionsSheet, "A13", "- Endereco: Rua, Numero, Cidade, Estado, CEP do local de atendimento")
-	f.SetCellValue(instructionsSheet, "A14", "- Descricao do Erro*: Descricao detalhada do problema (OBRIGATORIO)")
-	f.SetCellValue(instructionsSheet, "A15", "- Contato: Nome da pessoa para procurar no local")
-	f.SetCellValue(instructionsSheet, "A16", "- Telefone Contato: Telefone do contato")
-	f.SetCellValue(instructionsSheet, "A17", "- Prioridade: BAIXA, NORMAL, ALTA ou URGENTE (padrao: NORMAL)")
-	f.SetCellValue(instructionsSheet, "A18", "- Categoria: Nome exato da categoria")
+	f.SetCellValue(instructionsSheet, "A7", "5. A linha 2 contem os limites de caracteres de cada campo")
+	f.SetCellValue(instructionsSheet, "A9", "CAMPOS E LIMITES:")
+	f.SetCellValue(instructionsSheet, "A10", "- Referencia Externa: Max 100 caracteres (ex: RITM6261364)")
+	f.SetCellValue(instructionsSheet, "A11", "- Codigo Loja: Max 50 caracteres")
+	f.SetCellValue(instructionsSheet, "A12", "- Nome Loja: Max 255 caracteres")
+	f.SetCellValue(instructionsSheet, "A13", "- Rua: Max 255 caracteres")
+	f.SetCellValue(instructionsSheet, "A14", "- Numero: Max 20 caracteres")
+	f.SetCellValue(instructionsSheet, "A15", "- Cidade: Max 100 caracteres")
+	f.SetCellValue(instructionsSheet, "A16", "- Estado: 2 caracteres (UF) - Selecione da lista")
+	f.SetCellValue(instructionsSheet, "A17", "- CEP: Max 10 caracteres (ex: 65631-391)")
+	f.SetCellValue(instructionsSheet, "A18", "- Descricao do Erro*: OBRIGATORIO - Sem limite")
+	f.SetCellValue(instructionsSheet, "A19", "- Contato: Max 255 caracteres")
+	f.SetCellValue(instructionsSheet, "A20", "- Telefone Contato: Max 50 caracteres")
+	f.SetCellValue(instructionsSheet, "A21", "- Prioridade: Selecione da lista (BAIXA/NORMAL/ALTA/URGENTE)")
+	f.SetCellValue(instructionsSheet, "A22", "- Categoria: Max 100 caracteres")
 
 	titleStyle, _ := f.NewStyle(&excelize.Style{
 		Font: &excelize.Font{Bold: true, Size: 14, Color: "4472C4"},
@@ -362,10 +394,10 @@ func (h *ImportHandler) DownloadTechnicianTemplate(c *fiber.Ctx) error {
 	}
 
 	instructions := []string{
-		"Obrigatorio", "PJ ou PF", "Separar por ;", "Separar por ;",
-		"Ex: 150.00", "", "Apenas numeros", "Apenas numeros",
-		"", "", "", "CORRENTE ou POUPANCA", "", "",
-		"", "", "", "", "Ex: SP", "Ex: 01310-100",
+		"Max 255 chars", "PJ ou PF", "Separar por ;", "Separar por ;",
+		"Max 50 chars", "", "Max 14 chars", "Max 18 chars",
+		"Max 200 chars", "Max 50 chars", "Max 50 chars", "CORRENTE/POUPANCA", "Max 255 chars", "Max 255 chars",
+		"Max 255 chars", "Max 20 chars", "Max 100 chars", "Max 100 chars", "Max 50 chars", "Max 10 chars",
 	}
 
 	for i, instruction := range instructions {
@@ -377,26 +409,89 @@ func (h *ImportHandler) DownloadTechnicianTemplate(c *fiber.Ctx) error {
 	f.SetRowHeight(sheetName, 1, 25)
 	f.SetRowHeight(sheetName, 2, 20)
 
+	maxRows := 1000
+
+	dvType := excelize.NewDataValidation(true)
+	dvType.Sqref = fmt.Sprintf("B3:B%d", maxRows)
+	dvType.SetDropList([]string{"PF", "PJ"})
+	dvType.SetError(excelize.DataValidationErrorStyleStop, "Tipo invalido", "Use: PF ou PJ")
+	f.AddDataValidation(sheetName, dvType)
+
+	dvAccountType := excelize.NewDataValidation(true)
+	dvAccountType.Sqref = fmt.Sprintf("L3:L%d", maxRows)
+	dvAccountType.SetDropList([]string{"CORRENTE", "POUPANCA"})
+	dvAccountType.SetError(excelize.DataValidationErrorStyleStop, "Tipo invalido", "Use: CORRENTE ou POUPANCA")
+	f.AddDataValidation(sheetName, dvAccountType)
+
+	dvState := excelize.NewDataValidation(true)
+	dvState.Sqref = fmt.Sprintf("S3:S%d", maxRows)
+	dvState.SetDropList([]string{"AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"})
+	dvState.SetError(excelize.DataValidationErrorStyleStop, "UF invalida", "Selecione uma UF valida")
+	f.AddDataValidation(sheetName, dvState)
+
+	fieldLimits := map[string]int{
+		"A": 255, "E": 50, "G": 14, "H": 18,
+		"I": 200, "J": 50, "K": 50, "M": 255, "N": 255,
+		"O": 255, "P": 20, "Q": 100, "R": 100, "T": 10,
+	}
+	for col, maxLen := range fieldLimits {
+		dv := excelize.NewDataValidation(true)
+		dv.Sqref = fmt.Sprintf("%s3:%s%d", col, col, maxRows)
+		dv.Type = "textLength"
+		dv.Operator = "lessThanOrEqual"
+		dv.Formula1 = fmt.Sprintf("%d", maxLen)
+		dv.SetError(excelize.DataValidationErrorStyleWarning, "Texto muito longo", fmt.Sprintf("Maximo de %d caracteres", maxLen))
+		f.AddDataValidation(sheetName, dv)
+	}
+
+	dvCPF := excelize.NewDataValidation(true)
+	dvCPF.Sqref = fmt.Sprintf("G3:G%d", maxRows)
+	dvCPF.Type = "textLength"
+	dvCPF.Operator = "between"
+	dvCPF.Formula1 = "11"
+	dvCPF.Formula2 = "14"
+	dvCPF.SetError(excelize.DataValidationErrorStyleWarning, "CPF invalido", "CPF deve ter entre 11 e 14 caracteres")
+	f.AddDataValidation(sheetName, dvCPF)
+
+	dvCNPJ := excelize.NewDataValidation(true)
+	dvCNPJ.Sqref = fmt.Sprintf("H3:H%d", maxRows)
+	dvCNPJ.Type = "textLength"
+	dvCNPJ.Operator = "between"
+	dvCNPJ.Formula1 = "14"
+	dvCNPJ.Formula2 = "18"
+	dvCNPJ.SetError(excelize.DataValidationErrorStyleWarning, "CNPJ invalido", "CNPJ deve ter entre 14 e 18 caracteres")
+	f.AddDataValidation(sheetName, dvCNPJ)
+
 	instructionsSheet := "Instruções"
 	f.NewSheet(instructionsSheet)
 
 	f.SetCellValue(instructionsSheet, "A1", "INSTRUCOES PARA IMPORTACAO DE TECNICOS")
 	f.SetCellValue(instructionsSheet, "A3", "1. Preencha os dados na aba 'Tecnicos' a partir da linha 3")
-	f.SetCellValue(instructionsSheet, "A4", "2. O campo 'Nome' e obrigatorio")
-	f.SetCellValue(instructionsSheet, "A5", "3. Para Tipo, use: PF (Pessoa Fisica) ou PJ (Pessoa Juridica)")
-	f.SetCellValue(instructionsSheet, "A6", "4. Para Tipo Conta, use: CORRENTE ou POUPANCA")
-	f.SetCellValue(instructionsSheet, "A7", "5. A linha 2 contem exemplos de preenchimento (nao sera importada)")
-	f.SetCellValue(instructionsSheet, "A9", "CAMPOS:")
-	f.SetCellValue(instructionsSheet, "A10", "- Nome*: Nome completo do tecnico (OBRIGATORIO)")
-	f.SetCellValue(instructionsSheet, "A11", "- Tipo: PF (Pessoa Fisica) ou PJ (Pessoa Juridica) - padrao: PF")
-	f.SetCellValue(instructionsSheet, "A12", "- Emails: Lista de emails separados por ponto e virgula (;)")
-	f.SetCellValue(instructionsSheet, "A13", "- Telefones: Lista de telefones separados por ponto e virgula (;)")
-	f.SetCellValue(instructionsSheet, "A14", "- Valor Minimo: Valor minimo por chamado (ex: 150.00)")
-	f.SetCellValue(instructionsSheet, "A15", "- Observacao: Informacoes adicionais sobre o tecnico")
-	f.SetCellValue(instructionsSheet, "A16", "- CPF: Numero do CPF (apenas numeros)")
-	f.SetCellValue(instructionsSheet, "A17", "- CNPJ: Numero do CNPJ (apenas numeros)")
-	f.SetCellValue(instructionsSheet, "A18", "- Dados Bancarios: Banco, Agencia, Conta, Tipo Conta, Titular, Chave Pix")
-	f.SetCellValue(instructionsSheet, "A19", "- Endereco: Rua, Numero, Bairro, Cidade, Estado, CEP")
+	f.SetCellValue(instructionsSheet, "A4", "2. O campo 'Nome' e obrigatorio (max 255 caracteres)")
+	f.SetCellValue(instructionsSheet, "A5", "3. Para Tipo, selecione: PF ou PJ da lista")
+	f.SetCellValue(instructionsSheet, "A6", "4. Para Tipo Conta, selecione: CORRENTE ou POUPANCA da lista")
+	f.SetCellValue(instructionsSheet, "A7", "5. A linha 2 contem os limites de caracteres de cada campo")
+	f.SetCellValue(instructionsSheet, "A9", "CAMPOS E LIMITES:")
+	f.SetCellValue(instructionsSheet, "A10", "- Nome*: Max 255 caracteres (OBRIGATORIO)")
+	f.SetCellValue(instructionsSheet, "A11", "- Tipo: Selecione PF ou PJ da lista")
+	f.SetCellValue(instructionsSheet, "A12", "- Emails: Lista separada por ponto e virgula (;)")
+	f.SetCellValue(instructionsSheet, "A13", "- Telefones: Lista separada por ponto e virgula (;)")
+	f.SetCellValue(instructionsSheet, "A14", "- Valor Minimo: Max 50 caracteres (ex: 150.00)")
+	f.SetCellValue(instructionsSheet, "A15", "- Observacao: Sem limite de caracteres")
+	f.SetCellValue(instructionsSheet, "A16", "- CPF: Entre 11 e 14 caracteres (apenas numeros ou formatado)")
+	f.SetCellValue(instructionsSheet, "A17", "- CNPJ: Entre 14 e 18 caracteres (apenas numeros ou formatado)")
+	f.SetCellValue(instructionsSheet, "A18", "- Banco: Max 200 caracteres")
+	f.SetCellValue(instructionsSheet, "A19", "- Agencia: Max 50 caracteres")
+	f.SetCellValue(instructionsSheet, "A20", "- Conta: Max 50 caracteres")
+	f.SetCellValue(instructionsSheet, "A21", "- Tipo Conta: Selecione CORRENTE ou POUPANCA da lista")
+	f.SetCellValue(instructionsSheet, "A22", "- Titular: Max 255 caracteres")
+	f.SetCellValue(instructionsSheet, "A23", "- Chave Pix: Max 255 caracteres")
+	f.SetCellValue(instructionsSheet, "A24", "- Rua: Max 255 caracteres")
+	f.SetCellValue(instructionsSheet, "A25", "- Numero: Max 20 caracteres")
+	f.SetCellValue(instructionsSheet, "A26", "- Bairro: Max 100 caracteres")
+	f.SetCellValue(instructionsSheet, "A27", "- Cidade: Max 100 caracteres")
+	f.SetCellValue(instructionsSheet, "A28", "- Estado: Selecione a UF da lista")
+	f.SetCellValue(instructionsSheet, "A29", "- CEP: Max 10 caracteres (ex: 01310-100)")
 
 	titleStyle, _ := f.NewStyle(&excelize.Style{
 		Font: &excelize.Font{Bold: true, Size: 14, Color: "4472C4"},
