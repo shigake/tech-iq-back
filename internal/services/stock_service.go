@@ -2,6 +2,8 @@ package services
 
 import (
 	"errors"
+
+	"github.com/google/uuid"
 	"time"
 
 	"github.com/shigake/tech-iq-back/internal/models"
@@ -178,8 +180,13 @@ func (s *stockService) ListItems(filter models.StockItemFilter) (*models.Paginat
 // =============== Locations ===============
 
 func (s *stockService) CreateLocation(req models.CreateStockLocationRequest) (*models.StockLocation, error) {
+	scopeID := req.ScopeID
+	if scopeID == "" || scopeID == "default" {
+		scopeID = uuid.New().String()
+	}
+
 	location := &models.StockLocation{
-		ScopeID:  req.ScopeID,
+		ScopeID:  scopeID,
 		Type:     models.StockLocationType(req.Type),
 		Name:     req.Name,
 		IsActive: true,
