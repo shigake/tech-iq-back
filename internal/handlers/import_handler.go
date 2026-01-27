@@ -332,6 +332,11 @@ func (h *ImportHandler) DownloadTechnicianTemplate(c *fiber.Ctx) error {
 		},
 	})
 
+	instructionStyle, _ := f.NewStyle(&excelize.Style{
+		Font:      &excelize.Font{Italic: true, Size: 10, Color: "666666"},
+		Alignment: &excelize.Alignment{WrapText: true},
+	})
+
 	headers := []string{
 		"Nome*", "Tipo", "Emails", "Telefones",
 		"Valor Minimo", "Observacao", "CPF", "CNPJ",
@@ -339,16 +344,22 @@ func (h *ImportHandler) DownloadTechnicianTemplate(c *fiber.Ctx) error {
 		"Rua", "Numero", "Bairro", "Cidade", "Estado", "CEP",
 	}
 
-	for i, h := range headers {
-		cell, _ := excelize.CoordinatesToCellName(i+1, 1)
-		f.SetCellValue(sheetName, cell, h)
-		f.SetCellStyle(sheetName, cell, cell, headerStyle)
+	colWidths := map[string]float64{
+		"A": 25, "B": 8, "C": 35, "D": 30,
+		"E": 12, "F": 25, "G": 15, "H": 18,
+		"I": 20, "J": 10, "K": 12, "L": 15, "M": 20, "N": 25,
+		"O": 25, "P": 10, "Q": 15, "R": 20, "S": 8, "T": 12,
 	}
 
-	instructionStyle, _ := f.NewStyle(&excelize.Style{
-		Font:      &excelize.Font{Italic: true, Size: 10, Color: "666666"},
-		Alignment: &excelize.Alignment{WrapText: true},
-	})
+	for col, width := range colWidths {
+		f.SetColWidth(sheetName, col, col, width)
+	}
+
+	for i, header := range headers {
+		cell, _ := excelize.CoordinatesToCellName(i+1, 1)
+		f.SetCellValue(sheetName, cell, header)
+		f.SetCellStyle(sheetName, cell, cell, headerStyle)
+	}
 
 	instructions := []string{
 		"Obrigatorio", "PJ ou PF", "Separar por ;", "Separar por ;",
@@ -357,37 +368,54 @@ func (h *ImportHandler) DownloadTechnicianTemplate(c *fiber.Ctx) error {
 		"", "", "", "", "Ex: SP", "Ex: 01310-100",
 	}
 
-	for i, inst := range instructions {
+	for i, instruction := range instructions {
 		cell, _ := excelize.CoordinatesToCellName(i+1, 2)
-		f.SetCellValue(sheetName, cell, inst)
+		f.SetCellValue(sheetName, cell, instruction)
 		f.SetCellStyle(sheetName, cell, cell, instructionStyle)
 	}
 
-	example := []string{
-		"Joao Silva", "PF", "joao@email.com; joao2@email.com", "11999998888; 11988887777",
-		"150.00", "Tecnico experiente", "12345678900", "",
-		"Banco do Brasil", "1234", "12345-6", "CORRENTE", "Joao Silva", "joao@email.com",
-		"Rua das Flores", "100", "Centro", "Sao Paulo", "SP", "01310-100",
-	}
+	f.SetRowHeight(sheetName, 1, 25)
+	f.SetRowHeight(sheetName, 2, 20)
 
-	for i, val := range example {
-		cell, _ := excelize.CoordinatesToCellName(i+1, 3)
-		f.SetCellValue(sheetName, cell, val)
-	}
+	instructionsSheet := "Instruções"
+	f.NewSheet(instructionsSheet)
 
-	colWidths := []float64{25, 8, 35, 30, 12, 25, 15, 18, 20, 10, 12, 15, 20, 25, 25, 10, 15, 20, 8, 12}
-	for i, w := range colWidths {
-		col, _ := excelize.ColumnNumberToName(i + 1)
-		f.SetColWidth(sheetName, col, col, w)
-	}
+	f.SetCellValue(instructionsSheet, "A1", "INSTRUCOES PARA IMPORTACAO DE TECNICOS")
+	f.SetCellValue(instructionsSheet, "A3", "1. Preencha os dados na aba 'Tecnicos' a partir da linha 3")
+	f.SetCellValue(instructionsSheet, "A4", "2. O campo 'Nome' e obrigatorio")
+	f.SetCellValue(instructionsSheet, "A5", "3. Para Tipo, use: PF (Pessoa Fisica) ou PJ (Pessoa Juridica)")
+	f.SetCellValue(instructionsSheet, "A6", "4. Para Tipo Conta, use: CORRENTE ou POUPANCA")
+	f.SetCellValue(instructionsSheet, "A7", "5. A linha 2 contem exemplos de preenchimento (nao sera importada)")
+	f.SetCellValue(instructionsSheet, "A9", "CAMPOS:")
+	f.SetCellValue(instructionsSheet, "A10", "- Nome*: Nome completo do tecnico (OBRIGATORIO)")
+	f.SetCellValue(instructionsSheet, "A11", "- Tipo: PF (Pessoa Fisica) ou PJ (Pessoa Juridica) - padrao: PF")
+	f.SetCellValue(instructionsSheet, "A12", "- Emails: Lista de emails separados por ponto e virgula (;)")
+	f.SetCellValue(instructionsSheet, "A13", "- Telefones: Lista de telefones separados por ponto e virgula (;)")
+	f.SetCellValue(instructionsSheet, "A14", "- Valor Minimo: Valor minimo por chamado (ex: 150.00)")
+	f.SetCellValue(instructionsSheet, "A15", "- Observacao: Informacoes adicionais sobre o tecnico")
+	f.SetCellValue(instructionsSheet, "A16", "- CPF: Numero do CPF (apenas numeros)")
+	f.SetCellValue(instructionsSheet, "A17", "- CNPJ: Numero do CNPJ (apenas numeros)")
+	f.SetCellValue(instructionsSheet, "A18", "- Dados Bancarios: Banco, Agencia, Conta, Tipo Conta, Titular, Chave Pix")
+	f.SetCellValue(instructionsSheet, "A19", "- Endereco: Rua, Numero, Bairro, Cidade, Estado, CEP")
+
+	titleStyle, _ := f.NewStyle(&excelize.Style{
+		Font: &excelize.Font{Bold: true, Size: 14, Color: "4472C4"},
+	})
+	f.SetCellStyle(instructionsSheet, "A1", "A1", titleStyle)
+	f.SetColWidth(instructionsSheet, "A", "A", 60)
 
 	var buf bytes.Buffer
 	if err := f.Write(&buf); err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": "Erro ao gerar template"})
+		return c.Status(500).JSON(fiber.Map{
+			"success": false,
+			"message": "Erro ao gerar template",
+			"error":   err.Error(),
+		})
 	}
 
 	c.Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 	c.Set("Content-Disposition", "attachment; filename=template_tecnicos.xlsx")
+
 	return c.Send(buf.Bytes())
 }
 
