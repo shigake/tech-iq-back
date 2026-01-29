@@ -251,7 +251,7 @@ func (h *ImportHandler) DownloadTicketTemplate(c *fiber.Ctx) error {
 	f.SetCellStyle(instructionsSheet, "A28", "A28", subtitleStyle)
 
 	tableStyle, _ := f.NewStyle(&excelize.Style{
-		Font:      &excelize.Font{Name: "Consolas", Size: 10},
+		Font:      &excelize.Font{Family: "Consolas", Size: 10},
 		Alignment: &excelize.Alignment{Horizontal: "left"},
 	})
 	for i := 12; i <= 26; i++ {
@@ -703,7 +703,7 @@ func (h *ImportHandler) DownloadTechnicianTemplate(c *fiber.Ctx) error {
 	f.SetCellStyle(instructionsSheet, "A35", "A35", subtitleStyle)
 
 	tableStyle, _ := f.NewStyle(&excelize.Style{
-		Font:      &excelize.Font{Name: "Consolas", Size: 10},
+		Font:      &excelize.Font{Family: "Consolas", Size: 10},
 		Alignment: &excelize.Alignment{Horizontal: "left"},
 	})
 	for i := 12; i <= 33; i++ {
