@@ -77,7 +77,22 @@ func (r *technicianRepository) Update(technician *models.Technician) error {
 }
 
 func (r *technicianRepository) Delete(id string) error {
-	return r.db.Where("id = ?", id).Delete(&models.Technician{}).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		tx.Exec("DELETE FROM ticket_technicians WHERE technician_id = ?", id)
+
+		tx.Exec("DELETE FROM technician_locations WHERE technician_id = ?", id)
+
+		tx.Exec("UPDATE financial_entries SET technician_id = NULL WHERE technician_id = ?", id)
+
+		result := tx.Where("id = ?", id).Delete(&models.Technician{})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return gorm.ErrRecordNotFound
+		}
+		return nil
+	})
 }
 
 func (r *technicianRepository) FindByCity(city string) ([]models.Technician, error) {
