@@ -154,16 +154,21 @@ func (s *technicianService) Update(id string, req *models.CreateTechnicianReques
 }
 
 func (s *technicianService) Delete(id string) error {
+	log.Printf(">>> Delete called for technician ID: %s", id)
+	
 	if err := s.repo.Delete(id); err != nil {
+		log.Printf(">>> Delete failed for technician ID %s: %v", id, err)
 		return err
 	}
 
-	// Invalidate caches after delete
+	log.Printf(">>> Delete successful for technician ID: %s, invalidating caches", id)
+	
 	s.invalidateTechnicianCaches()
 	if s.cache != nil {
 		s.cache.Delete(cache.TechnicianDetailCacheKey(id))
 	}
 
+	log.Printf(">>> Cache invalidation completed for technician ID: %s", id)
 	return nil
 }
 

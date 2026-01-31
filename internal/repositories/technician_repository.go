@@ -78,11 +78,17 @@ func (r *technicianRepository) Update(technician *models.Technician) error {
 
 func (r *technicianRepository) Delete(id string) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		tx.Exec("DELETE FROM ticket_technicians WHERE technician_id = ?", id)
+		if err := tx.Exec("DELETE FROM ticket_technicians WHERE technician_id = ?", id).Error; err != nil {
+			return err
+		}
 
-		tx.Exec("DELETE FROM technician_locations WHERE technician_id = ?", id)
+		if err := tx.Exec("DELETE FROM technician_locations WHERE technician_id = ?", id).Error; err != nil {
+			return err
+		}
 
-		tx.Exec("UPDATE financial_entries SET technician_id = NULL WHERE technician_id = ?", id)
+		if err := tx.Exec("UPDATE financial_entries SET technician_id = NULL WHERE technician_id = ?", id).Error; err != nil {
+			return err
+		}
 
 		result := tx.Where("id = ?", id).Delete(&models.Technician{})
 		if result.Error != nil {
