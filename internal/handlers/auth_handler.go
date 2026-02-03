@@ -204,3 +204,35 @@ func (h *AuthHandler) ChangePassword(c *fiber.Ctx) error {
 		"message": "Password changed successfully",
 	})
 }
+
+func (h *AuthHandler) GetMe(c *fiber.Ctx) error {
+	userIDRaw := c.Locals("userId")
+	if userIDRaw == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized",
+		})
+	}
+
+	var userID string
+	switch v := userIDRaw.(type) {
+	case string:
+		userID = v
+	case float64:
+		userID = fmt.Sprintf("%.0f", v)
+	case uint:
+		userID = fmt.Sprintf("%d", v)
+	default:
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Invalid user ID",
+		})
+	}
+
+	response, err := h.service.GetCurrentUser(userID)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.JSON(response)
+}

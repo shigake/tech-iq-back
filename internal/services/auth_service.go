@@ -18,6 +18,7 @@ type AuthService interface {
 	SignUp(req *models.SignUpRequest) (*models.AuthResponse, error)
 	RefreshToken(tokenString string) (*models.AuthResponse, error)
 	ChangePassword(userID string, req *models.ChangePasswordRequest, ipAddress, userAgent string) error
+	GetCurrentUser(userID string) (*models.CurrentUserResponse, error)
 }
 
 type authService struct {
@@ -86,8 +87,12 @@ func (s *authService) SignIn(req *models.SignInRequest, ipAddress, userAgent str
 	// Log successful login
 	s.logSecurityEvent(user.ID, user.Email, "login_success", ipAddress, userAgent, "", true)
 
-	// Get user permissions from their role profile
-	permissions, _ := s.hierarchyRepo.GetPermissionsByRoleName(user.Role)
+	// Get user permissions from their memberships (new hierarchy system)
+	// First try to get from memberships, fallback to role name for backwards compatibility
+	permissions, _ := s.hierarchyRepo.GetUserPermissions(user.ID)
+	if len(permissions) == 0 {
+		permissions, _ = s.hierarchyRepo.GetPermissionsByRoleName(user.Role)
+	}
 
 	return &models.AuthResponse{
 		Token:        token,
@@ -211,8 +216,12 @@ func (s *authService) RefreshToken(tokenString string) (*models.AuthResponse, er
 		}
 	}
 
-	// Get user permissions from their role profile
-	permissions, _ := s.hierarchyRepo.GetPermissionsByRoleName(user.Role)
+	// Get user permissions from their memberships (new hierarchy system)
+	// First try to get from memberships, fallback to role name for backwards compatibility
+	permissions, _ := s.hierarchyRepo.GetUserPermissions(user.ID)
+	if len(permissions) == 0 {
+		permissions, _ = s.hierarchyRepo.GetPermissionsByRoleName(user.Role)
+	}
 
 	return &models.AuthResponse{
 		Token:        newToken,
@@ -282,4 +291,32 @@ func (s *authService) ChangePassword(userID string, req *models.ChangePasswordRe
 	// Log successful password change
 	s.logSecurityEvent(userID, user.Email, "password_change", ipAddress, userAgent, "", true)
 	return nil
+}
+
+func (s *authService) GetCurrentUser(userID string) (*models.CurrentUserResponse, error) {
+	user, err := s.userRepo.FindByID(userID)
+	if err != nil {
+		return nil, errors.New("user not found")
+	}
+
+	if !user.Active {
+		return nil, errors.New("user account is deactivated")
+	}
+
+	permissions, _ := s.hierarchyRepo.GetUserPermissions(user.ID)
+	if len(permissions) == 0 {
+		permissions, _ = s.hierarchyRepo.GetPermissionsByRoleName(user.Role)
+	}
+
+	return &models.CurrentUserResponse{
+		ID:             user.ID,
+		Email:          user.Email,
+		FirstName:      user.FirstName,
+		LastName:       user.LastName,
+		FullName:       user.FullName,
+		Role:           user.Role,
+		ProfilePicture: user.ProfilePicture,
+		Active:         user.Active,
+		Permissions:    permissions,
+	}, nil
 }

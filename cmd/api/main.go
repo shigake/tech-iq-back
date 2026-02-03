@@ -188,6 +188,7 @@ func main() {
 
 	// Protected auth routes
 	protected.Post("/auth/change-password", authHandler.ChangePassword)
+	protected.Get("/auth/me", authHandler.GetMe)
 
 	// User management routes (admin)
 	users := protected.Group("/users")

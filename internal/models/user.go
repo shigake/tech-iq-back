@@ -123,3 +123,15 @@ func (u *User) ToResponse() UserResponse {
 		UpdatedAt:      u.UpdatedAt.Format("2006-01-02T15:04:05Z"),
 	}
 }
+
+type CurrentUserResponse struct {
+	ID             string   `json:"id"`
+	Email          string   `json:"email"`
+	FirstName      string   `json:"firstName"`
+	LastName       string   `json:"lastName"`
+	FullName       string   `json:"fullName"`
+	Role           string   `json:"role"`
+	ProfilePicture string   `json:"profilePicture,omitempty"`
+	Active         bool     `json:"active"`
+	Permissions    []string `json:"permissions"`
+}
