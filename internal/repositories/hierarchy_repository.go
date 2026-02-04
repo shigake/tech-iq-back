@@ -367,8 +367,16 @@ func (r *hierarchyRepository) UpdateRole(role *models.Role) error {
 		return err
 	}
 
-	// Update permissions
-	return r.db.Model(role).Association("Permissions").Replace(role.Permissions)
+	// Update permissions - first clear existing, then add new ones
+	if err := r.db.Model(role).Association("Permissions").Clear(); err != nil {
+		return err
+	}
+	
+	if len(role.Permissions) > 0 {
+		return r.db.Model(role).Association("Permissions").Append(role.Permissions)
+	}
+	
+	return nil
 }
 
 func (r *hierarchyRepository) DeleteRole(id uint) error {

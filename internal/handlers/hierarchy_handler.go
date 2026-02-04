@@ -592,8 +592,8 @@ func (h *HierarchyHandler) UpdateRole(c *fiber.Ctx) error {
 	existing.Name = req.Name
 	existing.Description = req.Description
 
-	// Update permissions
-	existing.Permissions = nil
+	// Update permissions - initialize empty slice instead of nil
+	existing.Permissions = []models.Permission{}
 	if len(req.PermissionIDs) > 0 {
 		permissions, _ := h.repo.GetAllPermissions()
 		permMap := make(map[uint]models.Permission)
