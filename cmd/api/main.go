@@ -141,6 +141,8 @@ func main() {
 	stockHandler := handlers.NewStockHandler(stockService)
 	errorLogHandler := handlers.NewErrorLogHandler(errorLogService)
 
+	middleware.SetHierarchyRepository(hierarchyRepo)
+
 	// Error logging middleware (add before routes)
 	app.Use(middleware.ErrorLoggerMiddleware(errorLogService))
 
@@ -205,9 +207,9 @@ func main() {
 	technicians := protected.Group("/technicians")
 	technicians.Get("/", technicianHandler.GetAll)
 	technicians.Get("/:id", technicianHandler.GetByID)
-	technicians.Post("/", middleware.WriteAccess(), technicianHandler.Create)
-	technicians.Put("/:id", middleware.WriteAccess(), technicianHandler.Update)
-	technicians.Delete("/:id", middleware.WriteAccess(), technicianHandler.Delete)
+	technicians.Post("/", middleware.RequirePermission("technicians.create"), technicianHandler.Create)
+	technicians.Put("/:id", middleware.RequirePermission("technicians.edit"), technicianHandler.Update)
+	technicians.Delete("/:id", middleware.RequirePermission("technicians.delete"), technicianHandler.Delete)
 	technicians.Get("/search", technicianHandler.Search)
 	technicians.Get("/by-city/:city", technicianHandler.GetByCity)
 	technicians.Get("/by-state/:state", technicianHandler.GetByState)
@@ -216,30 +218,30 @@ func main() {
 	tickets := protected.Group("/tickets")
 	tickets.Get("/", ticketHandler.GetAll)
 	tickets.Get("/:id", ticketHandler.GetByID)
-	tickets.Post("/", middleware.WriteAccess(), ticketHandler.Create)
-	tickets.Put("/:id", middleware.WriteAccess(), ticketHandler.Update)
-	tickets.Delete("/:id", middleware.WriteAccess(), ticketHandler.Delete)
-	tickets.Put("/:id/status", middleware.WriteAccess(), ticketHandler.UpdateStatus)
-	tickets.Put("/:id/assign", middleware.WriteAccess(), ticketHandler.AssignTechnician)
-	tickets.Post("/:id/sign", middleware.WriteAccess(), ticketHandler.SignTicket)
-	tickets.Delete("/:id/sign", middleware.AdminOnly(), ticketHandler.DeleteSignature)
+	tickets.Post("/", middleware.RequirePermission("tickets.create"), ticketHandler.Create)
+	tickets.Put("/:id", middleware.RequirePermission("tickets.edit"), ticketHandler.Update)
+	tickets.Delete("/:id", middleware.RequirePermission("tickets.delete"), ticketHandler.Delete)
+	tickets.Put("/:id/status", middleware.RequirePermission("tickets.edit"), ticketHandler.UpdateStatus)
+	tickets.Put("/:id/assign", middleware.RequirePermission("tickets.assign"), ticketHandler.AssignTechnician)
+	tickets.Post("/:id/sign", middleware.RequirePermission("tickets.edit"), ticketHandler.SignTicket)
+	tickets.Delete("/:id/sign", middleware.RequirePermission("tickets.delete"), ticketHandler.DeleteSignature)
 
 	// Client routes
 	clients := protected.Group("/clients")
 	clients.Get("/", clientHandler.GetAll)
 	clients.Get("/count", clientHandler.Count)
 	clients.Get("/:id", clientHandler.GetByID)
-	clients.Post("/", middleware.WriteAccess(), clientHandler.Create)
-	clients.Put("/:id", middleware.WriteAccess(), clientHandler.Update)
-	clients.Delete("/:id", middleware.WriteAccess(), clientHandler.Delete)
+	clients.Post("/", middleware.RequirePermission("clients.create"), clientHandler.Create)
+	clients.Put("/:id", middleware.RequirePermission("clients.edit"), clientHandler.Update)
+	clients.Delete("/:id", middleware.RequirePermission("clients.delete"), clientHandler.Delete)
 
 	// Category routes
 	categories := protected.Group("/categories")
 	categories.Get("/", categoryHandler.GetAll)
 	categories.Get("/:id", categoryHandler.GetByID)
-	categories.Post("/", middleware.WriteAccess(), categoryHandler.Create)
-	categories.Put("/:id", middleware.WriteAccess(), categoryHandler.Update)
-	categories.Delete("/:id", middleware.WriteAccess(), categoryHandler.Delete)
+	categories.Post("/", middleware.RequirePermission("settings.manage"), categoryHandler.Create)
+	categories.Put("/:id", middleware.RequirePermission("settings.manage"), categoryHandler.Update)
+	categories.Delete("/:id", middleware.RequirePermission("settings.manage"), categoryHandler.Delete)
 
 	// Dashboard routes
 	dashboard := protected.Group("/dashboard")
@@ -255,8 +257,8 @@ func main() {
 	// Terms accept (protected)
 	protected.Post("/terms/accept", termsHandler.AcceptTerms)
 
-	// Export routes (admin and employee access)
-	export := protected.Group("/export", middleware.AdminOrEmployee())
+	// Export routes (requires export permission)
+	export := protected.Group("/export", middleware.RequirePermission("reports.export"))
 	export.Get("/clients", exportHandler.ExportClients)
 	export.Get("/technicians", exportHandler.ExportTechnicians)
 	export.Get("/tickets", exportHandler.ExportTickets)
@@ -267,8 +269,8 @@ func main() {
 	export.Get("/financial/entries", exportHandler.ExportFinancialEntries)
 	export.Get("/categories", exportHandler.ExportCategories)
 
-	// Import routes (admin and employee access)
-	importRoutes := protected.Group("/import", middleware.AdminOrEmployee())
+	// Import routes (requires import permission)
+	importRoutes := protected.Group("/import", middleware.RequireAnyPermission("technicians.create", "tickets.create", "clients.create"))
 	importRoutes.Get("/tickets/template", importHandler.DownloadTicketTemplate)
 	importRoutes.Post("/tickets", importHandler.ImportTickets)
 	importRoutes.Get("/technicians/template", importHandler.DownloadTechnicianTemplate)
@@ -279,34 +281,34 @@ func main() {
 	hierarchies := protected.Group("/hierarchies")
 	hierarchies.Get("/", hierarchyHandler.GetAllHierarchies)
 	hierarchies.Get("/:id", hierarchyHandler.GetHierarchy)
-	hierarchies.Post("/", middleware.WriteAccess(), hierarchyHandler.CreateHierarchy)
-	hierarchies.Put("/:id", middleware.WriteAccess(), hierarchyHandler.UpdateHierarchy)
-	hierarchies.Delete("/:id", middleware.WriteAccess(), hierarchyHandler.DeleteHierarchy)
+	hierarchies.Post("/", middleware.RequirePermission("access.manage"), hierarchyHandler.CreateHierarchy)
+	hierarchies.Put("/:id", middleware.RequirePermission("access.manage"), hierarchyHandler.UpdateHierarchy)
+	hierarchies.Delete("/:id", middleware.RequirePermission("access.manage"), hierarchyHandler.DeleteHierarchy)
 
 	// Nodes (within hierarchy)
-	hierarchies.Post("/:id/nodes", middleware.WriteAccess(), hierarchyHandler.CreateNode)
+	hierarchies.Post("/:id/nodes", middleware.RequirePermission("access.manage"), hierarchyHandler.CreateNode)
 
 	// Node operations
 	nodes := protected.Group("/nodes")
 	nodes.Get("/", hierarchyHandler.GetAllNodes)
-	nodes.Put("/:id", middleware.WriteAccess(), hierarchyHandler.UpdateNode)
-	nodes.Put("/:id/move", middleware.WriteAccess(), hierarchyHandler.MoveNode)
-	nodes.Delete("/:id", middleware.WriteAccess(), hierarchyHandler.DeleteNode)
+	nodes.Put("/:id", middleware.RequirePermission("access.manage"), hierarchyHandler.UpdateNode)
+	nodes.Put("/:id/move", middleware.RequirePermission("access.manage"), hierarchyHandler.MoveNode)
+	nodes.Delete("/:id", middleware.RequirePermission("access.manage"), hierarchyHandler.DeleteNode)
 	nodes.Get("/:id/members", hierarchyHandler.GetNodeMembers)
-	nodes.Post("/:id/members", middleware.WriteAccess(), hierarchyHandler.AddNodeMember)
+	nodes.Post("/:id/members", middleware.RequirePermission("access.manage"), hierarchyHandler.AddNodeMember)
 
 	// Memberships
 	memberships := protected.Group("/memberships")
-	memberships.Put("/:id", middleware.WriteAccess(), hierarchyHandler.UpdateMembership)
-	memberships.Delete("/:id", middleware.WriteAccess(), hierarchyHandler.DeleteMembership)
+	memberships.Put("/:id", middleware.RequirePermission("access.manage"), hierarchyHandler.UpdateMembership)
+	memberships.Delete("/:id", middleware.RequirePermission("access.manage"), hierarchyHandler.DeleteMembership)
 
 	// Roles
 	roles := protected.Group("/roles")
 	roles.Get("/", hierarchyHandler.GetAllRoles)
 	roles.Get("/:id", hierarchyHandler.GetRole)
-	roles.Post("/", middleware.WriteAccess(), hierarchyHandler.CreateRole)
-	roles.Put("/:id", middleware.WriteAccess(), hierarchyHandler.UpdateRole)
-	roles.Delete("/:id", middleware.WriteAccess(), hierarchyHandler.DeleteRole)
+	roles.Post("/", middleware.RequirePermission("access.manage"), hierarchyHandler.CreateRole)
+	roles.Put("/:id", middleware.RequirePermission("access.manage"), hierarchyHandler.UpdateRole)
+	roles.Delete("/:id", middleware.RequirePermission("access.manage"), hierarchyHandler.DeleteRole)
 
 	// Permissions
 	protected.Get("/permissions", hierarchyHandler.GetAllPermissions)
@@ -323,7 +325,7 @@ func main() {
 	access.Post("/simulate", hierarchyHandler.SimulateAccess)
 	access.Get("/user/:userId", hierarchyHandler.GetUserAccess)
 	access.Get("/history", hierarchyHandler.GetHistory)
-	access.Post("/history/:id/revert", middleware.WriteAccess(), hierarchyHandler.RevertChange)
+	access.Post("/history/:id/revert", middleware.RequirePermission("access.manage"), hierarchyHandler.RevertChange)
 
 	// ==================== Geolocation Routes ====================
 	geo := protected.Group("/geo")
@@ -336,15 +338,15 @@ func main() {
 	geo.Get("/tickets/:id/locations", geoHandler.GetTicketLocations)
 	// Admin endpoints (settings and cache)
 	geo.Get("/settings", geoHandler.GetGeoSettings)
-	geo.Put("/settings", middleware.WriteAccess(), geoHandler.UpdateGeoSettings)
-	geo.Post("/cache/refresh", middleware.WriteAccess(), geoHandler.RefreshGeoCache)
+	geo.Put("/settings", middleware.RequirePermission("settings.manage"), geoHandler.UpdateGeoSettings)
+	geo.Post("/cache/refresh", middleware.RequirePermission("settings.manage"), geoHandler.RefreshGeoCache)
 	geo.Get("/cache/status", geoHandler.GetGeoCacheStatus)
 	// Geocoding endpoints
-	geo.Post("/geocode/batch", middleware.AdminOnly(), geoHandler.GeocodeAllTechnicians)
+	geo.Post("/geocode/batch", middleware.RequirePermission("settings.manage"), geoHandler.GeocodeAllTechnicians)
 	geo.Get("/geocode/status", geoHandler.GetGeocodingStatus)
-	geo.Post("/geocode/:id", middleware.WriteAccess(), geoHandler.GeocodeSingleTechnician)
+	geo.Post("/geocode/:id", middleware.RequirePermission("technicians.edit"), geoHandler.GeocodeSingleTechnician)
 	// Cities endpoints
-	geo.Post("/cities/load", middleware.AdminOnly(), geoHandler.LoadCities)
+	geo.Post("/cities/load", middleware.RequirePermission("settings.manage"), geoHandler.LoadCities)
 	geo.Get("/cities/count", geoHandler.GetCityCount)
 
 	// ==================== Admin Routes ====================
@@ -361,7 +363,7 @@ func main() {
 	protected.Post("/errors/frontend", errorLogHandler.CreateFromFrontend)
 
 	// Admin routes for managing error logs
-	errors := protected.Group("/errors", middleware.AdminOnly())
+	errors := protected.Group("/errors", middleware.RequirePermission("settings.manage"))
 	errors.Get("/", errorLogHandler.GetAll)
 	errors.Get("/stats", errorLogHandler.GetStats)
 	errors.Get("/:id", errorLogHandler.GetByID)
@@ -382,12 +384,12 @@ func main() {
 	entries := financial.Group("/entries")
 	entries.Get("/", financialHandler.ListEntries)
 	entries.Get("/:id", financialHandler.GetEntry)
-	entries.Post("/", middleware.WriteAccess(), financialHandler.CreateEntry)
-	entries.Put("/:id", middleware.WriteAccess(), financialHandler.UpdateEntry)
-	entries.Patch("/:id/status", middleware.WriteAccess(), financialHandler.UpdateEntryStatus)
-	entries.Delete("/:id", middleware.AdminOnly(), financialHandler.DeleteEntry)
-	// Payment batches (admin only)
-	batches := financial.Group("/batches", middleware.AdminOnly())
+	entries.Post("/", middleware.RequirePermission("finance.create"), financialHandler.CreateEntry)
+	entries.Put("/:id", middleware.RequirePermission("finance.edit"), financialHandler.UpdateEntry)
+	entries.Patch("/:id/status", middleware.RequirePermission("finance.edit"), financialHandler.UpdateEntryStatus)
+	entries.Delete("/:id", middleware.RequirePermission("finance.delete"), financialHandler.DeleteEntry)
+	// Payment batches (requires finance.manage permission)
+	batches := financial.Group("/batches", middleware.RequirePermission("finance.manage"))
 	batches.Get("/", financialHandler.ListBatches)
 	batches.Get("/:id", financialHandler.GetBatch)
 	batches.Post("/", financialHandler.CreateBatch)

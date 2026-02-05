@@ -162,7 +162,10 @@ func SeedAccessControl(db *gorm.DB) {
 		// Finance
 		{Code: "finance.view", Name: "Ver Financeiro", Category: "Financeiro", Description: "Visualizar dados financeiros"},
 		{Code: "finance.create", Name: "Lançar Financeiro", Category: "Financeiro", Description: "Criar lançamentos financeiros"},
+		{Code: "finance.edit", Name: "Editar Financeiro", Category: "Financeiro", Description: "Editar lançamentos financeiros"},
+		{Code: "finance.delete", Name: "Excluir Financeiro", Category: "Financeiro", Description: "Excluir lançamentos financeiros"},
 		{Code: "finance.approve", Name: "Aprovar Financeiro", Category: "Financeiro", Description: "Aprovar lançamentos financeiros"},
+		{Code: "finance.manage", Name: "Gerenciar Financeiro", Category: "Financeiro", Description: "Gerenciar lotes e operações avançadas"},
 		// Inventory
 		{Code: "inventory.view", Name: "Ver Estoque", Category: "Estoque", Description: "Visualizar estoque"},
 		{Code: "inventory.manage", Name: "Gerenciar Estoque", Category: "Estoque", Description: "Gerenciar itens do estoque"},
