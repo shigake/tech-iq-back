@@ -756,8 +756,8 @@ func (h *ImportHandler) ImportTechnicians(c *fiber.Ctx) error {
 		return c.Status(500).JSON(fiber.Map{"error": "Erro ao ler linhas"})
 	}
 
-	if len(rows) < 4 {
-		return c.Status(400).JSON(fiber.Map{"error": "Planilha vazia ou sem dados (preencha a partir da linha 4)"})
+	if len(rows) < 2 {
+		return c.Status(400).JSON(fiber.Map{"error": "Planilha vazia ou sem dados (preencha a partir da linha 2)"})
 	}
 
 	var created, updated, errCount int
@@ -765,7 +765,7 @@ func (h *ImportHandler) ImportTechnicians(c *fiber.Ctx) error {
 	var successDetails []string
 
 	for i, row := range rows {
-		if i < 3 {
+		if i < 1 {
 			continue
 		}
 
