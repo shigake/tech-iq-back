@@ -760,8 +760,9 @@ func (h *ImportHandler) ImportTechnicians(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "Planilha vazia ou sem dados (preencha a partir da linha 4)"})
 	}
 
-	var created, errCount int
+	var created, updated, errCount int
 	var errorDetails []string
+	var successDetails []string
 
 	for i, row := range rows {
 		if i < 3 {
@@ -913,20 +914,43 @@ func (h *ImportHandler) ImportTechnicians(c *fiber.Ctx) error {
 			ZipCode:       zipCode,
 		}
 
-		if err := h.technicianRepo.Create(tech); err != nil {
-			errCount++
-			errorDetails = append(errorDetails, fmt.Sprintf("Linha %d: %s", i+1, err.Error()))
-			continue
+		var existingTech *models.Technician
+		var findErr error
+
+		if cpf != "" {
+			existingTech, findErr = h.technicianRepo.FindByCPF(cpf)
+		} else if cnpj != "" {
+			existingTech, findErr = h.technicianRepo.FindByCNPJ(cnpj)
 		}
 
-		created++
+		if findErr == nil && existingTech != nil {
+			tech.ID = existingTech.ID
+			tech.CreatedAt = existingTech.CreatedAt
+			if err := h.technicianRepo.Update(tech); err != nil {
+				errCount++
+				errorDetails = append(errorDetails, fmt.Sprintf("Linha %d: Erro ao atualizar - %s", i+1, err.Error()))
+				continue
+			}
+			updated++
+			successDetails = append(successDetails, fmt.Sprintf("Linha %d: Tecnico '%s' atualizado com sucesso", i+1, name))
+		} else {
+			if err := h.technicianRepo.Create(tech); err != nil {
+				errCount++
+				errorDetails = append(errorDetails, fmt.Sprintf("Linha %d: Erro ao criar - %s", i+1, err.Error()))
+				continue
+			}
+			created++
+			successDetails = append(successDetails, fmt.Sprintf("Linha %d: Tecnico '%s' cadastrado com sucesso", i+1, name))
+		}
 	}
 
 	return c.JSON(fiber.Map{
-		"success":    true,
-		"message":    fmt.Sprintf("Importacao concluida: %d tecnicos criados, %d erros", created, errCount),
-		"imported":   created,
-		"errorCount": errCount,
-		"errors":     errorDetails,
+		"success":        true,
+		"message":        fmt.Sprintf("Importacao concluida: %d tecnicos criados, %d atualizados, %d erros", created, updated, errCount),
+		"imported":       created,
+		"updated":        updated,
+		"errorCount":     errCount,
+		"errors":         errorDetails,
+		"successDetails": successDetails,
 	})
 }

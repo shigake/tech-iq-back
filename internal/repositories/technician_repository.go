@@ -12,6 +12,8 @@ type TechnicianRepository interface {
 	FindAll(page, size int) ([]models.Technician, int64, error)
 	FindByID(id string) (*models.Technician, error)
 	FindByUserID(userID string) (*models.Technician, error)
+	FindByCPF(cpf string) (*models.Technician, error)
+	FindByCNPJ(cnpj string) (*models.Technician, error)
 	Update(technician *models.Technician) error
 	Delete(id string) error
 	FindByCity(city string) ([]models.Technician, error)
@@ -24,7 +26,7 @@ type TechnicianRepository interface {
 	FindByIDs(ids []string) ([]models.Technician, error)
 	GetDistinctCities() ([]string, error)
 	GetRecent(limit int) ([]models.Technician, error)
-	GetAll() ([]models.Technician, error) // Retorna todos os técnicos sem paginação
+	GetAll() ([]models.Technician, error)
 }
 
 type technicianRepository struct {
@@ -66,6 +68,24 @@ func (r *technicianRepository) FindByID(id string) (*models.Technician, error) {
 func (r *technicianRepository) FindByUserID(userID string) (*models.Technician, error) {
 	var technician models.Technician
 	err := r.db.Where("user_id = ?", userID).First(&technician).Error
+	if err != nil {
+		return nil, err
+	}
+	return &technician, nil
+}
+
+func (r *technicianRepository) FindByCPF(cpf string) (*models.Technician, error) {
+	var technician models.Technician
+	err := r.db.Where("cpf = ?", cpf).First(&technician).Error
+	if err != nil {
+		return nil, err
+	}
+	return &technician, nil
+}
+
+func (r *technicianRepository) FindByCNPJ(cnpj string) (*models.Technician, error) {
+	var technician models.Technician
+	err := r.db.Where("cnpj = ?", cnpj).First(&technician).Error
 	if err != nil {
 		return nil, err
 	}
