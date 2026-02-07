@@ -513,17 +513,17 @@ func (h *ImportHandler) DownloadTechnicianTemplate(c *fiber.Ctx) error {
 	})
 
 	headers := []string{
-		"Nome*", "Tipo", "Emails", "Telefones",
+		"Nome*", "Tipo", "Status", "Emails", "Telefones",
 		"Valor Minimo", "Observacao", "CPF", "CNPJ",
 		"Banco", "Agencia", "Conta", "Tipo Conta", "Titular", "Chave Pix",
 		"Rua", "Numero", "Bairro", "Cidade", "Estado", "CEP",
 	}
 
 	colWidths := map[string]float64{
-		"A": 28, "B": 10, "C": 40, "D": 35,
-		"E": 14, "F": 30, "G": 18, "H": 22,
-		"I": 22, "J": 12, "K": 14, "L": 18, "M": 22, "N": 28,
-		"O": 28, "P": 10, "Q": 18, "R": 22, "S": 10, "T": 14,
+		"A": 28, "B": 10, "C": 12, "D": 40, "E": 35,
+		"F": 14, "G": 30, "H": 18, "I": 22,
+		"J": 22, "K": 12, "L": 14, "M": 18, "N": 22, "O": 28,
+		"P": 28, "Q": 10, "R": 18, "S": 22, "T": 10, "U": 14,
 	}
 
 	for col, width := range colWidths {
@@ -543,7 +543,7 @@ func (h *ImportHandler) DownloadTechnicianTemplate(c *fiber.Ctx) error {
 	}
 
 	instructions := []string{
-		"*OBRIGATORIO Max 255", "Selecione", "Separar por ;", "(00)00000-0000; ...",
+		"*OBRIGATORIO Max 255", "Selecione", "Selecione", "Separar por ;", "(00)00000-0000; ...",
 		"Ex: 150.00", "Texto livre", "000.000.000-00", "00.000.000/0000-00",
 		"Max 200", "Max 50", "Max 50", "Selecione", "Max 255", "Max 255",
 		"Max 255", "Max 20", "Max 100", "Max 100", "Selecione UF", "00000-000",
@@ -556,7 +556,7 @@ func (h *ImportHandler) DownloadTechnicianTemplate(c *fiber.Ctx) error {
 	}
 
 	examples := []string{
-		"Joao da Silva", "PF", "joao@email.com; joao2@email.com", "(11) 99999-8888; (11) 3333-4444",
+		"Joao da Silva", "PF", "ATIVO", "joao@email.com; joao2@email.com", "(11) 99999-8888; (11) 3333-4444",
 		"150.00", "Tecnico especializado em redes", "123.456.789-00", "12.345.678/0001-90",
 		"Banco do Brasil", "1234", "12345-6", "CORRENTE", "Joao da Silva", "joao@email.com",
 		"Rua das Flores", "100", "Centro", "Sao Paulo", "SP", "01310-100",
@@ -575,11 +575,11 @@ func (h *ImportHandler) DownloadTechnicianTemplate(c *fiber.Ctx) error {
 	maxRows := 1000
 
 	for row := 4; row <= maxRows; row++ {
-		cpfCell, _ := excelize.CoordinatesToCellName(7, row)
+		cpfCell, _ := excelize.CoordinatesToCellName(8, row)
 		f.SetCellStyle(sheetName, cpfCell, cpfCell, cpfStyle)
-		cnpjCell, _ := excelize.CoordinatesToCellName(8, row)
+		cnpjCell, _ := excelize.CoordinatesToCellName(9, row)
 		f.SetCellStyle(sheetName, cnpjCell, cnpjCell, cnpjStyle)
-		cepCell, _ := excelize.CoordinatesToCellName(20, row)
+		cepCell, _ := excelize.CoordinatesToCellName(21, row)
 		f.SetCellStyle(sheetName, cepCell, cepCell, cepStyle)
 	}
 
@@ -590,24 +590,31 @@ func (h *ImportHandler) DownloadTechnicianTemplate(c *fiber.Ctx) error {
 	dvType.SetInput("Tipo Pessoa", "PF = Pessoa Fisica, PJ = Pessoa Juridica")
 	f.AddDataValidation(sheetName, dvType)
 
+	dvStatus := excelize.NewDataValidation(true)
+	dvStatus.Sqref = fmt.Sprintf("C4:C%d", maxRows)
+	dvStatus.SetDropList([]string{"ATIVO", "INATIVO"})
+	dvStatus.SetError(excelize.DataValidationErrorStyleStop, "Status invalido", "Selecione: ATIVO ou INATIVO")
+	dvStatus.SetInput("Status", "ATIVO = Tecnico ativo, INATIVO = Tecnico inativo")
+	f.AddDataValidation(sheetName, dvStatus)
+
 	dvAccountType := excelize.NewDataValidation(true)
-	dvAccountType.Sqref = fmt.Sprintf("L4:L%d", maxRows)
+	dvAccountType.Sqref = fmt.Sprintf("M4:M%d", maxRows)
 	dvAccountType.SetDropList([]string{"CORRENTE", "POUPANCA"})
 	dvAccountType.SetError(excelize.DataValidationErrorStyleStop, "Tipo invalido", "Selecione: CORRENTE ou POUPANCA")
 	dvAccountType.SetInput("Tipo de Conta", "Selecione o tipo de conta bancaria")
 	f.AddDataValidation(sheetName, dvAccountType)
 
 	dvState := excelize.NewDataValidation(true)
-	dvState.Sqref = fmt.Sprintf("S4:S%d", maxRows)
+	dvState.Sqref = fmt.Sprintf("T4:T%d", maxRows)
 	dvState.SetDropList([]string{"AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"})
 	dvState.SetError(excelize.DataValidationErrorStyleStop, "UF invalida", "Selecione uma UF valida da lista")
 	dvState.SetInput("Estado", "Selecione a UF")
 	f.AddDataValidation(sheetName, dvState)
 
 	fieldLimits := map[string]int{
-		"A": 255, "E": 50,
-		"I": 200, "J": 50, "K": 50, "M": 255, "N": 255,
-		"O": 255, "P": 20, "Q": 100, "R": 100,
+		"A": 255, "F": 50,
+		"J": 200, "K": 50, "L": 50, "N": 255, "O": 255,
+		"P": 255, "Q": 20, "R": 100, "S": 100,
 	}
 	for col, maxLen := range fieldLimits {
 		dv := excelize.NewDataValidation(true)
@@ -620,7 +627,7 @@ func (h *ImportHandler) DownloadTechnicianTemplate(c *fiber.Ctx) error {
 	}
 
 	dvCPF := excelize.NewDataValidation(true)
-	dvCPF.Sqref = fmt.Sprintf("G4:G%d", maxRows)
+	dvCPF.Sqref = fmt.Sprintf("H4:H%d", maxRows)
 	dvCPF.Type = "textLength"
 	dvCPF.Operator = "between"
 	dvCPF.Formula1 = "11"
@@ -630,7 +637,7 @@ func (h *ImportHandler) DownloadTechnicianTemplate(c *fiber.Ctx) error {
 	f.AddDataValidation(sheetName, dvCPF)
 
 	dvCNPJ := excelize.NewDataValidation(true)
-	dvCNPJ.Sqref = fmt.Sprintf("H4:H%d", maxRows)
+	dvCNPJ.Sqref = fmt.Sprintf("I4:I%d", maxRows)
 	dvCNPJ.Type = "textLength"
 	dvCNPJ.Operator = "between"
 	dvCNPJ.Formula1 = "14"
@@ -640,7 +647,7 @@ func (h *ImportHandler) DownloadTechnicianTemplate(c *fiber.Ctx) error {
 	f.AddDataValidation(sheetName, dvCNPJ)
 
 	dvCEP := excelize.NewDataValidation(true)
-	dvCEP.Sqref = fmt.Sprintf("T4:T%d", maxRows)
+	dvCEP.Sqref = fmt.Sprintf("U4:U%d", maxRows)
 	dvCEP.Type = "textLength"
 	dvCEP.Operator = "between"
 	dvCEP.Formula1 = "8"
@@ -664,31 +671,33 @@ func (h *ImportHandler) DownloadTechnicianTemplate(c *fiber.Ctx) error {
 	f.SetCellValue(instructionsSheet, "A13", "|-----------------|-------------|----------------------------------|-------------|")
 	f.SetCellValue(instructionsSheet, "A14", "| Nome            | 255         | Texto livre                      | SIM         |")
 	f.SetCellValue(instructionsSheet, "A15", "| Tipo            | -           | PF ou PJ (dropdown)              | Nao         |")
-	f.SetCellValue(instructionsSheet, "A16", "| Emails          | -           | Separar multiplos por ;          | Nao         |")
-	f.SetCellValue(instructionsSheet, "A17", "| Telefones       | -           | (00) 00000-0000; Separar por ;   | Nao         |")
-	f.SetCellValue(instructionsSheet, "A18", "| Valor Minimo    | 50          | Numero decimal (ex: 150.00)      | Nao         |")
-	f.SetCellValue(instructionsSheet, "A19", "| Observacao      | Ilimitado   | Texto livre                      | Nao         |")
-	f.SetCellValue(instructionsSheet, "A20", "| CPF             | 14          | 000.000.000-00 ou 00000000000    | Nao         |")
-	f.SetCellValue(instructionsSheet, "A21", "| CNPJ            | 18          | 00.000.000/0000-00 ou 00000...   | Nao         |")
-	f.SetCellValue(instructionsSheet, "A22", "| Banco           | 200         | Nome do banco                    | Nao         |")
-	f.SetCellValue(instructionsSheet, "A23", "| Agencia         | 50          | Numero da agencia                | Nao         |")
-	f.SetCellValue(instructionsSheet, "A24", "| Conta           | 50          | Numero da conta com digito       | Nao         |")
-	f.SetCellValue(instructionsSheet, "A25", "| Tipo Conta      | -           | CORRENTE ou POUPANCA (dropdown)  | Nao         |")
-	f.SetCellValue(instructionsSheet, "A26", "| Titular         | 255         | Nome do titular da conta         | Nao         |")
-	f.SetCellValue(instructionsSheet, "A27", "| Chave Pix       | 255         | CPF, email, telefone ou aleatoria| Nao         |")
-	f.SetCellValue(instructionsSheet, "A28", "| Rua             | 255         | Endereco do tecnico              | Nao         |")
-	f.SetCellValue(instructionsSheet, "A29", "| Numero          | 20          | Numero do endereco               | Nao         |")
-	f.SetCellValue(instructionsSheet, "A30", "| Bairro          | 100         | Bairro                           | Nao         |")
-	f.SetCellValue(instructionsSheet, "A31", "| Cidade          | 100         | Cidade                           | Nao         |")
-	f.SetCellValue(instructionsSheet, "A32", "| Estado          | 2           | UF (dropdown)                    | Nao         |")
-	f.SetCellValue(instructionsSheet, "A33", "| CEP             | 10          | 00000-000 ou 00000000            | Nao         |")
-	f.SetCellValue(instructionsSheet, "A35", "DICAS DE PREENCHIMENTO:")
-	f.SetCellValue(instructionsSheet, "A36", "- CPF: aceita com mascara (123.456.789-00) ou sem (12345678900)")
-	f.SetCellValue(instructionsSheet, "A37", "- CNPJ: aceita com mascara (12.345.678/0001-90) ou sem (12345678000190)")
-	f.SetCellValue(instructionsSheet, "A38", "- CEP: aceita com mascara (01310-100) ou sem (01310100)")
-	f.SetCellValue(instructionsSheet, "A39", "- Telefone: formato sugerido (11) 99999-8888, mas aceita outros")
-	f.SetCellValue(instructionsSheet, "A40", "- Emails/Telefones: para multiplos valores, separe com ponto e virgula (;)")
-	f.SetCellValue(instructionsSheet, "A41", "- Chave Pix: pode ser CPF, CNPJ, email, telefone ou chave aleatoria")
+	f.SetCellValue(instructionsSheet, "A16", "| Status          | -           | ATIVO ou INATIVO (dropdown)      | Nao         |")
+	f.SetCellValue(instructionsSheet, "A17", "| Emails          | -           | Separar multiplos por ;          | Nao         |")
+	f.SetCellValue(instructionsSheet, "A18", "| Telefones       | -           | (00) 00000-0000; Separar por ;   | Nao         |")
+	f.SetCellValue(instructionsSheet, "A19", "| Valor Minimo    | 50          | Numero decimal (ex: 150.00)      | Nao         |")
+	f.SetCellValue(instructionsSheet, "A20", "| Observacao      | Ilimitado   | Texto livre                      | Nao         |")
+	f.SetCellValue(instructionsSheet, "A21", "| CPF             | 14          | 000.000.000-00 ou 00000000000    | Nao         |")
+	f.SetCellValue(instructionsSheet, "A22", "| CNPJ            | 18          | 00.000.000/0000-00 ou 00000...   | Nao         |")
+	f.SetCellValue(instructionsSheet, "A23", "| Banco           | 200         | Nome do banco                    | Nao         |")
+	f.SetCellValue(instructionsSheet, "A24", "| Agencia         | 50          | Numero da agencia                | Nao         |")
+	f.SetCellValue(instructionsSheet, "A25", "| Conta           | 50          | Numero da conta com digito       | Nao         |")
+	f.SetCellValue(instructionsSheet, "A26", "| Tipo Conta      | -           | CORRENTE ou POUPANCA (dropdown)  | Nao         |")
+	f.SetCellValue(instructionsSheet, "A27", "| Titular         | 255         | Nome do titular da conta         | Nao         |")
+	f.SetCellValue(instructionsSheet, "A28", "| Chave Pix       | 255         | CPF, email, telefone ou aleatoria| Nao         |")
+	f.SetCellValue(instructionsSheet, "A29", "| Rua             | 255         | Endereco do tecnico              | Nao         |")
+	f.SetCellValue(instructionsSheet, "A30", "| Numero          | 20          | Numero do endereco               | Nao         |")
+	f.SetCellValue(instructionsSheet, "A31", "| Bairro          | 100         | Bairro                           | Nao         |")
+	f.SetCellValue(instructionsSheet, "A32", "| Cidade          | 100         | Cidade                           | Nao         |")
+	f.SetCellValue(instructionsSheet, "A33", "| Estado          | 2           | UF (dropdown)                    | Nao         |")
+	f.SetCellValue(instructionsSheet, "A34", "| CEP             | 10          | 00000-000 ou 00000000            | Nao         |")
+	f.SetCellValue(instructionsSheet, "A36", "DICAS DE PREENCHIMENTO:")
+	f.SetCellValue(instructionsSheet, "A37", "- Status: se nao preenchido, assume ATIVO por padrao")
+	f.SetCellValue(instructionsSheet, "A38", "- CPF: aceita com mascara (123.456.789-00) ou sem (12345678900)")
+	f.SetCellValue(instructionsSheet, "A39", "- CNPJ: aceita com mascara (12.345.678/0001-90) ou sem (12345678000190)")
+	f.SetCellValue(instructionsSheet, "A40", "- CEP: aceita com mascara (01310-100) ou sem (01310100)")
+	f.SetCellValue(instructionsSheet, "A41", "- Telefone: formato sugerido (11) 99999-8888, mas aceita outros")
+	f.SetCellValue(instructionsSheet, "A42", "- Emails/Telefones: para multiplos valores, separe com ponto e virgula (;)")
+	f.SetCellValue(instructionsSheet, "A43", "- Chave Pix: pode ser CPF, CNPJ, email, telefone ou chave aleatoria")
 
 	titleStyle, _ := f.NewStyle(&excelize.Style{
 		Font: &excelize.Font{Bold: true, Size: 14, Color: "4472C4"},
@@ -700,13 +709,13 @@ func (h *ImportHandler) DownloadTechnicianTemplate(c *fiber.Ctx) error {
 	})
 	f.SetCellStyle(instructionsSheet, "A3", "A3", subtitleStyle)
 	f.SetCellStyle(instructionsSheet, "A10", "A10", subtitleStyle)
-	f.SetCellStyle(instructionsSheet, "A35", "A35", subtitleStyle)
+	f.SetCellStyle(instructionsSheet, "A36", "A36", subtitleStyle)
 
 	tableStyle, _ := f.NewStyle(&excelize.Style{
 		Font:      &excelize.Font{Family: "Consolas", Size: 10},
 		Alignment: &excelize.Alignment{Horizontal: "left"},
 	})
-	for i := 12; i <= 33; i++ {
+	for i := 12; i <= 34; i++ {
 		cell := fmt.Sprintf("A%d", i)
 		f.SetCellStyle(instructionsSheet, cell, cell, tableStyle)
 	}
@@ -775,6 +784,7 @@ func (h *ImportHandler) ImportTechnicians(c *fiber.Ctx) error {
 
 		name := ""
 		techType := "PF"
+		status := "ATIVO"
 		emailsStr := ""
 		phonesStr := ""
 		minValue := 0.0
@@ -801,58 +811,64 @@ func (h *ImportHandler) ImportTechnicians(c *fiber.Ctx) error {
 			techType = strings.ToUpper(strings.TrimSpace(row[1]))
 		}
 		if len(row) > 2 {
-			emailsStr = strings.TrimSpace(row[2])
+			statusVal := strings.ToUpper(strings.TrimSpace(row[2]))
+			if statusVal == "ATIVO" || statusVal == "INATIVO" {
+				status = statusVal
+			}
 		}
 		if len(row) > 3 {
-			phonesStr = strings.TrimSpace(row[3])
+			emailsStr = strings.TrimSpace(row[3])
 		}
-		if len(row) > 4 && row[4] != "" {
-			fmt.Sscanf(strings.Replace(row[4], ",", ".", -1), "%f", &minValue)
+		if len(row) > 4 {
+			phonesStr = strings.TrimSpace(row[4])
 		}
-		if len(row) > 5 {
-			observation = strings.TrimSpace(row[5])
+		if len(row) > 5 && row[5] != "" {
+			fmt.Sscanf(strings.Replace(row[5], ",", ".", -1), "%f", &minValue)
 		}
 		if len(row) > 6 {
-			cpf = strings.TrimSpace(row[6])
+			observation = strings.TrimSpace(row[6])
 		}
 		if len(row) > 7 {
-			cnpj = strings.TrimSpace(row[7])
+			cpf = strings.TrimSpace(row[7])
 		}
 		if len(row) > 8 {
-			bankName = strings.TrimSpace(row[8])
+			cnpj = strings.TrimSpace(row[8])
 		}
 		if len(row) > 9 {
-			agency = strings.TrimSpace(row[9])
+			bankName = strings.TrimSpace(row[9])
 		}
 		if len(row) > 10 {
-			accountNumber = strings.TrimSpace(row[10])
+			agency = strings.TrimSpace(row[10])
 		}
 		if len(row) > 11 {
-			accountType = strings.ToUpper(strings.TrimSpace(row[11]))
+			accountNumber = strings.TrimSpace(row[11])
 		}
 		if len(row) > 12 {
-			accountHolder = strings.TrimSpace(row[12])
+			accountType = strings.ToUpper(strings.TrimSpace(row[12]))
 		}
 		if len(row) > 13 {
-			pixKey = strings.TrimSpace(row[13])
+			accountHolder = strings.TrimSpace(row[13])
 		}
 		if len(row) > 14 {
-			street = strings.TrimSpace(row[14])
+			pixKey = strings.TrimSpace(row[14])
 		}
 		if len(row) > 15 {
-			number = strings.TrimSpace(row[15])
+			street = strings.TrimSpace(row[15])
 		}
 		if len(row) > 16 {
-			neighborhood = strings.TrimSpace(row[16])
+			number = strings.TrimSpace(row[16])
 		}
 		if len(row) > 17 {
-			city = strings.TrimSpace(row[17])
+			neighborhood = strings.TrimSpace(row[17])
 		}
 		if len(row) > 18 {
-			state = strings.TrimSpace(row[18])
+			city = strings.TrimSpace(row[18])
 		}
 		if len(row) > 19 {
-			zipCode = strings.TrimSpace(row[19])
+			state = strings.TrimSpace(row[19])
+		}
+		if len(row) > 20 {
+			zipCode = strings.TrimSpace(row[20])
 		}
 
 		if name == "" {
@@ -893,7 +909,7 @@ func (h *ImportHandler) ImportTechnicians(c *fiber.Ctx) error {
 		tech := &models.Technician{
 			FullName:      name,
 			Type:          techType,
-			Status:        "ATIVO",
+			Status:        status,
 			Emails:        emails,
 			Phones:        phones,
 			MinCallValue:  minValueStr,
