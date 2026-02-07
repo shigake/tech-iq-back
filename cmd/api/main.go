@@ -73,6 +73,7 @@ func main() {
 	app := fiber.New(fiber.Config{
 		AppName:      cfg.AppName,
 		ErrorHandler: handlers.ErrorHandler,
+		BodyLimit:    50 * 1024 * 1024, // 50MB para suportar importação de planilhas grandes
 	})
 
 	// Middleware
