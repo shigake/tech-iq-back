@@ -74,8 +74,23 @@ jobs:
             # Delete existing pods to force recreation with new image
             kubectl delete pods -l app=tech-erp-backend -n hml --force --grace-period=0 || true
             
-            # Configure Ingress to allow larger uploads (50MB)
-            kubectl annotate ingress --all -n hml nginx.ingress.kubernetes.io/proxy-body-size="50m" --overwrite || true
+            # Configure Traefik middleware for large uploads (50MB)
+            cat <<EOF | kubectl apply -f -
+            apiVersion: traefik.io/v1alpha1
+            kind: Middleware
+            metadata:
+              name: large-body-size
+              namespace: hml
+            spec:
+              buffering:
+                maxRequestBodyBytes: 52428800
+                maxResponseBodyBytes: 52428800
+            EOF
+            
+            # Apply middleware to API ingress
+            kubectl annotate ingress tech-erp-api-ingress -n hml \
+              traefik.ingress.kubernetes.io/router.middlewares='hml-large-body-size@kubernetescrd' \
+              --overwrite || true
             
             # Restart deployment to pick up new image
             kubectl rollout restart deployment/tech-erp-backend -n hml
