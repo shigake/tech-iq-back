@@ -74,6 +74,9 @@ jobs:
             # Delete existing pods to force recreation with new image
             kubectl delete pods -l app=tech-erp-backend -n hml --force --grace-period=0 || true
             
+            # Configure Ingress to allow larger uploads (50MB)
+            kubectl annotate ingress --all -n hml nginx.ingress.kubernetes.io/proxy-body-size="50m" --overwrite || true
+            
             # Restart deployment to pick up new image
             kubectl rollout restart deployment/tech-erp-backend -n hml
             kubectl rollout status deployment/tech-erp-backend -n hml --timeout=120s
