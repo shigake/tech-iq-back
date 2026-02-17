@@ -267,6 +267,7 @@ func main() {
 	export.Get("/stock/items", exportHandler.ExportStockItems)
 	export.Get("/stock/locations", exportHandler.ExportStockLocations)
 	export.Get("/stock/movements", exportHandler.ExportStockMovements)
+	export.Get("/stock/balances/xlsx", exportHandler.ExportStockBalancesXLSX)
 	export.Get("/financial/entries", exportHandler.ExportFinancialEntries)
 	export.Get("/categories", exportHandler.ExportCategories)
 

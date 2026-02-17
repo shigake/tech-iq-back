@@ -3,12 +3,14 @@ package handlers
 import (
 	"encoding/csv"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/shigake/tech-iq-back/internal/models"
 	"github.com/shigake/tech-iq-back/internal/repositories"
+	"github.com/xuri/excelize/v2"
 )
 
 type ExportHandler struct {
@@ -706,4 +708,173 @@ func (h *ExportHandler) ExportCategories(c *fiber.Ctx) error {
 	}
 
 	return c.SendString(csvData.String())
+}
+
+func (h *ExportHandler) ExportStockBalancesXLSX(c *fiber.Ctx) error {
+	filter := models.StockBalanceFilter{
+		Page:     1,
+		PageSize: 1000000,
+	}
+	result, err := h.stockRepo.ListBalances(filter)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"success": false,
+			"message": "Erro ao buscar saldos de estoque",
+			"error":   err.Error(),
+		})
+	}
+
+	itemsFilter := models.StockItemFilter{
+		Page:     0,
+		PageSize: 1000000,
+	}
+	itemsResult, err := h.stockRepo.ListItems(itemsFilter)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"success": false,
+			"message": "Erro ao buscar itens de estoque",
+			"error":   err.Error(),
+		})
+	}
+
+	itemsMap := make(map[string]models.StockItem)
+	for _, item := range itemsResult.Data {
+		itemsMap[item.ID] = item
+	}
+
+	balancesByLocation := make(map[string][]models.StockBalanceResponse)
+	for _, balance := range result.Data {
+		key := balance.LocationName
+		balancesByLocation[key] = append(balancesByLocation[key], balance)
+	}
+
+	locationNames := make([]string, 0, len(balancesByLocation))
+	for name := range balancesByLocation {
+		locationNames = append(locationNames, name)
+	}
+	sort.Strings(locationNames)
+
+	f := excelize.NewFile()
+	defer f.Close()
+
+	headerStyle, _ := f.NewStyle(&excelize.Style{
+		Font:      &excelize.Font{Bold: true, Size: 11, Color: "FFFFFF"},
+		Fill:      excelize.Fill{Type: "pattern", Color: []string{"4472C4"}, Pattern: 1},
+		Alignment: &excelize.Alignment{Horizontal: "center", Vertical: "center", WrapText: true},
+		Border: []excelize.Border{
+			{Type: "left", Color: "000000", Style: 1},
+			{Type: "top", Color: "000000", Style: 1},
+			{Type: "bottom", Color: "000000", Style: 1},
+			{Type: "right", Color: "000000", Style: 1},
+		},
+	})
+
+	dataStyle, _ := f.NewStyle(&excelize.Style{
+		Alignment: &excelize.Alignment{Horizontal: "left", Vertical: "center"},
+		Border: []excelize.Border{
+			{Type: "left", Color: "000000", Style: 1},
+			{Type: "top", Color: "000000", Style: 1},
+			{Type: "bottom", Color: "000000", Style: 1},
+			{Type: "right", Color: "000000", Style: 1},
+		},
+	})
+
+	numberStyle, _ := f.NewStyle(&excelize.Style{
+		Alignment: &excelize.Alignment{Horizontal: "center", Vertical: "center"},
+		Border: []excelize.Border{
+			{Type: "left", Color: "000000", Style: 1},
+			{Type: "top", Color: "000000", Style: 1},
+			{Type: "bottom", Color: "000000", Style: 1},
+			{Type: "right", Color: "000000", Style: 1},
+		},
+	})
+
+	f.DeleteSheet("Sheet1")
+
+	for _, locationName := range locationNames {
+		balances := balancesByLocation[locationName]
+
+		sheetName := locationName
+		if len(sheetName) > 31 {
+			sheetName = sheetName[:31]
+		}
+		sheetName = strings.ReplaceAll(sheetName, "/", "-")
+		sheetName = strings.ReplaceAll(sheetName, "\\", "-")
+		sheetName = strings.ReplaceAll(sheetName, "?", "")
+		sheetName = strings.ReplaceAll(sheetName, "*", "")
+		sheetName = strings.ReplaceAll(sheetName, "[", "(")
+		sheetName = strings.ReplaceAll(sheetName, "]", ")")
+		sheetName = strings.ReplaceAll(sheetName, ":", "-")
+
+		f.NewSheet(sheetName)
+
+		headers := []string{"Item", "Quantidade", "Unidade", "Local de Estoque", "SKU", "Ativo"}
+		for col, header := range headers {
+			cell, _ := excelize.CoordinatesToCellName(col+1, 1)
+			f.SetCellValue(sheetName, cell, header)
+			f.SetCellStyle(sheetName, cell, cell, headerStyle)
+		}
+
+		for row, balance := range balances {
+			rowNum := row + 2
+
+			item, hasItem := itemsMap[balance.ItemID]
+			isActive := "Sim"
+			if hasItem && !item.IsActive {
+				isActive = "Não"
+			}
+
+			f.SetCellValue(sheetName, fmt.Sprintf("A%d", rowNum), balance.ItemName)
+			f.SetCellValue(sheetName, fmt.Sprintf("B%d", rowNum), balance.Quantity)
+			f.SetCellValue(sheetName, fmt.Sprintf("C%d", rowNum), balance.ItemUnit)
+			f.SetCellValue(sheetName, fmt.Sprintf("D%d", rowNum), balance.LocationName)
+			f.SetCellValue(sheetName, fmt.Sprintf("E%d", rowNum), balance.ItemSKU)
+			f.SetCellValue(sheetName, fmt.Sprintf("F%d", rowNum), isActive)
+
+			f.SetCellStyle(sheetName, fmt.Sprintf("A%d", rowNum), fmt.Sprintf("A%d", rowNum), dataStyle)
+			f.SetCellStyle(sheetName, fmt.Sprintf("B%d", rowNum), fmt.Sprintf("B%d", rowNum), numberStyle)
+			f.SetCellStyle(sheetName, fmt.Sprintf("C%d", rowNum), fmt.Sprintf("C%d", rowNum), dataStyle)
+			f.SetCellStyle(sheetName, fmt.Sprintf("D%d", rowNum), fmt.Sprintf("D%d", rowNum), dataStyle)
+			f.SetCellStyle(sheetName, fmt.Sprintf("E%d", rowNum), fmt.Sprintf("E%d", rowNum), dataStyle)
+			f.SetCellStyle(sheetName, fmt.Sprintf("F%d", rowNum), fmt.Sprintf("F%d", rowNum), numberStyle)
+		}
+
+		f.SetColWidth(sheetName, "A", "A", 40)
+		f.SetColWidth(sheetName, "B", "B", 12)
+		f.SetColWidth(sheetName, "C", "C", 10)
+		f.SetColWidth(sheetName, "D", "D", 25)
+		f.SetColWidth(sheetName, "E", "E", 20)
+		f.SetColWidth(sheetName, "F", "F", 8)
+	}
+
+	if len(locationNames) > 0 {
+		firstSheetName := locationNames[0]
+		if len(firstSheetName) > 31 {
+			firstSheetName = firstSheetName[:31]
+		}
+		firstSheetName = strings.ReplaceAll(firstSheetName, "/", "-")
+		firstSheetName = strings.ReplaceAll(firstSheetName, "\\", "-")
+		firstSheetName = strings.ReplaceAll(firstSheetName, "?", "")
+		firstSheetName = strings.ReplaceAll(firstSheetName, "*", "")
+		firstSheetName = strings.ReplaceAll(firstSheetName, "[", "(")
+		firstSheetName = strings.ReplaceAll(firstSheetName, "]", ")")
+		firstSheetName = strings.ReplaceAll(firstSheetName, ":", "-")
+		
+		sheetIdx, _ := f.GetSheetIndex(firstSheetName)
+		f.SetActiveSheet(sheetIdx)
+	}
+
+	buffer, err := f.WriteToBuffer()
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"success": false,
+			"message": "Erro ao gerar arquivo Excel",
+			"error":   err.Error(),
+		})
+	}
+
+	c.Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	c.Set("Content-Disposition", "attachment; filename=estoque_por_local_"+time.Now().Format("20060102_150405")+".xlsx")
+
+	return c.Send(buffer.Bytes())
 }
