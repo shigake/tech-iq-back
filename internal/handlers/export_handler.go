@@ -93,7 +93,21 @@ func (h *ExportHandler) ExportClients(c *fiber.Ctx) error {
 }
 
 func (h *ExportHandler) ExportTechnicians(c *fiber.Ctx) error {
-	technicians, err := h.technicianRepo.GetAll()
+	search := c.Query("search")
+	status := c.Query("status")
+	techType := c.Query("type")
+	city := c.Query("city")
+	state := c.Query("state")
+
+	var technicians []models.Technician
+	var err error
+
+	if search != "" || status != "" || techType != "" || city != "" || state != "" {
+		technicians, _, err = h.technicianRepo.SearchWithFilters(search, status, techType, city, state, 0, 100000)
+	} else {
+		technicians, err = h.technicianRepo.GetAll()
+	}
+
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
 			"success": false,
