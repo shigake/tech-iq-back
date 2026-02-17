@@ -8,6 +8,7 @@ import (
 type TicketRepository interface {
 	Create(ticket *models.Ticket) error
 	FindAll(page, size int, filters *models.TicketFilters) ([]models.Ticket, int64, error)
+	GetAllWithoutPagination() ([]models.Ticket, error)
 	FindByID(id string) (*models.Ticket, error)
 	FindByExternalReference(externalRef string) (*models.Ticket, error)
 	Update(ticket *models.Ticket) error
@@ -165,5 +166,17 @@ func (r *ticketRepository) AssignTechnicians(id string, technicians []models.Tec
 func (r *ticketRepository) GetRecent(limit int) ([]models.Ticket, error) {
 	var tickets []models.Ticket
 	err := r.db.Order("updated_at DESC").Limit(limit).Find(&tickets).Error
+	return tickets, err
+}
+
+func (r *ticketRepository) GetAllWithoutPagination() ([]models.Ticket, error) {
+	var tickets []models.Ticket
+	err := r.db.
+		Preload("Node").
+		Preload("Client").
+		Preload("Category").
+		Preload("Technicians").
+		Order("created_at DESC").
+		Find(&tickets).Error
 	return tickets, err
 }

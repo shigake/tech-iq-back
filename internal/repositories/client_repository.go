@@ -9,6 +9,7 @@ type ClientRepository interface {
 	Create(client *models.Client) error
 	GetByID(id string) (*models.Client, error)
 	GetAll(page, size int) ([]models.Client, int64, error)
+	GetAllWithoutPagination() ([]models.Client, error)
 	Update(client *models.Client) error
 	Delete(id string) error
 	GetByDocument(cpf, cnpj string) (*models.Client, error)
@@ -106,4 +107,10 @@ func (r *clientRepository) Count() (int64, error) {
 	var count int64
 	err := r.db.Model(&models.Client{}).Count(&count).Error
 	return count, err
+}
+
+func (r *clientRepository) GetAllWithoutPagination() ([]models.Client, error) {
+	var clients []models.Client
+	err := r.db.Order("full_name ASC").Find(&clients).Error
+	return clients, err
 }

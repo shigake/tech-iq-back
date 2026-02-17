@@ -40,8 +40,7 @@ func NewExportHandler(
 
 // ExportClients exports clients data as CSV
 func (h *ExportHandler) ExportClients(c *fiber.Ctx) error {
-	// Get all clients with large page size
-	clients, _, err := h.clientRepo.GetAll(0, 10000)
+	clients, err := h.clientRepo.GetAllWithoutPagination()
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
 			"success": false,
@@ -94,7 +93,7 @@ func (h *ExportHandler) ExportClients(c *fiber.Ctx) error {
 }
 
 func (h *ExportHandler) ExportTechnicians(c *fiber.Ctx) error {
-	technicians, _, err := h.technicianRepo.FindAll(0, 10000)
+	technicians, err := h.technicianRepo.GetAll()
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
 			"success": false,
@@ -173,7 +172,7 @@ func (h *ExportHandler) ExportTechnicians(c *fiber.Ctx) error {
 
 // ExportTickets exports tickets data as CSV
 func (h *ExportHandler) ExportTickets(c *fiber.Ctx) error {
-	tickets, _, err := h.ticketRepo.FindAll(0, 10000, nil)
+	tickets, err := h.ticketRepo.GetAllWithoutPagination()
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
 			"success": false,
@@ -248,7 +247,7 @@ func (h *ExportHandler) ExportAll(c *fiber.Ctx) error {
 
 	// Export clients section
 	writer.Write([]string{"=== CLIENTES ==="})
-	clients, _, err := h.clientRepo.GetAll(0, 10000)
+	clients, err := h.clientRepo.GetAllWithoutPagination()
 	if err == nil {
 		clientHeader := []string{"ID", "Nome Completo", "CPF", "CNPJ", "Email", "Telefone", "Cidade", "Estado", "CEP", "Data de Criação"}
 		writer.Write(clientHeader)
@@ -274,7 +273,7 @@ func (h *ExportHandler) ExportAll(c *fiber.Ctx) error {
 
 	// Export technicians section
 	writer.Write([]string{"=== TÉCNICOS ==="})
-	technicians, _, err := h.technicianRepo.FindAll(0, 10000)
+	technicians, err := h.technicianRepo.GetAll()
 	if err == nil {
 		techHeader := []string{"ID", "Nome", "CPF", "CNPJ", "Status", "Tipo", "Cidade", "Estado", "Data de Criação"}
 		writer.Write(techHeader)
@@ -299,7 +298,7 @@ func (h *ExportHandler) ExportAll(c *fiber.Ctx) error {
 
 	// Export tickets section
 	writer.Write([]string{"=== TICKETS ==="})
-	tickets, _, err := h.ticketRepo.FindAll(0, 10000, nil)
+	tickets, err := h.ticketRepo.GetAllWithoutPagination()
 	if err == nil {
 		ticketHeader := []string{
 			"ID", "Número OS", "Descrição do Erro", "Status", "Prioridade",
@@ -364,7 +363,7 @@ func (h *ExportHandler) ExportStockItems(c *fiber.Ctx) error {
 	// Get all stock items
 	filter := models.StockItemFilter{
 		Page:     0,
-		PageSize: 10000,
+		PageSize: 1000000,
 	}
 	result, err := h.stockRepo.ListItems(filter)
 	if err != nil {
@@ -429,7 +428,7 @@ func (h *ExportHandler) ExportStockLocations(c *fiber.Ctx) error {
 	// Get all stock locations
 	filter := models.StockLocationFilter{
 		Page:     0,
-		PageSize: 10000,
+		PageSize: 1000000,
 	}
 	result, err := h.stockRepo.ListLocations(filter)
 	if err != nil {
@@ -482,7 +481,7 @@ func (h *ExportHandler) ExportStockMovements(c *fiber.Ctx) error {
 	// Get all stock movements
 	filter := models.StockMovementFilter{
 		Page:     0,
-		PageSize: 10000,
+		PageSize: 1000000,
 	}
 	result, err := h.stockRepo.ListMovements(filter)
 	if err != nil {
@@ -556,7 +555,7 @@ func (h *ExportHandler) ExportFinancialEntries(c *fiber.Ctx) error {
 	// Get all financial entries
 	filter := models.FinancialEntryFilter{
 		Page:  0,
-		Limit: 10000,
+		Limit: 1000000,
 	}
 	entries, _, err := h.financialRepo.ListEntries(filter)
 	if err != nil {
