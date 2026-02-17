@@ -154,8 +154,8 @@ func (StockMovement) TableName() string {
 type StockBalance struct {
 	ID         string    `json:"id" gorm:"type:uuid;primaryKey"`
 	ScopeID    string    `json:"scopeId" gorm:"type:uuid;index;not null"`
-	ItemID     string    `json:"itemId" gorm:"type:uuid;not null"`
-	LocationID string    `json:"locationId" gorm:"type:uuid;not null"`
+	ItemID     string    `json:"itemId" gorm:"type:uuid;not null;uniqueIndex:idx_stock_balance_item_location"`
+	LocationID string    `json:"locationId" gorm:"type:uuid;not null;uniqueIndex:idx_stock_balance_item_location"`
 	Quantity   int       `json:"quantity" gorm:"not null;default:0"`
 	UpdatedAt  time.Time `json:"updatedAt"`
 
