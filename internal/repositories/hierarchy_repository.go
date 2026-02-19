@@ -545,7 +545,7 @@ func (r *hierarchyRepository) AddMember(membership *models.Membership) error {
 }
 
 func (r *hierarchyRepository) UpdateMembership(membership *models.Membership) error {
-	return r.db.Model(membership).Update("role_id", membership.RoleID).Error
+	return r.db.Model(&models.Membership{}).Where("id = ?", membership.ID).Update("role_id", membership.RoleID).Error
 }
 
 func (r *hierarchyRepository) RemoveMembership(id uint) error {
