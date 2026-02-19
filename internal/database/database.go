@@ -144,6 +144,7 @@ func SeedAccessControl(db *gorm.DB) {
 	permissions := []models.Permission{
 		// Tickets
 		{Code: "tickets.view", Name: "Ver Tickets", Category: "Tickets", Description: "Visualizar tickets"},
+		{Code: "tickets.view_own", Name: "Ver Somente Próprios Tickets", Category: "Tickets", Description: "Visualizar somente tickets atribuídos ao próprio técnico"},
 		{Code: "tickets.create", Name: "Criar Tickets", Category: "Tickets", Description: "Criar novos tickets"},
 		{Code: "tickets.edit", Name: "Editar Tickets", Category: "Tickets", Description: "Editar tickets existentes"},
 		{Code: "tickets.delete", Name: "Excluir Tickets", Category: "Tickets", Description: "Excluir tickets"},
@@ -251,8 +252,8 @@ func SeedAccessControl(db *gorm.DB) {
 				IsSystem:    false,
 			},
 			Permissions: []string{
-				"tickets.view",  // Only own tickets (filtered by user)
-				"settings.view", // Can view settings/profile
+				"tickets.view_own", // Only own tickets (filtered by permission)
+				"settings.view",   // Can view settings/profile
 			},
 		},
 	}
