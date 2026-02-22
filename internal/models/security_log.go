@@ -10,8 +10,8 @@ import (
 // SecurityLog represents a security-related event (login, logout, failed attempts, etc.)
 type SecurityLog struct {
 	ID        string    `json:"id" gorm:"type:varchar(36);primaryKey"`
-	UserID    string    `json:"userId" gorm:"type:varchar(36);index"`
-	User      *User     `json:"user,omitempty" gorm:"foreignKey:UserID"`
+	UserID    *string   `json:"userId" gorm:"type:varchar(36);index"`
+	User      *User     `json:"user,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete:SET NULL"`
 	Email     string    `json:"email" gorm:"type:varchar(255)"` // Email used in the attempt
 	Action    string    `json:"action" gorm:"type:varchar(50);not null;index"` // login_success, login_failed, logout, password_change, etc.
 	IPAddress string    `json:"ipAddress" gorm:"type:varchar(45)"`

@@ -29,8 +29,8 @@ type AuditLog struct {
 	EntityType  string          `json:"entityType" gorm:"type:varchar(50);not null;index"` // technician, client, ticket, user, etc.
 	EntityID    string          `json:"entityId" gorm:"type:varchar(36);not null;index"`
 	EntityName  string          `json:"entityName" gorm:"type:varchar(255)"` // Human-readable name for display
-	UserID      string          `json:"userId" gorm:"type:varchar(36);not null;index"`
-	User        *User           `json:"user,omitempty" gorm:"foreignKey:UserID"`
+	UserID      *string         `json:"userId" gorm:"type:varchar(36);index"`
+	User        *User           `json:"user,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete:SET NULL"`
 	UserName    string          `json:"userName" gorm:"type:varchar(255)"`    // Cached user name for performance
 	UserEmail   string          `json:"userEmail" gorm:"type:varchar(255)"`   // Cached email for display
 	OldValue    json.RawMessage `json:"oldValue,omitempty" gorm:"type:jsonb"` // Previous state

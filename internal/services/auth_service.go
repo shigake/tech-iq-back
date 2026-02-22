@@ -38,8 +38,12 @@ func NewAuthService(userRepo repositories.UserRepository, securityLogRepo reposi
 }
 
 func (s *authService) logSecurityEvent(userID, email, action, ipAddress, userAgent, details string, success bool) {
+	var userIDPtr *string
+	if userID != "" {
+		userIDPtr = &userID
+	}
 	secLog := &models.SecurityLog{
-		UserID:    userID,
+		UserID:    userIDPtr,
 		Email:     email,
 		Action:    action,
 		IPAddress: ipAddress,

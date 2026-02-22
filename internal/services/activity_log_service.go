@@ -30,8 +30,12 @@ func (s *activityLogService) Create(log *models.ActivityLog) error {
 }
 
 func (s *activityLogService) CreateFromRequest(userID string, req *models.CreateActivityLogRequest) (*models.ActivityLog, error) {
+	var userIDPtr *string
+	if userID != "" {
+		userIDPtr = &userID
+	}
 	log := &models.ActivityLog{
-		UserID:      userID,
+		UserID:      userIDPtr,
 		Action:      req.Action,
 		Resource:    req.Resource,
 		ResourceID:  req.ResourceID,
@@ -108,8 +112,12 @@ func (s *activityLogService) GetRecentLogs(limit int) ([]models.ActivityLog, err
 }
 
 func (s *activityLogService) LogAction(userID, action, resource, resourceID, description, ipAddress, userAgent string) error {
+	var userIDPtr *string
+	if userID != "" {
+		userIDPtr = &userID
+	}
 	log := &models.ActivityLog{
-		UserID:      userID,
+		UserID:      userIDPtr,
 		Action:      action,
 		Resource:    resource,
 		ResourceID:  resourceID,

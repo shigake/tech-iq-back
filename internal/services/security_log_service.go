@@ -30,8 +30,12 @@ func (s *securityLogService) Create(log *models.SecurityLog) error {
 }
 
 func (s *securityLogService) LogSecurityEvent(userID, email, action, ipAddress, userAgent, location, details string, success bool) error {
+	var userIDPtr *string
+	if userID != "" {
+		userIDPtr = &userID
+	}
 	log := &models.SecurityLog{
-		UserID:    userID,
+		UserID:    userIDPtr,
 		Email:     email,
 		Action:    action,
 		IPAddress: ipAddress,

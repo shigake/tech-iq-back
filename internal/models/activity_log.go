@@ -10,8 +10,8 @@ import (
 // ActivityLog represents a user activity log entry
 type ActivityLog struct {
 	ID          string    `json:"id" gorm:"type:varchar(36);primaryKey"`
-	UserID      string    `json:"userId" gorm:"type:varchar(36);index;not null"`
-	User        *User     `json:"user,omitempty" gorm:"foreignKey:UserID"`
+	UserID      *string   `json:"userId" gorm:"type:varchar(36);index"`
+	User        *User     `json:"user,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete:SET NULL"`
 	Action      string    `json:"action" gorm:"type:varchar(100);not null"` // login, logout, create, update, delete, etc.
 	Resource    string    `json:"resource" gorm:"type:varchar(100)"`        // ticket, technician, client, etc.
 	ResourceID  string    `json:"resourceId" gorm:"type:varchar(36)"`       // ID of the affected resource

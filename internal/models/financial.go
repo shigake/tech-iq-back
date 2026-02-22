@@ -94,10 +94,10 @@ type FinancialEntry struct {
 	AttachmentURLs pq.StringArray `json:"attachmentUrls" gorm:"type:text[]"`
 
 	// Audit
-	CreatedBy   string         `json:"createdBy" gorm:"type:uuid;not null"`
-	CreatedByUser *User        `json:"createdByUser,omitempty" gorm:"foreignKey:CreatedBy"`
+	CreatedBy   *string        `json:"createdBy" gorm:"type:uuid"`
+	CreatedByUser *User        `json:"createdByUser,omitempty" gorm:"foreignKey:CreatedBy;constraint:OnDelete:SET NULL"`
 	UpdatedBy   *string        `json:"updatedBy" gorm:"type:uuid"`
-	UpdatedByUser *User        `json:"updatedByUser,omitempty" gorm:"foreignKey:UpdatedBy"`
+	UpdatedByUser *User        `json:"updatedByUser,omitempty" gorm:"foreignKey:UpdatedBy;constraint:OnDelete:SET NULL"`
 	CreatedAt   time.Time      `json:"createdAt"`
 	UpdatedAt   time.Time      `json:"updatedAt"`
 	DeletedAt   gorm.DeletedAt `json:"-" gorm:"index"`
@@ -145,7 +145,7 @@ type PaymentBatch struct {
 
 	// Approval
 	ApprovedBy   *string    `json:"approvedBy" gorm:"type:uuid"`
-	ApprovedByUser *User    `json:"approvedByUser,omitempty" gorm:"foreignKey:ApprovedBy"`
+	ApprovedByUser *User    `json:"approvedByUser,omitempty" gorm:"foreignKey:ApprovedBy;constraint:OnDelete:SET NULL"`
 	ApprovedAt   *time.Time `json:"approvedAt"`
 
 	// Payment
@@ -156,8 +156,8 @@ type PaymentBatch struct {
 	Entries []FinancialEntry `json:"entries,omitempty" gorm:"many2many:payment_batch_entries;joinForeignKey:batch_id;joinReferences:entry_id"`
 
 	// Audit
-	CreatedBy     string         `json:"createdBy" gorm:"type:uuid;not null"`
-	CreatedByUser *User          `json:"createdByUser,omitempty" gorm:"foreignKey:CreatedBy"`
+	CreatedBy     *string        `json:"createdBy" gorm:"type:uuid"`
+	CreatedByUser *User          `json:"createdByUser,omitempty" gorm:"foreignKey:CreatedBy;constraint:OnDelete:SET NULL"`
 	CreatedAt     time.Time      `json:"createdAt"`
 	UpdatedAt     time.Time      `json:"updatedAt"`
 	DeletedAt     gorm.DeletedAt `json:"-" gorm:"index"`

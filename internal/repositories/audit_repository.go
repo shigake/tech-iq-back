@@ -330,12 +330,17 @@ func NewAuditService(repo AuditRepository) *AuditService {
 func (s *AuditService) LogCreate(userID, userName, userEmail, entityType, entityID, entityName, ipAddress, userAgent string, newValue interface{}) error {
 	newValueJSON, _ := json.Marshal(newValue)
 
+	var userIDPtr *string
+	if userID != "" {
+		userIDPtr = &userID
+	}
+
 	log := &models.AuditLog{
 		Action:      models.AuditActionCreate,
 		EntityType:  entityType,
 		EntityID:    entityID,
 		EntityName:  entityName,
-		UserID:      userID,
+		UserID:      userIDPtr,
 		UserName:    userName,
 		UserEmail:   userEmail,
 		NewValue:    newValueJSON,
@@ -353,12 +358,17 @@ func (s *AuditService) LogUpdate(userID, userName, userEmail, entityType, entity
 	changes := s.computeChanges(oldValue, newValue)
 	changesJSON, _ := json.Marshal(changes)
 
+	var userIDPtr *string
+	if userID != "" {
+		userIDPtr = &userID
+	}
+
 	log := &models.AuditLog{
 		Action:      models.AuditActionUpdate,
 		EntityType:  entityType,
 		EntityID:    entityID,
 		EntityName:  entityName,
-		UserID:      userID,
+		UserID:      userIDPtr,
 		UserName:    userName,
 		UserEmail:   userEmail,
 		OldValue:    oldValueJSON,
@@ -375,12 +385,17 @@ func (s *AuditService) LogUpdate(userID, userName, userEmail, entityType, entity
 func (s *AuditService) LogDelete(userID, userName, userEmail, entityType, entityID, entityName, ipAddress, userAgent string, oldValue interface{}) error {
 	oldValueJSON, _ := json.Marshal(oldValue)
 
+	var userIDPtr *string
+	if userID != "" {
+		userIDPtr = &userID
+	}
+
 	log := &models.AuditLog{
 		Action:      models.AuditActionDelete,
 		EntityType:  entityType,
 		EntityID:    entityID,
 		EntityName:  entityName,
-		UserID:      userID,
+		UserID:      userIDPtr,
 		UserName:    userName,
 		UserEmail:   userEmail,
 		OldValue:    oldValueJSON,
@@ -403,12 +418,17 @@ func (s *AuditService) LogStatusChange(userID, userName, userEmail, entityType, 
 
 	description := "Status alterado de " + oldStatus + " para " + newStatus
 
+	var userIDPtr *string
+	if userID != "" {
+		userIDPtr = &userID
+	}
+
 	log := &models.AuditLog{
 		Action:      models.AuditActionUpdate,
 		EntityType:  entityType,
 		EntityID:    entityID,
 		EntityName:  entityName,
-		UserID:      userID,
+		UserID:      userIDPtr,
 		UserName:    userName,
 		UserEmail:   userEmail,
 		Changes:     changesJSON,

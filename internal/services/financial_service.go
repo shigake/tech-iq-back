@@ -53,7 +53,7 @@ func (s *FinancialService) CreateEntry(req models.CreateFinancialEntryRequest, u
 		PaymentMethod:    req.PaymentMethod,
 		PaymentReference: req.PaymentReference,
 		AttachmentURLs:   req.AttachmentURLs,
-		CreatedBy:        userID,
+		CreatedBy:        &userID,
 		Version:          1,
 	}
 
@@ -260,7 +260,7 @@ func (s *FinancialService) CreateBatch(req models.CreatePaymentBatchRequest, use
 		PeriodStart: periodStart,
 		PeriodEnd:   periodEnd,
 		Status:      models.PaymentBatchStatusDraft,
-		CreatedBy:   userID,
+		CreatedBy:   &userID,
 	}
 
 	if err := s.repo.CreateBatch(batch); err != nil {
