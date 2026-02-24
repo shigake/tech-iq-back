@@ -1,17 +1,19 @@
 package handlers
 
 import (
+	"fmt"
 	"strconv"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/go-playground/validator/v10"
+	"github.com/gofiber/fiber/v2"
 	"github.com/shigake/tech-iq-back/internal/models"
 	"github.com/shigake/tech-iq-back/internal/services"
 )
 
 type TicketHandler struct {
-	service  services.TicketService
-	validate *validator.Validate
+	service            services.TicketService
+	activityLogService services.ActivityLogService
+	validate           *validator.Validate
 }
 
 func NewTicketHandler(service services.TicketService) *TicketHandler {
@@ -19,6 +21,22 @@ func NewTicketHandler(service services.TicketService) *TicketHandler {
 		service:  service,
 		validate: validator.New(),
 	}
+}
+
+func NewTicketHandlerWithActivityLog(service services.TicketService, activityLogService services.ActivityLogService) *TicketHandler {
+	return &TicketHandler{
+		service:            service,
+		activityLogService: activityLogService,
+		validate:           validator.New(),
+	}
+}
+
+func (h *TicketHandler) logActivity(c *fiber.Ctx, action, resourceID, description string) {
+	if h.activityLogService == nil {
+		return
+	}
+	userID, _ := c.Locals("userId").(string)
+	go h.activityLogService.LogAction(userID, action, "ticket", resourceID, description, c.IP(), c.Get("User-Agent"))
 }
 
 // GetAll returns paginated list of tickets with filters
@@ -95,6 +113,8 @@ func (h *TicketHandler) Create(c *fiber.Ctx) error {
 		})
 	}
 
+	h.logActivity(c, "create", ticket.ID, fmt.Sprintf("Ticket #%s criado", ticket.OsNumber))
+
 	return c.Status(fiber.StatusCreated).JSON(ticket)
 }
 
@@ -121,6 +141,8 @@ func (h *TicketHandler) Update(c *fiber.Ctx) error {
 		})
 	}
 
+	h.logActivity(c, "update", ticket.ID, fmt.Sprintf("Ticket #%s atualizado", ticket.OsNumber))
+
 	return c.JSON(ticket)
 }
 
@@ -133,10 +155,16 @@ func (h *TicketHandler) Delete(c *fiber.Ctx) error {
 		})
 	}
 
+	ticket, _ := h.service.GetByID(id)
+	
 	if err := h.service.Delete(id); err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "Ticket not found",
 		})
+	}
+
+	if ticket != nil {
+		h.logActivity(c, "delete", id, fmt.Sprintf("Ticket #%s removido", ticket.OsNumber))
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)
@@ -164,6 +192,8 @@ func (h *TicketHandler) UpdateStatus(c *fiber.Ctx) error {
 		})
 	}
 
+	h.logActivity(c, "update", id, fmt.Sprintf("Status do ticket alterado para %s", req.Status))
+
 	return c.JSON(fiber.Map{"message": "Status updated successfully"})
 }
 
@@ -188,6 +218,8 @@ func (h *TicketHandler) AssignTechnician(c *fiber.Ctx) error {
 			"error": err.Error(),
 		})
 	}
+
+	h.logActivity(c, "update", id, "Técnicos atribuídos ao ticket")
 
 	return c.JSON(fiber.Map{"message": "Technicians assigned successfully"})
 }
@@ -219,6 +251,8 @@ func (h *TicketHandler) SignTicket(c *fiber.Ctx) error {
 			"error": err.Error(),
 		})
 	}
+
+	h.logActivity(c, "sign", ticket.ID, fmt.Sprintf("Ticket #%s assinado", ticket.OsNumber))
 
 	return c.JSON(ticket)
 }

@@ -13,9 +13,10 @@ import (
 )
 
 type TechnicianHandler struct {
-	service      services.TechnicianService
-	validate     *validator.Validate
-	auditService *repositories.AuditService
+	service            services.TechnicianService
+	activityLogService services.ActivityLogService
+	validate           *validator.Validate
+	auditService       *repositories.AuditService
 }
 
 func NewTechnicianHandler(service services.TechnicianService) *TechnicianHandler {
@@ -25,7 +26,6 @@ func NewTechnicianHandler(service services.TechnicianService) *TechnicianHandler
 	}
 }
 
-// NewTechnicianHandlerWithAudit creates a new handler with audit support
 func NewTechnicianHandlerWithAudit(service services.TechnicianService, db *gorm.DB) *TechnicianHandler {
 	auditRepo := repositories.NewAuditRepository(db)
 	auditService := repositories.NewAuditService(auditRepo)
@@ -34,6 +34,25 @@ func NewTechnicianHandlerWithAudit(service services.TechnicianService, db *gorm.
 		validate:     validator.New(),
 		auditService: auditService,
 	}
+}
+
+func NewTechnicianHandlerWithActivityLog(service services.TechnicianService, db *gorm.DB, activityLogService services.ActivityLogService) *TechnicianHandler {
+	auditRepo := repositories.NewAuditRepository(db)
+	auditService := repositories.NewAuditService(auditRepo)
+	return &TechnicianHandler{
+		service:            service,
+		activityLogService: activityLogService,
+		validate:           validator.New(),
+		auditService:       auditService,
+	}
+}
+
+func (h *TechnicianHandler) logActivity(c *fiber.Ctx, action, resourceID, description string) {
+	if h.activityLogService == nil {
+		return
+	}
+	userID, _ := c.Locals("userId").(string)
+	go h.activityLogService.LogAction(userID, action, "technician", resourceID, description, c.IP(), c.Get("User-Agent"))
 }
 
 // GetAll returns paginated list of technicians
@@ -175,6 +194,8 @@ func (h *TechnicianHandler) Create(c *fiber.Ctx) error {
 		)
 	}
 
+	h.logActivity(c, "create", technician.ID, fmt.Sprintf("Técnico %s criado", technician.FullName))
+
 	return c.Status(fiber.StatusCreated).JSON(technician)
 }
 
@@ -241,6 +262,8 @@ func (h *TechnicianHandler) Update(c *fiber.Ctx) error {
 		}
 	}
 
+	h.logActivity(c, "update", technician.ID, fmt.Sprintf("Técnico %s atualizado", technician.FullName))
+
 	return c.JSON(technician)
 }
 
@@ -284,6 +307,10 @@ func (h *TechnicianHandler) Delete(c *fiber.Ctx) error {
 			c.IP(), c.Get("User-Agent"),
 			oldTechnician,
 		)
+	}
+
+	if oldTechnician != nil {
+		h.logActivity(c, "delete", id, fmt.Sprintf("Técnico %s removido", oldTechnician.FullName))
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)

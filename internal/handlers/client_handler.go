@@ -1,18 +1,21 @@
 package handlers
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/go-playground/validator/v10"
+	"github.com/gofiber/fiber/v2"
 	"github.com/shigake/tech-iq-back/internal/models"
 	"github.com/shigake/tech-iq-back/internal/repositories"
+	"github.com/shigake/tech-iq-back/internal/services"
 )
 
 type ClientHandler struct {
-	repo     repositories.ClientRepository
-	validate *validator.Validate
+	repo               repositories.ClientRepository
+	activityLogService services.ActivityLogService
+	validate           *validator.Validate
 }
 
 func NewClientHandler(repo repositories.ClientRepository) *ClientHandler {
@@ -20,6 +23,22 @@ func NewClientHandler(repo repositories.ClientRepository) *ClientHandler {
 		repo:     repo,
 		validate: validator.New(),
 	}
+}
+
+func NewClientHandlerWithActivityLog(repo repositories.ClientRepository, activityLogService services.ActivityLogService) *ClientHandler {
+	return &ClientHandler{
+		repo:               repo,
+		activityLogService: activityLogService,
+		validate:           validator.New(),
+	}
+}
+
+func (h *ClientHandler) logActivity(c *fiber.Ctx, action, resourceID, description string) {
+	if h.activityLogService == nil {
+		return
+	}
+	userID, _ := c.Locals("userId").(string)
+	go h.activityLogService.LogAction(userID, action, "client", resourceID, description, c.IP(), c.Get("User-Agent"))
 }
 
 // GetAll returns paginated list of clients
@@ -139,6 +158,8 @@ func (h *ClientHandler) Create(c *fiber.Ctx) error {
 		})
 	}
 
+	h.logActivity(c, "create", client.ID, fmt.Sprintf("Cliente %s criado", client.FullName))
+
 	return c.Status(fiber.StatusCreated).JSON(client)
 }
 
@@ -237,6 +258,8 @@ func (h *ClientHandler) Update(c *fiber.Ctx) error {
 		})
 	}
 
+	h.logActivity(c, "update", existing.ID, fmt.Sprintf("Cliente %s atualizado", existing.FullName))
+
 	return c.JSON(existing)
 }
 
@@ -249,10 +272,16 @@ func (h *ClientHandler) Delete(c *fiber.Ctx) error {
 		})
 	}
 
+	client, _ := h.repo.GetByID(id)
+
 	if err := h.repo.Delete(id); err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "Client not found",
 		})
+	}
+
+	if client != nil {
+		h.logActivity(c, "delete", id, fmt.Sprintf("Cliente %s removido", client.FullName))
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)

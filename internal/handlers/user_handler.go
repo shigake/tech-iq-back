@@ -1,18 +1,21 @@
 package handlers
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/shigake/tech-iq-back/internal/models"
 	"github.com/shigake/tech-iq-back/internal/repositories"
+	"github.com/shigake/tech-iq-back/internal/services"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type UserHandler struct {
-	repo     repositories.UserRepository
-	validate *validator.Validate
+	repo               repositories.UserRepository
+	activityLogService services.ActivityLogService
+	validate           *validator.Validate
 }
 
 func NewUserHandler(repo repositories.UserRepository) *UserHandler {
@@ -20,6 +23,22 @@ func NewUserHandler(repo repositories.UserRepository) *UserHandler {
 		repo:     repo,
 		validate: validator.New(),
 	}
+}
+
+func NewUserHandlerWithActivityLog(repo repositories.UserRepository, activityLogService services.ActivityLogService) *UserHandler {
+	return &UserHandler{
+		repo:               repo,
+		activityLogService: activityLogService,
+		validate:           validator.New(),
+	}
+}
+
+func (h *UserHandler) logActivity(c *fiber.Ctx, action, resourceID, description string) {
+	if h.activityLogService == nil {
+		return
+	}
+	userID, _ := c.Locals("userId").(string)
+	go h.activityLogService.LogAction(userID, action, "user", resourceID, description, c.IP(), c.Get("User-Agent"))
 }
 
 // Helper function to safely get user role from context
@@ -162,6 +181,8 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 		})
 	}
 
+	h.logActivity(c, "create", user.ID, fmt.Sprintf("Usuário %s %s criado", user.FirstName, user.LastName))
+
 	return c.Status(fiber.StatusCreated).JSON(user.ToResponse())
 }
 
@@ -230,6 +251,8 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 		})
 	}
 
+	h.logActivity(c, "update", user.ID, fmt.Sprintf("Usuário %s %s atualizado", user.FirstName, user.LastName))
+
 	return c.JSON(user.ToResponse())
 }
 
@@ -251,7 +274,7 @@ func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
 		})
 	}
 
-	_, err := h.repo.FindByID(targetID)
+	user, err := h.repo.FindByID(targetID)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "User not found",
@@ -263,6 +286,8 @@ func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
 			"error": "Failed to delete user",
 		})
 	}
+
+	h.logActivity(c, "delete", targetID, fmt.Sprintf("Usuário %s %s removido", user.FirstName, user.LastName))
 
 	return c.SendStatus(fiber.StatusNoContent)
 }
