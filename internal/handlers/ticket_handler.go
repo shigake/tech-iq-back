@@ -113,7 +113,7 @@ func (h *TicketHandler) Create(c *fiber.Ctx) error {
 		})
 	}
 
-	h.logActivity(c, "create", ticket.ID, fmt.Sprintf("Ticket #%s criado", ticket.OsNumber))
+	h.logActivity(c, "create", ticket.ID, fmt.Sprintf("Ticket #%s criado", ticket.OSNumber))
 
 	return c.Status(fiber.StatusCreated).JSON(ticket)
 }
@@ -141,7 +141,7 @@ func (h *TicketHandler) Update(c *fiber.Ctx) error {
 		})
 	}
 
-	h.logActivity(c, "update", ticket.ID, fmt.Sprintf("Ticket #%s atualizado", ticket.OsNumber))
+	h.logActivity(c, "update", ticket.ID, fmt.Sprintf("Ticket #%s atualizado", ticket.OSNumber))
 
 	return c.JSON(ticket)
 }
@@ -164,7 +164,7 @@ func (h *TicketHandler) Delete(c *fiber.Ctx) error {
 	}
 
 	if ticket != nil {
-		h.logActivity(c, "delete", id, fmt.Sprintf("Ticket #%s removido", ticket.OsNumber))
+		h.logActivity(c, "delete", id, fmt.Sprintf("Ticket #%s removido", ticket.OSNumber))
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)
@@ -252,7 +252,7 @@ func (h *TicketHandler) SignTicket(c *fiber.Ctx) error {
 		})
 	}
 
-	h.logActivity(c, "sign", ticket.ID, fmt.Sprintf("Ticket #%s assinado", ticket.OsNumber))
+	h.logActivity(c, "sign", ticket.ID, fmt.Sprintf("Ticket #%s assinado", ticket.OSNumber))
 
 	return c.JSON(ticket)
 }
