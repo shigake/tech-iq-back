@@ -258,11 +258,11 @@ func (h *ExportHandler) ExportAll(c *fiber.Ctx) error {
 	writer := csv.NewWriter(&csvData)
 
 	// Add a header indicating this is a complete export
-	writer.Write([]string{"=== EXPORTAÇÃO COMPLETA TECH-ERP ===", time.Now().Format("02/01/2006 15:04:05")})
+	writer.Write([]string{"[ EXPORTAÇÃO COMPLETA TECH-ERP ]", time.Now().Format("02/01/2006 15:04:05")})
 	writer.Write([]string{""}) // Empty line
 
 	// Export clients section
-	writer.Write([]string{"=== CLIENTES ==="})
+	writer.Write([]string{"[ CLIENTES ]"})
 	clients, err := h.clientRepo.GetAllWithoutPagination()
 	if err == nil {
 		clientHeader := []string{"ID", "Nome Completo", "CPF", "CNPJ", "Email", "Telefone", "Cidade", "Estado", "CEP", "Data de Criação"}
@@ -288,7 +288,7 @@ func (h *ExportHandler) ExportAll(c *fiber.Ctx) error {
 	writer.Write([]string{""}) // Empty line
 
 	// Export technicians section
-	writer.Write([]string{"=== TÉCNICOS ==="})
+	writer.Write([]string{"[ TÉCNICOS ]"})
 	technicians, err := h.technicianRepo.GetAll()
 	if err == nil {
 		techHeader := []string{"ID", "Nome", "CPF", "CNPJ", "Status", "Tipo", "Cidade", "Estado", "Data de Criação"}
@@ -313,7 +313,7 @@ func (h *ExportHandler) ExportAll(c *fiber.Ctx) error {
 	writer.Write([]string{""}) // Empty line
 
 	// Export tickets section
-	writer.Write([]string{"=== TICKETS ==="})
+	writer.Write([]string{"[ TICKETS ]"})
 	tickets, err := h.ticketRepo.GetAllWithoutPagination()
 	if err == nil {
 		ticketHeader := []string{
