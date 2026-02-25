@@ -230,6 +230,20 @@ func (h *GeoHandler) GetTechniciansLastLocations(c *fiber.Ctx) error {
 		}
 	}
 
+	// Bounds para filtrar pelo viewport do mapa
+	if swLat, err := strconv.ParseFloat(c.Query("swLat"), 64); err == nil {
+		filter.SwLat = &swLat
+	}
+	if swLng, err := strconv.ParseFloat(c.Query("swLng"), 64); err == nil {
+		filter.SwLng = &swLng
+	}
+	if neLat, err := strconv.ParseFloat(c.Query("neLat"), 64); err == nil {
+		filter.NeLat = &neLat
+	}
+	if neLng, err := strconv.ParseFloat(c.Query("neLng"), 64); err == nil {
+		filter.NeLng = &neLng
+	}
+
 	page, _ := strconv.Atoi(c.Query("page", "1"))
 	limit, _ := strconv.Atoi(c.Query("limit", "500"))
 	if limit > 10000 {
@@ -265,6 +279,50 @@ func (h *GeoHandler) GetTechniciansLastLocations(c *fiber.Ctx) error {
 				"totalPages": totalPages,
 			},
 		},
+	})
+}
+
+// GetTechniciansClusters godoc
+// @Summary Clusters de técnicos para o mapa
+// @Description Retorna clusters de técnicos agrupados por zoom, ou técnicos individuais em zoom >= 12
+// @Tags Geo
+// @Produce json
+// @Param zoom query int true "Nível de zoom do mapa (1-20)"
+// @Param swLat query number true "Latitude south-west do viewport"
+// @Param swLng query number true "Longitude south-west do viewport"
+// @Param neLat query number true "Latitude north-east do viewport"
+// @Param neLng query number true "Longitude north-east do viewport"
+// @Param status query string false "Filtrar por status"
+// @Success 200 {object} map[string]interface{}
+// @Security BearerAuth
+// @Router /api/geo/clusters [get]
+func (h *GeoHandler) GetTechniciansClusters(c *fiber.Ctx) error {
+	_, err := getUserIDFromContext(c)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"success": false,
+			"error":   fiber.Map{"code": "UNAUTHORIZED", "message": "Invalid or missing token"},
+		})
+	}
+
+	zoom, _ := strconv.Atoi(c.Query("zoom", "5"))
+	swLat, _ := strconv.ParseFloat(c.Query("swLat", "0"), 64)
+	swLng, _ := strconv.ParseFloat(c.Query("swLng", "0"), 64)
+	neLat, _ := strconv.ParseFloat(c.Query("neLat", "0"), 64)
+	neLng, _ := strconv.ParseFloat(c.Query("neLng", "0"), 64)
+	status := c.Query("status")
+
+	result, err := h.geoService.GetClusters(zoom, swLat, swLng, neLat, neLng, status)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"success": false,
+			"error":   fiber.Map{"code": "INTERNAL_ERROR", "message": err.Error()},
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"success": true,
+		"data":    result,
 	})
 }
 

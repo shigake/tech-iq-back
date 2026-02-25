@@ -241,6 +241,13 @@ func (s *GeoService) GetLastLocations(userID uuid.UUID, filter repositories.GeoF
 				continue
 			}
 		}
+		// Filtro por viewport (bounds do mapa)
+		if filter.SwLat != nil && filter.SwLng != nil && filter.NeLat != nil && filter.NeLng != nil {
+			if tech.Latitude < *filter.SwLat || tech.Latitude > *filter.NeLat ||
+				tech.Longitude < *filter.SwLng || tech.Longitude > *filter.NeLng {
+				continue
+			}
+		}
 		filtered = append(filtered, tech)
 	}
 
@@ -305,7 +312,123 @@ func containsIgnoreCase(s, substr string) bool {
 	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
 }
 
-// GetTechnicianHistory obtém o histórico de localizações de um técnico
+// geoGridCellSize retorna o tamanho de célula em graus para um dado nível de zoom
+func geoGridCellSize(zoom int) float64 {
+	switch {
+	case zoom <= 5:
+		return 5.0
+	case zoom <= 7:
+		return 2.0
+	case zoom <= 9:
+		return 1.0
+	case zoom <= 10:
+		return 0.5
+	default:
+		return 0.2
+	}
+}
+
+// GetClusters retorna clusters de técnicos agrupados por zoom ou técnicos individuais (zoom >= 12)
+func (s *GeoService) GetClusters(zoom int, swLat, swLng, neLat, neLng float64, status string) (*models.GeoClustersResponse, error) {
+	allTechs, err := s.GetAllTechniciansFromCache()
+	if err != nil {
+		return nil, err
+	}
+
+	hasBounds := swLat != 0 || swLng != 0 || neLat != 0 || neLng != 0
+
+	// Filtrar por status e bounds
+	filtered := make([]cache.TechnicianGeoData, 0, len(allTechs))
+	for _, tech := range allTechs {
+		// Ignorar técnicos sem localização válida
+		if tech.Latitude == 0 && tech.Longitude == 0 {
+			continue
+		}
+		if status != "" && tech.Status != status {
+			continue
+		}
+		if hasBounds {
+			if tech.Latitude < swLat || tech.Latitude > neLat ||
+				tech.Longitude < swLng || tech.Longitude > neLng {
+				continue
+			}
+		}
+		filtered = append(filtered, tech)
+	}
+
+	totalCount := len(filtered)
+
+	// Zoom alto (>= 12): retornar técnicos individuais, limitando a 1000 por viewport
+	if zoom >= 12 {
+		limit := 1000
+		if len(filtered) > limit {
+			filtered = filtered[:limit]
+		}
+
+		points := make([]models.GeoClusterItem, 0, len(filtered))
+		for _, tech := range filtered {
+			minutesAgo := -1
+			if tech.LastUpdateTime != nil {
+				minutesAgo = int(time.Since(time.Unix(*tech.LastUpdateTime, 0)).Minutes())
+			}
+			points = append(points, models.GeoClusterItem{
+				Lat:          tech.Latitude,
+				Lng:          tech.Longitude,
+				Count:        1,
+				TechnicianID: tech.TechnicianID,
+				Name:         tech.Name,
+				Status:       tech.Status,
+				City:         tech.City,
+				State:        tech.State,
+				HasRealLoc:   tech.HasRealLocation,
+				MinutesAgo:   minutesAgo,
+			})
+		}
+
+		return &models.GeoClustersResponse{
+			Clusters:   points,
+			TotalCount: totalCount,
+			Zoom:       zoom,
+			IsExact:    true,
+		}, nil
+	}
+
+	// Zoom baixo: agrupar em grid cells
+	cellSize := geoGridCellSize(zoom)
+
+	type cellKey struct {
+		col, row int
+	}
+	cells := make(map[cellKey][]cache.TechnicianGeoData)
+	for _, tech := range filtered {
+		col := int(math.Floor(tech.Longitude / cellSize))
+		row := int(math.Floor(tech.Latitude / cellSize))
+		cells[cellKey{col, row}] = append(cells[cellKey{col, row}], tech)
+	}
+
+	clusters := make([]models.GeoClusterItem, 0, len(cells))
+	for _, techs := range cells {
+		var sumLat, sumLng float64
+		for _, t := range techs {
+			sumLat += t.Latitude
+			sumLng += t.Longitude
+		}
+		n := len(techs)
+		clusters = append(clusters, models.GeoClusterItem{
+			Lat:   sumLat / float64(n),
+			Lng:   sumLng / float64(n),
+			Count: n,
+		})
+	}
+
+	return &models.GeoClustersResponse{
+		Clusters:   clusters,
+		TotalCount: totalCount,
+		Zoom:       zoom,
+		IsExact:    false,
+	}, nil
+}
+
 func (s *GeoService) GetTechnicianHistory(userID uuid.UUID, technicianID string, filter repositories.HistoryFilter) (*models.TechnicianHistoryResponse, int64, error) {
 	// Buscar técnico
 	technician, err := s.technicianRepo.FindByID(technicianID)
@@ -592,10 +715,12 @@ func (s *GeoService) loadTechniciansToCache() {
 		return
 	}
 
-	// Verificar se já foi carregado recentemente
-	if s.redisClient.IsGeoCacheLoaded() {
-		count, _ := s.redisClient.GetGeoCacheCount()
-		log.Printf("✅ Geo cache already loaded with %d technicians", count)
+	// Verificar pelo count real do hash, não apenas pelo flag
+	// O flag GeoCacheLoadedKey tem TTL de 24h mas o hash tem 30min.
+	// Se o count real for > threshold, o cache está íntegro — pula.
+	count, _ := s.redisClient.GetGeoCacheCount()
+	if count > 50 {
+		log.Printf("✅ Geo cache has %d technicians, skipping reload", count)
 		return
 	}
 
@@ -712,7 +837,11 @@ func (s *GeoService) updateTechnicianInCache(technicianID string) {
 		data.LastUpdateTime = &ts
 	}
 
-	s.redisClient.UpdateTechnicianLocation(data)
+	// Se o hash não existir (expirado), forçar recarga completa em vez de criar com 1 entry
+	if err := s.redisClient.UpdateTechnicianLocation(data); err != nil {
+		log.Printf("⚠️ Geo cache hash expirado para técnico %s, recarregando cache completo...", technicianID)
+		go s.loadTechniciansToCache()
+	}
 }
 
 // GetAllTechniciansFromCache retorna todos os técnicos do cache Redis
@@ -790,10 +919,11 @@ func (s *GeoService) RefreshGeoCache() error {
 		return errors.New("redis client not available")
 	}
 
-	// Deletar flag de cache carregado para forçar recarga
+	// Deletar tanto o hash quanto o flag para forçar recarga completa
+	s.redisClient.Delete(cache.AllTechniciansGeoKey)
 	s.redisClient.Delete(cache.GeoCacheLoadedKey)
 
-	// Recarregar
+	// Recarregar (bloqueante para que o caller saiba quando terminou)
 	s.loadTechniciansToCache()
 
 	return nil

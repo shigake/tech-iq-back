@@ -283,6 +283,11 @@ type GeoFilter struct {
 	UpdatedSince *time.Time
 	Limit        int
 	Offset       int
+	// Bounds (bounding box) para filtrar por viewport do mapa
+	SwLat *float64 // south-west latitude
+	SwLng *float64 // south-west longitude
+	NeLat *float64 // north-east latitude
+	NeLng *float64 // north-east longitude
 }
 
 type HistoryFilter struct {

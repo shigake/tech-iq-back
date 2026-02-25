@@ -106,8 +106,19 @@ func (r *RedisClient) GetAllTechniciansGeo() ([]TechnicianGeoData, error) {
 	return technicians, nil
 }
 
-// UpdateTechnicianLocation atualiza a localização de um técnico específico no cache
+// UpdateTechnicianLocation atualiza a localização de um técnico específico no cache.
+// Retorna erro se o hash não existir (expirado) para forçar recarga completa.
 func (r *RedisClient) UpdateTechnicianLocation(tech TechnicianGeoData) error {
+	// Verifica se o hash ainda existe antes de atualizar.
+	// Se expirou, NÃO recriar com apenas 1 entry — sinaliza que precisa de recarga completa.
+	exists, err := r.client.Exists(r.ctx, AllTechniciansGeoKey).Result()
+	if err != nil {
+		return err
+	}
+	if exists == 0 {
+		return fmt.Errorf("geo cache hash expirado, requer recarga completa")
+	}
+
 	jsonValue, err := json.Marshal(tech)
 	if err != nil {
 		return err

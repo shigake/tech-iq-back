@@ -327,3 +327,27 @@ type UpdateGeoSettingsRequest struct {
 	HeartbeatEnabled       *bool      `json:"heartbeatEnabled"`
 	RequireLocationCheckin *bool      `json:"requireLocationCheckin"`
 }
+
+// GeoClusterItem representa um ponto no mapa: cluster (vários técnicos) ou técnico individual
+type GeoClusterItem struct {
+	Lat   float64 `json:"lat"`
+	Lng   float64 `json:"lng"`
+	Count int     `json:"count"`
+	// Preenchido somente quando IsExact=true (zoom >= 12, técnico individual)
+	TechnicianID string `json:"technicianId,omitempty"`
+	Name         string `json:"name,omitempty"`
+	Status       string `json:"status,omitempty"`
+	City         string `json:"city,omitempty"`
+	State        string `json:"state,omitempty"`
+	HasRealLoc   bool   `json:"hasRealLocation,omitempty"`
+	MinutesAgo   int    `json:"minutesAgo,omitempty"`
+}
+
+// GeoClustersResponse é a resposta do endpoint de clusters
+type GeoClustersResponse struct {
+	Clusters   []GeoClusterItem `json:"clusters"`
+	TotalCount int              `json:"totalCount"`
+	Zoom       int              `json:"zoom"`
+	// IsExact = true quando cada item é um técnico individual (zoom >= 12)
+	IsExact bool `json:"isExact"`
+}

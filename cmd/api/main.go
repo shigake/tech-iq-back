@@ -336,6 +336,7 @@ func main() {
 	geo.Post("/locations/batch", geoHandler.CreateBatchLocations)
 	// Manager endpoints (view locations)
 	geo.Get("/technicians/last", geoHandler.GetTechniciansLastLocations)
+	geo.Get("/technicians/clusters", geoHandler.GetTechniciansClusters)
 	geo.Get("/technicians/:id/history", geoHandler.GetTechnicianHistory)
 	geo.Get("/tickets/:id/locations", geoHandler.GetTicketLocations)
 	// Admin endpoints (settings and cache)
