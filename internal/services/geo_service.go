@@ -368,9 +368,10 @@ func (s *GeoService) GetClusters(zoom int, swLat, swLng, neLat, neLng float64, s
 
 	totalCount := len(filtered)
 
-	// Zoom alto (>= 12): retornar técnicos individuais, limitando a 1000 por viewport
+	// Zoom alto (>= 12): retornar técnicos individuais, limitando a 300 por viewport
+	// (acima disso o Flutter Web começa a travar ao renderizar markers)
 	if zoom >= 12 {
-		limit := 1000
+		limit := 300
 		if len(filtered) > limit {
 			filtered = filtered[:limit]
 		}
