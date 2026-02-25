@@ -177,6 +177,7 @@ func (s *ticketService) Update(id string, req *models.CreateTicketRequest) (*mod
 	}
 
 	existing.ErrorDescription = req.ErrorDescription
+	existing.CustomerFeedback = req.CustomerFeedback
 	existing.Priority = models.TicketPriority(req.Priority)
 	existing.ComputerBrand = req.GetBrand()
 	existing.ComputerModel = req.GetModel()

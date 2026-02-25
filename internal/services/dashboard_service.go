@@ -65,7 +65,7 @@ func (s *dashboardService) GetRecentActivity(limit int) ([]models.RecentActivity
 	var activities []models.RecentActivity
 
 	// Get recent technicians
-	technicians, _ := s.technicianRepo.GetRecent(limit / 2)
+	technicians, _ := s.technicianRepo.GetRecent(limit)
 	for _, t := range technicians {
 		action := "criado"
 		if t.UpdatedAt.After(t.CreatedAt) {
@@ -78,11 +78,12 @@ func (s *dashboardService) GetRecentActivity(limit int) ([]models.RecentActivity
 			Title:       fmt.Sprintf("Técnico %s", t.FullName),
 			Description: fmt.Sprintf("Técnico %s foi %s", t.FullName, action),
 			Timestamp:   formatTimeAgo(t.UpdatedAt),
+			CreatedAt:   t.UpdatedAt,
 		})
 	}
 
 	// Get recent tickets
-	tickets, _ := s.ticketRepo.GetRecent(limit / 2)
+	tickets, _ := s.ticketRepo.GetRecent(limit)
 	for _, t := range tickets {
 		action := "criado"
 		if t.UpdatedAt.After(t.CreatedAt) {
@@ -95,7 +96,18 @@ func (s *dashboardService) GetRecentActivity(limit int) ([]models.RecentActivity
 			Title:       fmt.Sprintf("Ticket #%s", t.ID),
 			Description: fmt.Sprintf("Ticket #%s foi %s - %s", t.ID, action, t.Status),
 			Timestamp:   formatTimeAgo(t.UpdatedAt),
+			CreatedAt:   t.UpdatedAt,
 		})
+	}
+
+	// Sort by CreatedAt descending (most recent first)
+	sort.Slice(activities, func(i, j int) bool {
+		return activities[i].CreatedAt.After(activities[j].CreatedAt)
+	})
+
+	// Limit to requested number
+	if len(activities) > limit {
+		activities = activities[:limit]
 	}
 
 	return activities, nil

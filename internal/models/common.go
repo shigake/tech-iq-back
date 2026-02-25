@@ -47,10 +47,11 @@ type TechniciansByState struct {
 
 // RecentActivity represents a recent activity item for the dashboard
 type RecentActivity struct {
-	ID          string `json:"id"`
-	Type        string `json:"type"`        // "technician", "ticket", "client"
-	Action      string `json:"action"`      // "created", "updated"
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Timestamp   string `json:"timestamp"`
+	ID          string    `json:"id"`
+	Type        string    `json:"type"`        // "technician", "ticket", "client"
+	Action      string    `json:"action"`      // "created", "updated"
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	Timestamp   string    `json:"timestamp"`
+	CreatedAt   time.Time `json:"-"`           // Used for sorting, not exposed to API
 }
