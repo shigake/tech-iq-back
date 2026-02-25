@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 // Address represents an embedded address structure
 type Address struct {
 	Street       string `json:"street" gorm:"type:varchar(255)"`
