@@ -218,10 +218,13 @@ func (r *stockRepository) CreateMovementTx(tx *gorm.DB, movement *models.StockMo
 
 func (r *stockRepository) GetMovementByID(id string) (*models.StockMovement, error) {
 	var movement models.StockMovement
-	err := r.db.Preload("Item").Preload("FromLocation").Preload("ToLocation").Preload("Performer").
+	err := r.db.Preload("Item").Preload("FromLocation").Preload("ToLocation").Preload("Performer").Preload("Ticket").
 		Where("id = ?", id).First(&movement).Error
 	if err != nil {
 		return nil, err
+	}
+	if movement.Ticket != nil {
+		movement.TicketOsNumber = &movement.Ticket.OSNumber
 	}
 	return &movement, nil
 }
@@ -273,10 +276,16 @@ func (r *stockRepository) ListMovements(filter models.StockMovementFilter) (*mod
 	}
 
 	offset := (filter.Page - 1) * filter.PageSize
-	err = query.Preload("Item").Preload("FromLocation").Preload("ToLocation").
+	err = query.Preload("Item").Preload("FromLocation").Preload("ToLocation").Preload("Ticket").
 		Order("performed_at DESC").Offset(offset).Limit(filter.PageSize).Find(&movements).Error
 	if err != nil {
 		return nil, err
+	}
+
+	for i := range movements {
+		if movements[i].Ticket != nil {
+			movements[i].TicketOsNumber = &movements[i].Ticket.OSNumber
+		}
 	}
 
 	totalPages := int(math.Ceil(float64(total) / float64(filter.PageSize)))

@@ -122,6 +122,7 @@ type StockMovement struct {
 	FromLocationID *string           `json:"fromLocationId" gorm:"type:uuid;index"`
 	ToLocationID   *string           `json:"toLocationId" gorm:"type:uuid;index"`
 	TicketID       *string           `json:"ticketId" gorm:"type:uuid;index"`
+	TicketOsNumber *string           `json:"ticketOsNumber" gorm:"-"`
 	Quantity       int               `json:"quantity" gorm:"not null"`
 	UnitCost       *decimal.Decimal  `json:"unitCost" gorm:"type:decimal(12,2)"`
 	Notes          *string           `json:"notes" gorm:"type:text"`
@@ -134,6 +135,7 @@ type StockMovement struct {
 	FromLocation *StockLocation `json:"fromLocation,omitempty" gorm:"foreignKey:FromLocationID"`
 	ToLocation   *StockLocation `json:"toLocation,omitempty" gorm:"foreignKey:ToLocationID"`
 	Performer    *User          `json:"performer,omitempty" gorm:"foreignKey:PerformedBy"`
+	Ticket       *Ticket        `json:"ticket,omitempty" gorm:"foreignKey:TicketID"`
 }
 
 func (s *StockMovement) BeforeCreate(tx *gorm.DB) error {
