@@ -6,6 +6,7 @@ import (
 	"log"
 	"math"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,6 +14,10 @@ import (
 	"github.com/shigake/tech-iq-back/internal/models"
 	"github.com/shigake/tech-iq-back/internal/repositories"
 )
+
+// memCacheTTL define por quanto tempo o slice desserializado fica em memória
+// antes de buscar novamente no Redis. Evita HGetAll + JSON decode a cada request.
+const memCacheTTL = 30 * time.Second
 
 type GeoService struct {
 	geoRepo          *repositories.GeoRepository
@@ -22,6 +27,11 @@ type GeoService struct {
 	hierarchyService *HierarchyService
 	redisClient      *cache.RedisClient
 	cityService      *CityService
+
+	// in-memory cache: evita HGetAll + desserialização JSON a cada requisição
+	memMu        sync.RWMutex
+	memCache     []cache.TechnicianGeoData
+	memCacheExp  time.Time
 }
 
 func NewGeoService(geoRepo *repositories.GeoRepository, userRepo repositories.UserRepository, technicianRepo repositories.TechnicianRepository, ticketRepo repositories.TicketRepository, hierarchyService *HierarchyService, redisClient *cache.RedisClient, cityService *CityService) *GeoService {
@@ -795,6 +805,12 @@ func (s *GeoService) loadTechniciansToCache() {
 		return
 	}
 
+	// Atualizar in-memory cache imediatamente após carregar no Redis
+	s.memMu.Lock()
+	s.memCache = geoData
+	s.memCacheExp = time.Now().Add(memCacheTTL)
+	s.memMu.Unlock()
+
 	log.Printf("✅ Loaded %d technicians to geo cache", len(geoData))
 }
 
@@ -842,25 +858,51 @@ func (s *GeoService) updateTechnicianInCache(technicianID string) {
 		log.Printf("⚠️ Geo cache hash expirado para técnico %s, recarregando cache completo...", technicianID)
 		go s.loadTechniciansToCache()
 	}
+
+	// Invalidar in-memory cache para que a próxima leitura pegue o dado atualizado
+	s.invalidateMemCache()
 }
 
-// GetAllTechniciansFromCache retorna todos os técnicos do cache Redis
-// Fallback para o banco de dados se o cache estiver vazio
+// GetAllTechniciansFromCache retorna todos os técnicos, usando in-memory cache como
+// primeira camada, Redis como segunda e banco como fallback final.
 func (s *GeoService) GetAllTechniciansFromCache() ([]cache.TechnicianGeoData, error) {
+	// --- 1ª camada: in-memory (sem network, sem desserialização) ---
+	s.memMu.RLock()
+	if s.memCache != nil && time.Now().Before(s.memCacheExp) {
+		result := s.memCache
+		s.memMu.RUnlock()
+		return result, nil
+	}
+	s.memMu.RUnlock()
+
+	// --- 2ª camada: Redis ---
 	if s.redisClient == nil {
 		return s.loadTechniciansDirectly()
 	}
 
-	// Tentar buscar do cache
 	technicians, err := s.redisClient.GetAllTechniciansGeo()
 	if err != nil || len(technicians) == 0 {
-		// Cache miss - carregar do banco
 		log.Println("⚠️ Geo cache miss, loading from database...")
 		go s.loadTechniciansToCache()
 		return s.loadTechniciansDirectly()
 	}
 
+	// Guardar em memória para os próximos 30s
+	s.memMu.Lock()
+	s.memCache = technicians
+	s.memCacheExp = time.Now().Add(memCacheTTL)
+	s.memMu.Unlock()
+
 	return technicians, nil
+}
+
+// invalidateMemCache descarta o in-memory cache para que a próxima leitura
+// busque dados atualizados no Redis.
+func (s *GeoService) invalidateMemCache() {
+	s.memMu.Lock()
+	s.memCache = nil
+	s.memCacheExp = time.Time{}
+	s.memMu.Unlock()
 }
 
 // loadTechniciansDirectly carrega técnicos diretamente do banco (fallback)
