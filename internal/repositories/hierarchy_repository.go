@@ -49,6 +49,7 @@ type HierarchyRepository interface {
 	GetUserMemberships(userID string) ([]models.Membership, error)
 	AddMember(membership *models.Membership) error
 	UpdateMembership(membership *models.Membership) error
+	UpdateUserMembershipsRole(userID string, newRoleID uint) error
 	RemoveMembership(id uint) error
 	CheckDuplicateMembership(userID string, nodeID uint) (*models.Membership, error)
 
@@ -546,6 +547,10 @@ func (r *hierarchyRepository) AddMember(membership *models.Membership) error {
 
 func (r *hierarchyRepository) UpdateMembership(membership *models.Membership) error {
 	return r.db.Model(&models.Membership{}).Where("id = ?", membership.ID).Update("role_id", membership.RoleID).Error
+}
+
+func (r *hierarchyRepository) UpdateUserMembershipsRole(userID string, newRoleID uint) error {
+	return r.db.Model(&models.Membership{}).Where("user_id = ?", userID).Update("role_id", newRoleID).Error
 }
 
 func (r *hierarchyRepository) RemoveMembership(id uint) error {

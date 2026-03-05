@@ -14,6 +14,7 @@ import (
 
 type UserHandler struct {
 	repo               repositories.UserRepository
+	hierarchyRepo      repositories.HierarchyRepository
 	activityLogService services.ActivityLogService
 	validate           *validator.Validate
 }
@@ -33,6 +34,14 @@ func NewUserHandlerWithActivityLog(repo repositories.UserRepository, activityLog
 	}
 }
 
+func NewUserHandlerFull(repo repositories.UserRepository, hierarchyRepo repositories.HierarchyRepository, activityLogService services.ActivityLogService) *UserHandler {
+	return &UserHandler{
+		repo:               repo,
+		hierarchyRepo:      hierarchyRepo,
+		activityLogService: activityLogService,
+		validate:           validator.New(),
+	}
+}
 func (h *UserHandler) logActivity(c *fiber.Ctx, action, resourceID, description string) {
 	if h.activityLogService == nil {
 		return
@@ -220,9 +229,9 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	// Update fields if provided
+	oldRole := user.Role
+
 	if req.Email != "" && req.Email != user.Email {
-		// Check if email is taken
 		existing, _ := h.repo.FindByEmail(req.Email)
 		if existing != nil && existing.ID != user.ID {
 			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
@@ -249,6 +258,13 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to update user",
 		})
+	}
+
+	if h.hierarchyRepo != nil && req.Role != "" && req.Role != oldRole {
+		role, err := h.hierarchyRepo.GetRoleByName(req.Role)
+		if err == nil && role != nil {
+			h.hierarchyRepo.UpdateUserMembershipsRole(targetID, role.ID)
+		}
 	}
 
 	h.logActivity(c, "update", user.ID, fmt.Sprintf("Usuário %s %s atualizado", user.FirstName, user.LastName))

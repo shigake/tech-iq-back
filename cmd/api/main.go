@@ -133,7 +133,7 @@ func main() {
 	exportHandler := handlers.NewExportHandler(clientRepo, technicianRepo, ticketRepo, stockRepo, financialRepo, categoryRepo)
 	importHandler := handlers.NewImportHandler(clientRepo, ticketRepo, categoryRepo, technicianRepo)
 	hierarchyHandler := handlers.NewHierarchyHandler(hierarchyRepo)
-	userHandler := handlers.NewUserHandlerWithActivityLog(userRepo, activityLogService)
+	userHandler := handlers.NewUserHandlerFull(userRepo, hierarchyRepo, activityLogService)
 	activityLogHandler := handlers.NewActivityLogHandler(activityLogService)
 	geoHandler := handlers.NewGeoHandler(geoService, geocodingService)
 	securityLogHandler := handlers.NewSecurityLogHandler(securityLogService)
