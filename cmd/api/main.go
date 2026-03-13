@@ -125,7 +125,7 @@ func main() {
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
 	technicianHandler := handlers.NewTechnicianHandlerWithActivityLog(technicianService, db, activityLogService)
-	ticketHandler := handlers.NewTicketHandlerWithActivityLog(ticketService, activityLogService)
+	ticketHandler := handlers.NewTicketHandlerWithActivityLog(ticketService, activityLogService, db)
 	dashboardHandler := handlers.NewDashboardHandler(dashboardService)
 	clientHandler := handlers.NewClientHandlerWithActivityLog(clientRepo, activityLogService)
 	categoryHandler := handlers.NewCategoryHandler(categoryRepo)
@@ -226,6 +226,10 @@ func main() {
 	tickets.Put("/:id/assign", middleware.RequirePermission("tickets.assign"), ticketHandler.AssignTechnician)
 	tickets.Post("/:id/sign", middleware.RequirePermission("tickets.edit"), ticketHandler.SignTicket)
 	tickets.Delete("/:id/sign", middleware.RequirePermission("tickets.delete"), ticketHandler.DeleteSignature)
+	tickets.Post("/:id/files", middleware.RequirePermission("tickets.edit"), ticketHandler.UploadFiles)
+	tickets.Get("/:id/files", ticketHandler.GetFiles)
+	tickets.Get("/:id/files/:fileId", ticketHandler.DownloadFile)
+	tickets.Delete("/:id/files/:fileId", middleware.RequirePermission("tickets.edit"), ticketHandler.DeleteFile)
 
 	// Client routes
 	clients := protected.Group("/clients")

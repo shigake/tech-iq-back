@@ -50,6 +50,7 @@ func (s *ticketService) Create(req *models.CreateTicketRequest) (*models.Ticket,
 		ErrorDescription: req.ErrorDescription,
 		Priority:         models.TicketPriority(req.Priority),
 		Status:           models.TicketStatusOpen,
+		OSNumber:         req.OSNumber,
 		ComputerBrand:    req.GetBrand(),
 		ComputerModel:    req.GetModel(),
 		SerialNumber:     req.SerialNumber,
@@ -179,6 +180,9 @@ func (s *ticketService) Update(id string, req *models.CreateTicketRequest) (*mod
 	existing.ErrorDescription = req.ErrorDescription
 	existing.CustomerFeedback = req.CustomerFeedback
 	existing.Priority = models.TicketPriority(req.Priority)
+	if req.OSNumber != "" {
+		existing.OSNumber = req.OSNumber
+	}
 	existing.ComputerBrand = req.GetBrand()
 	existing.ComputerModel = req.GetModel()
 	existing.SerialNumber = req.SerialNumber

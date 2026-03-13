@@ -32,7 +32,7 @@ func NewAuditHandler(db *gorm.DB) *AuditHandler {
 // GET /api/v1/audit
 func (h *AuditHandler) GetAuditLogs(c *fiber.Ctx) error {
 	userID, _ := c.Locals("userId").(string)
-	userRole, _ := c.Locals("role").(string)
+	userRole, _ := c.Locals("userRole").(string)
 
 	// Parse filters
 	filter := models.AuditLogFilter{
@@ -66,7 +66,8 @@ func (h *AuditHandler) GetAuditLogs(c *fiber.Ctx) error {
 	}
 
 	// Check if user is admin - admins see everything
-	if userRole == "ADMIN" {
+	// Support both old "ADMIN" role and new "Administrador" profile
+	if userRole == "ADMIN" || userRole == "Administrador" {
 		result, err := h.repo.FindAll(filter)
 		if err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch audit logs"})

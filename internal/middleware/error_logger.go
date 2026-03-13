@@ -64,14 +64,18 @@ func logError(c *fiber.Ctx, service *services.ErrorLogService, statusCode int, d
 	// Get query params
 	queryParams := c.Request().URI().QueryString()
 	
-	// Get user info from context
+	// Get user info from context (with safe type assertion)
 	userID := ""
 	userEmail := ""
 	if uid := c.Locals("userId"); uid != nil {
-		userID = uid.(string)
+		if uidStr, ok := uid.(string); ok {
+			userID = uidStr
+		}
 	}
-	if email := c.Locals("userEmail"); email != nil {
-		userEmail = email.(string)
+	if email := c.Locals("email"); email != nil {
+		if emailStr, ok := email.(string); ok {
+			userEmail = emailStr
+		}
 	}
 	
 	// Create error log
