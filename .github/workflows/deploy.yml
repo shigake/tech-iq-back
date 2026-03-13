@@ -74,6 +74,15 @@ jobs:
             # Delete existing pods to force recreation with new image
             kubectl delete pods -l app=tech-erp-backend -n hml --force --grace-period=0 || true
             
+            # Ensure uploads directory exists on host
+            mkdir -p /opt/tech-iq/uploads
+            
+            # Patch deployment to mount uploads volume
+            kubectl patch deployment tech-erp-backend -n hml --type='json' -p='[
+              {"op": "add", "path": "/spec/template/spec/volumes", "value": [{"name": "uploads", "hostPath": {"path": "/opt/tech-iq/uploads", "type": "DirectoryOrCreate"}}]},
+              {"op": "add", "path": "/spec/template/spec/containers/0/volumeMounts", "value": [{"name": "uploads", "mountPath": "/app/uploads"}]}
+            ]' || true
+            
             # Configure Traefik middleware for large uploads (50MB)
             cat <<EOF | kubectl apply -f -
             apiVersion: traefik.io/v1alpha1

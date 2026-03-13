@@ -34,6 +34,9 @@ RUN apk --no-cache add ca-certificates tzdata
 # Copy the binary from builder
 COPY --from=builder /app/main .
 
+# Create uploads directory  
+RUN mkdir -p /app/uploads
+
 # Set timezone
 ENV TZ=America/Sao_Paulo
 
