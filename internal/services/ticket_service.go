@@ -240,6 +240,7 @@ func (s *ticketService) UpdateStatus(id string, status string) error {
 		"EM_ATENDIMENTO":  true,
 		"PARA_FECHAMENTO": true,
 		"FECHADO":         true,
+		"FINALIZADO":      true,
 		"IMPRODUTIVO":     true,
 	}
 

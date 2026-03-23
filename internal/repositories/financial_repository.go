@@ -579,3 +579,86 @@ func (r *FinancialRepository) GetAuditLogs(entityType string, entityID string) (
 		Find(&logs).Error
 	return logs, err
 }
+
+func (r *FinancialRepository) GetTechnicianCutoffReport(startDate, endDate time.Time, technicianID string) ([]models.TechnicianCutoffReport, error) {
+	query := r.db.Model(&models.Ticket{}).
+		Where("status = ? AND closed_at BETWEEN ? AND ?", models.TicketStatusFinalized, startDate, endDate)
+
+	if technicianID != "" {
+		query = query.Where("id IN (SELECT ticket_id FROM ticket_technicians WHERE technician_id = ?)", technicianID)
+	}
+
+	var tickets []models.Ticket
+	err := query.
+		Preload("Client").
+		Preload("Technicians").
+		Order("closed_at DESC").
+		Find(&tickets).Error
+	if err != nil {
+		return nil, err
+	}
+
+	reportMap := make(map[string]*models.TechnicianCutoffReport)
+
+	for _, ticket := range tickets {
+		for _, tech := range ticket.Technicians {
+			if technicianID != "" && tech.ID != technicianID {
+				continue
+			}
+
+			report, exists := reportMap[tech.ID]
+			if !exists {
+				report = &models.TechnicianCutoffReport{
+					TechnicianID:   tech.ID,
+					TechnicianName: tech.FullName,
+					CPF:            tech.CPF,
+					CNPJ:           tech.CNPJ,
+					BankName:       tech.BankName,
+					Agency:         tech.Agency,
+					AccountNumber:  tech.AccountNumber,
+					PixKey:         tech.PixKey,
+					PeriodStart:    startDate.Format("2006-01-02"),
+					PeriodEnd:      endDate.Format("2006-01-02"),
+					Entries:        []models.TechnicianCutoffReportEntry{},
+				}
+				reportMap[tech.ID] = report
+			}
+
+			clientName := ""
+			if ticket.Client != nil {
+				clientName = ticket.Client.FullName
+			}
+
+			var sigCount int64
+			r.db.Model(&models.TicketSignature{}).Where("ticket_id = ?", ticket.ID).Count(&sigCount)
+
+			entry := models.TechnicianCutoffReportEntry{
+				TicketID:      ticket.ID,
+				OSNumber:      ticket.OSNumber,
+				ClientName:    clientName,
+				ClosedAt:      ticket.ClosedAt,
+				AcceptedValue: 0,
+				HasSignature:  sigCount > 0,
+			}
+
+			var historyValue struct {
+				AcceptedValue float64
+			}
+			r.db.Model(&models.TechnicianHistory{}).
+				Where("technician_id = ? AND ticket_id = ?", tech.ID, ticket.ID).
+				Select("COALESCE(accepted_value, 0) as accepted_value").
+				Scan(&historyValue)
+			entry.AcceptedValue = historyValue.AcceptedValue
+
+			report.Entries = append(report.Entries, entry)
+			report.TotalAmount += entry.AcceptedValue
+		}
+	}
+
+	var reports []models.TechnicianCutoffReport
+	for _, r := range reportMap {
+		reports = append(reports, *r)
+	}
+
+	return reports, nil
+}

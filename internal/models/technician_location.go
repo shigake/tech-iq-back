@@ -333,14 +333,15 @@ type GeoClusterItem struct {
 	Lat   float64 `json:"lat"`
 	Lng   float64 `json:"lng"`
 	Count int     `json:"count"`
-	// Preenchido somente quando IsExact=true (zoom >= 12, técnico individual)
-	TechnicianID string `json:"technicianId,omitempty"`
-	Name         string `json:"name,omitempty"`
-	Status       string `json:"status,omitempty"`
-	City         string `json:"city,omitempty"`
-	State        string `json:"state,omitempty"`
-	HasRealLoc   bool   `json:"hasRealLocation,omitempty"`
-	MinutesAgo   int    `json:"minutesAgo,omitempty"`
+	TechnicianID string   `json:"technicianId,omitempty"`
+	Name         string   `json:"name,omitempty"`
+	Status       string   `json:"status,omitempty"`
+	City         string   `json:"city,omitempty"`
+	State        string   `json:"state,omitempty"`
+	Phone        string   `json:"phone,omitempty"`
+	Skills       []string `json:"skills,omitempty"`
+	HasRealLoc   bool     `json:"hasRealLocation,omitempty"`
+	MinutesAgo   int      `json:"minutesAgo,omitempty"`
 }
 
 // GeoClustersResponse é a resposta do endpoint de clusters

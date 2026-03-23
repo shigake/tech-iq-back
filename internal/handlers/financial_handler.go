@@ -556,7 +556,7 @@ func (h *FinancialHandler) GetTechnicianPaymentsReport(c *fiber.Ctx) error {
 // @Router /financial/categories [get]
 func (h *FinancialHandler) GetCategories(c *fiber.Ctx) error {
 	categoryType := c.Query("type")
-	
+
 	if categoryType != "" {
 		categories, err := h.categoryRepo.GetByTypeWithChildren(models.CategoryType(categoryType))
 		if err != nil {
@@ -566,7 +566,7 @@ func (h *FinancialHandler) GetCategories(c *fiber.Ctx) error {
 		}
 		return c.JSON(categories)
 	}
-	
+
 	// Return both income and expense categories
 	incomeCategories, err := h.categoryRepo.GetByTypeWithChildren(models.CategoryTypeFinanceIncome)
 	if err != nil {
@@ -574,15 +574,38 @@ func (h *FinancialHandler) GetCategories(c *fiber.Ctx) error {
 			"error": "Failed to fetch income categories",
 		})
 	}
-	
+
 	expenseCategories, err := h.categoryRepo.GetByTypeWithChildren(models.CategoryTypeFinanceExpense)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to fetch expense categories",
 		})
 	}
-	
+
 	// Combine both lists
 	allCategories := append(incomeCategories, expenseCategories...)
 	return c.JSON(allCategories)
+}
+
+func (h *FinancialHandler) GetTechnicianCutoffReport(c *fiber.Ctx) error {
+	filter := models.TechnicianCutoffReportFilter{
+		StartDate:    c.Query("startDate"),
+		EndDate:      c.Query("endDate"),
+		TechnicianID: c.Query("technicianId"),
+	}
+
+	if filter.StartDate == "" || filter.EndDate == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "startDate and endDate are required",
+		})
+	}
+
+	reports, err := h.service.GetTechnicianCutoffReport(filter)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.JSON(reports)
 }

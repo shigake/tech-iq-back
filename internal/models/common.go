@@ -25,14 +25,16 @@ type PaginatedResponse struct {
 
 // DashboardStats represents dashboard statistics
 type DashboardStats struct {
-	TotalTechnicians  int64 `json:"totalTechnicians"`
-	ActiveTechnicians int64 `json:"activeTechnicians"`
-	TotalTickets      int64 `json:"totalTickets"`
-	OpenTickets       int64 `json:"openTickets"`
-	PendingTickets    int64 `json:"pendingTickets"`
-	InProgressTickets int64 `json:"inProgressTickets"`
-	ClosedTickets     int64 `json:"closedTickets"`
-	TotalClients      int64 `json:"totalClients"`
+	TotalTechnicians    int64            `json:"totalTechnicians"`
+	ActiveTechnicians   int64            `json:"activeTechnicians"`
+	TotalTickets        int64            `json:"totalTickets"`
+	OpenTickets         int64            `json:"openTickets"`
+	PendingTickets      int64            `json:"pendingTickets"`
+	InProgressTickets   int64            `json:"inProgressTickets"`
+	ClosedTickets       int64            `json:"closedTickets"`
+	FinalizedTickets    int64            `json:"finalizedTickets"`
+	TotalClients        int64            `json:"totalClients"`
+	TechniciansByStatus map[string]int64 `json:"techniciansByStatus,omitempty"`
 }
 
 // TicketsByStatus represents tickets grouped by status
@@ -50,10 +52,10 @@ type TechniciansByState struct {
 // RecentActivity represents a recent activity item for the dashboard
 type RecentActivity struct {
 	ID          string    `json:"id"`
-	Type        string    `json:"type"`        // "technician", "ticket", "client"
-	Action      string    `json:"action"`      // "created", "updated"
+	Type        string    `json:"type"`   // "technician", "ticket", "client"
+	Action      string    `json:"action"` // "created", "updated"
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
 	Timestamp   string    `json:"timestamp"`
-	CreatedAt   time.Time `json:"-"`           // Used for sorting, not exposed to API
+	CreatedAt   time.Time `json:"-"` // Used for sorting, not exposed to API
 }

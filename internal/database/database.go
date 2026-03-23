@@ -115,6 +115,10 @@ func Migrate(db *gorm.DB) error {
 		&models.ErrorLog{},
 		// Audit Logs (generic)
 		&models.AuditLog{},
+		// PRD-001: New models
+		&models.TechnicianHistory{},
+		&models.TicketSignature{},
+		&models.UserDashboardConfig{},
 	)
 	if err != nil {
 		log.Println("⚠️ Migration warning (continuing anyway):", err)
@@ -253,7 +257,7 @@ func SeedAccessControl(db *gorm.DB) {
 			},
 			Permissions: []string{
 				"tickets.view_own", // Only own tickets (filtered by permission)
-				"settings.view",   // Can view settings/profile
+				"settings.view",    // Can view settings/profile
 			},
 		},
 	}

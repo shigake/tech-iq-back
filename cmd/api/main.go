@@ -105,6 +105,9 @@ func main() {
 	stockRepo := repositories.NewStockRepository(db)
 	errorLogRepo := repositories.NewErrorLogRepository(db)
 	cityRepo := repositories.NewCityRepository(db)
+	technicianHistoryRepo := repositories.NewTechnicianHistoryRepository(db)
+	ticketSignatureRepo := repositories.NewTicketSignatureRepository(db)
+	dashboardConfigRepo := repositories.NewDashboardConfigRepository(db)
 
 	// Initialize services
 	authService := services.NewAuthService(userRepo, securityLogRepo, hierarchyRepo, cfg)
@@ -121,6 +124,9 @@ func main() {
 	financialService := services.NewFinancialService(financialRepo, categoryRepo)
 	stockService := services.NewStockService(stockRepo)
 	errorLogService := services.NewErrorLogService(errorLogRepo)
+	technicianHistoryService := services.NewTechnicianHistoryService(technicianHistoryRepo, technicianRepo)
+	ticketSignatureService := services.NewTicketSignatureService(ticketSignatureRepo, ticketRepo)
+	dashboardConfigService := services.NewDashboardConfigService(dashboardConfigRepo)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
@@ -141,6 +147,9 @@ func main() {
 	financialHandler := handlers.NewFinancialHandler(financialService, categoryRepo)
 	stockHandler := handlers.NewStockHandler(stockService)
 	errorLogHandler := handlers.NewErrorLogHandler(errorLogService)
+	technicianHistoryHandler := handlers.NewTechnicianHistoryHandler(technicianHistoryService)
+	ticketSignatureHandler := handlers.NewTicketSignatureHandler(ticketSignatureService)
+	dashboardConfigHandler := handlers.NewDashboardConfigHandler(dashboardConfigService)
 
 	middleware.SetHierarchyRepository(hierarchyRepo)
 
@@ -214,6 +223,8 @@ func main() {
 	technicians.Get("/search", technicianHandler.Search)
 	technicians.Get("/by-city/:city", technicianHandler.GetByCity)
 	technicians.Get("/by-state/:state", technicianHandler.GetByState)
+	technicians.Get("/:id/history", technicianHistoryHandler.GetHistory)
+	technicians.Post("/:id/history", middleware.RequirePermission("technicians.edit"), technicianHistoryHandler.CreateHistory)
 
 	// Ticket routes
 	tickets := protected.Group("/tickets")
@@ -230,6 +241,9 @@ func main() {
 	tickets.Get("/:id/files", ticketHandler.GetFiles)
 	tickets.Get("/:id/files/:fileId", ticketHandler.DownloadFile)
 	tickets.Delete("/:id/files/:fileId", middleware.RequirePermission("tickets.edit"), ticketHandler.DeleteFile)
+	tickets.Put("/:id/signature", middleware.RequirePermission("tickets.edit"), ticketSignatureHandler.CreateOrUpdateSignature)
+	tickets.Get("/:id/signature", ticketSignatureHandler.GetSignature)
+	tickets.Delete("/:id/signature", middleware.RequirePermission("tickets.delete"), ticketSignatureHandler.DeleteSignatureRecord)
 
 	// Client routes
 	clients := protected.Group("/clients")
@@ -255,6 +269,8 @@ func main() {
 	dashboard.Get("/technicians-by-state", dashboardHandler.GetTechniciansByState)
 	dashboard.Get("/chart", dashboardHandler.GetChartData)
 	dashboard.Get("/recent-activity", dashboardHandler.GetRecentActivity)
+	dashboard.Get("/config", dashboardConfigHandler.GetConfig)
+	dashboard.Put("/config", dashboardConfigHandler.SaveConfig)
 
 	// Cities endpoint for technicians
 	technicians.Get("/cities", technicianHandler.GetCities)
@@ -273,6 +289,8 @@ func main() {
 	export.Get("/stock/movements", exportHandler.ExportStockMovements)
 	export.Get("/stock/balances/xlsx", exportHandler.ExportStockBalancesXLSX)
 	export.Get("/financial/entries", exportHandler.ExportFinancialEntries)
+	export.Get("/financial/cutoff-report/xlsx", exportHandler.ExportCutoffReportXLSX)
+	export.Get("/financial/cutoff-report/pdf", exportHandler.ExportCutoffReportPDF)
 	export.Get("/categories", exportHandler.ExportCategories)
 
 	// Import routes (requires import permission)
@@ -387,6 +405,7 @@ func main() {
 	financial.Get("/dashboard", financialHandler.GetDashboard)
 	financial.Get("/reports/cash-flow", financialHandler.GetCashFlowReport)
 	financial.Get("/reports/technician-payments", financialHandler.GetTechnicianPaymentsReport)
+	financial.Get("/reports/technician-cutoff", financialHandler.GetTechnicianCutoffReport)
 	// Financial entries
 	entries := financial.Group("/entries")
 	entries.Get("/", financialHandler.ListEntries)

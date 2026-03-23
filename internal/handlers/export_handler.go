@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/csv"
 	"fmt"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/go-pdf/fpdf"
 	"github.com/gofiber/fiber/v2"
 	"github.com/shigake/tech-iq-back/internal/models"
 	"github.com/shigake/tech-iq-back/internal/repositories"
@@ -877,4 +879,352 @@ func (h *ExportHandler) ExportStockBalancesXLSX(c *fiber.Ctx) error {
 	c.Set("Content-Disposition", "attachment; filename=estoque_por_local_"+time.Now().Format("20060102_150405")+".xlsx")
 
 	return c.Send(buffer.Bytes())
+}
+
+func (h *ExportHandler) getCutoffReports(c *fiber.Ctx) ([]models.TechnicianCutoffReport, error) {
+	startDateStr := c.Query("startDate")
+	endDateStr := c.Query("endDate")
+	technicianID := c.Query("technicianId")
+
+	if startDateStr == "" || endDateStr == "" {
+		return nil, fmt.Errorf("startDate e endDate são obrigatórios")
+	}
+
+	startDate, err := time.Parse("2006-01-02", startDateStr)
+	if err != nil {
+		return nil, fmt.Errorf("formato de startDate inválido, esperado YYYY-MM-DD")
+	}
+	endDate, err := time.Parse("2006-01-02", endDateStr)
+	if err != nil {
+		return nil, fmt.Errorf("formato de endDate inválido, esperado YYYY-MM-DD")
+	}
+
+	return h.financialRepo.GetTechnicianCutoffReport(startDate, endDate, technicianID)
+}
+
+func (h *ExportHandler) ExportCutoffReportXLSX(c *fiber.Ctx) error {
+	reports, err := h.getCutoffReports(c)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	f := excelize.NewFile()
+	defer f.Close()
+
+	sheetName := "Relatório de Corte"
+	f.SetSheetName("Sheet1", sheetName)
+
+	headerStyle, _ := f.NewStyle(&excelize.Style{
+		Font:      &excelize.Font{Bold: true, Size: 11, Color: "FFFFFF"},
+		Fill:      excelize.Fill{Type: "pattern", Color: []string{"4472C4"}, Pattern: 1},
+		Alignment: &excelize.Alignment{Horizontal: "center", Vertical: "center", WrapText: true},
+		Border: []excelize.Border{
+			{Type: "left", Color: "000000", Style: 1},
+			{Type: "top", Color: "000000", Style: 1},
+			{Type: "bottom", Color: "000000", Style: 1},
+			{Type: "right", Color: "000000", Style: 1},
+		},
+	})
+
+	techHeaderStyle, _ := f.NewStyle(&excelize.Style{
+		Font:      &excelize.Font{Bold: true, Size: 11},
+		Fill:      excelize.Fill{Type: "pattern", Color: []string{"D9E2F3"}, Pattern: 1},
+		Alignment: &excelize.Alignment{Horizontal: "left", Vertical: "center"},
+		Border: []excelize.Border{
+			{Type: "left", Color: "000000", Style: 1},
+			{Type: "top", Color: "000000", Style: 1},
+			{Type: "bottom", Color: "000000", Style: 1},
+			{Type: "right", Color: "000000", Style: 1},
+		},
+	})
+
+	dataStyle, _ := f.NewStyle(&excelize.Style{
+		Alignment: &excelize.Alignment{Horizontal: "left", Vertical: "center"},
+		Border: []excelize.Border{
+			{Type: "left", Color: "000000", Style: 1},
+			{Type: "top", Color: "000000", Style: 1},
+			{Type: "bottom", Color: "000000", Style: 1},
+			{Type: "right", Color: "000000", Style: 1},
+		},
+	})
+
+	currencyStyle, _ := f.NewStyle(&excelize.Style{
+		NumFmt:    164,
+		Alignment: &excelize.Alignment{Horizontal: "right", Vertical: "center"},
+		Border: []excelize.Border{
+			{Type: "left", Color: "000000", Style: 1},
+			{Type: "top", Color: "000000", Style: 1},
+			{Type: "bottom", Color: "000000", Style: 1},
+			{Type: "right", Color: "000000", Style: 1},
+		},
+	})
+
+	totalStyle, _ := f.NewStyle(&excelize.Style{
+		Font:      &excelize.Font{Bold: true, Size: 11},
+		NumFmt:    164,
+		Alignment: &excelize.Alignment{Horizontal: "right", Vertical: "center"},
+		Fill:      excelize.Fill{Type: "pattern", Color: []string{"E2EFDA"}, Pattern: 1},
+		Border: []excelize.Border{
+			{Type: "left", Color: "000000", Style: 1},
+			{Type: "top", Color: "000000", Style: 1},
+			{Type: "bottom", Color: "000000", Style: 1},
+			{Type: "right", Color: "000000", Style: 1},
+		},
+	})
+
+	row := 1
+
+	if len(reports) > 0 {
+		f.SetCellValue(sheetName, fmt.Sprintf("A%d", row), "Relatório de Corte - Técnicos")
+		titleStyle, _ := f.NewStyle(&excelize.Style{
+			Font:      &excelize.Font{Bold: true, Size: 14},
+			Alignment: &excelize.Alignment{Horizontal: "left"},
+		})
+		f.SetCellStyle(sheetName, fmt.Sprintf("A%d", row), fmt.Sprintf("A%d", row), titleStyle)
+		row++
+
+		period := fmt.Sprintf("Período: %s a %s", reports[0].PeriodStart, reports[0].PeriodEnd)
+		f.SetCellValue(sheetName, fmt.Sprintf("A%d", row), period)
+		row += 2
+	}
+
+	var grandTotal float64
+
+	for _, report := range reports {
+		f.MergeCell(sheetName, fmt.Sprintf("A%d", row), fmt.Sprintf("F%d", row))
+		techInfo := report.TechnicianName
+		if report.CPF != "" {
+			techInfo += " - CPF: " + report.CPF
+		} else if report.CNPJ != "" {
+			techInfo += " - CNPJ: " + report.CNPJ
+		}
+		f.SetCellValue(sheetName, fmt.Sprintf("A%d", row), techInfo)
+		f.SetCellStyle(sheetName, fmt.Sprintf("A%d", row), fmt.Sprintf("F%d", row), techHeaderStyle)
+		row++
+
+		if report.BankName != "" || report.PixKey != "" {
+			bankInfo := ""
+			if report.BankName != "" {
+				bankInfo = fmt.Sprintf("Banco: %s | Ag: %s | Cc: %s", report.BankName, report.Agency, report.AccountNumber)
+			}
+			if report.PixKey != "" {
+				if bankInfo != "" {
+					bankInfo += " | "
+				}
+				bankInfo += "PIX: " + report.PixKey
+			}
+			f.MergeCell(sheetName, fmt.Sprintf("A%d", row), fmt.Sprintf("F%d", row))
+			f.SetCellValue(sheetName, fmt.Sprintf("A%d", row), bankInfo)
+			row++
+		}
+
+		headers := []string{"Nº OS", "Cliente", "Data Fechamento", "Assinatura", "Valor Aceito"}
+		for col, header := range headers {
+			cell, _ := excelize.CoordinatesToCellName(col+1, row)
+			f.SetCellValue(sheetName, cell, header)
+			f.SetCellStyle(sheetName, cell, cell, headerStyle)
+		}
+		row++
+
+		for _, entry := range report.Entries {
+			f.SetCellValue(sheetName, fmt.Sprintf("A%d", row), entry.OSNumber)
+			f.SetCellStyle(sheetName, fmt.Sprintf("A%d", row), fmt.Sprintf("A%d", row), dataStyle)
+
+			f.SetCellValue(sheetName, fmt.Sprintf("B%d", row), entry.ClientName)
+			f.SetCellStyle(sheetName, fmt.Sprintf("B%d", row), fmt.Sprintf("B%d", row), dataStyle)
+
+			closedAt := ""
+			if entry.ClosedAt != nil {
+				closedAt = entry.ClosedAt.Format("02/01/2006")
+			}
+			f.SetCellValue(sheetName, fmt.Sprintf("C%d", row), closedAt)
+			f.SetCellStyle(sheetName, fmt.Sprintf("C%d", row), fmt.Sprintf("C%d", row), dataStyle)
+
+			sig := "Não"
+			if entry.HasSignature {
+				sig = "Sim"
+			}
+			f.SetCellValue(sheetName, fmt.Sprintf("D%d", row), sig)
+			f.SetCellStyle(sheetName, fmt.Sprintf("D%d", row), fmt.Sprintf("D%d", row), dataStyle)
+
+			f.SetCellValue(sheetName, fmt.Sprintf("E%d", row), entry.AcceptedValue)
+			f.SetCellStyle(sheetName, fmt.Sprintf("E%d", row), fmt.Sprintf("E%d", row), currencyStyle)
+
+			row++
+		}
+
+		f.MergeCell(sheetName, fmt.Sprintf("A%d", row), fmt.Sprintf("D%d", row))
+		f.SetCellValue(sheetName, fmt.Sprintf("A%d", row), "Total - "+report.TechnicianName)
+		f.SetCellStyle(sheetName, fmt.Sprintf("A%d", row), fmt.Sprintf("D%d", row), totalStyle)
+		f.SetCellValue(sheetName, fmt.Sprintf("E%d", row), report.TotalAmount)
+		f.SetCellStyle(sheetName, fmt.Sprintf("E%d", row), fmt.Sprintf("E%d", row), totalStyle)
+		grandTotal += report.TotalAmount
+		row += 2
+	}
+
+	f.MergeCell(sheetName, fmt.Sprintf("A%d", row), fmt.Sprintf("D%d", row))
+	f.SetCellValue(sheetName, fmt.Sprintf("A%d", row), "TOTAL GERAL")
+	grandTotalStyle, _ := f.NewStyle(&excelize.Style{
+		Font:      &excelize.Font{Bold: true, Size: 12, Color: "FFFFFF"},
+		NumFmt:    164,
+		Alignment: &excelize.Alignment{Horizontal: "right", Vertical: "center"},
+		Fill:      excelize.Fill{Type: "pattern", Color: []string{"4472C4"}, Pattern: 1},
+		Border: []excelize.Border{
+			{Type: "left", Color: "000000", Style: 1},
+			{Type: "top", Color: "000000", Style: 1},
+			{Type: "bottom", Color: "000000", Style: 1},
+			{Type: "right", Color: "000000", Style: 1},
+		},
+	})
+	f.SetCellStyle(sheetName, fmt.Sprintf("A%d", row), fmt.Sprintf("D%d", row), grandTotalStyle)
+	f.SetCellValue(sheetName, fmt.Sprintf("E%d", row), grandTotal)
+	f.SetCellStyle(sheetName, fmt.Sprintf("E%d", row), fmt.Sprintf("E%d", row), grandTotalStyle)
+
+	f.SetColWidth(sheetName, "A", "A", 18)
+	f.SetColWidth(sheetName, "B", "B", 30)
+	f.SetColWidth(sheetName, "C", "C", 18)
+	f.SetColWidth(sheetName, "D", "D", 12)
+	f.SetColWidth(sheetName, "E", "E", 18)
+
+	buffer, err := f.WriteToBuffer()
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Erro ao gerar arquivo Excel"})
+	}
+
+	c.Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	c.Set("Content-Disposition", "attachment; filename=relatorio_corte_"+time.Now().Format("20060102_150405")+".xlsx")
+
+	return c.Send(buffer.Bytes())
+}
+
+func (h *ExportHandler) ExportCutoffReportPDF(c *fiber.Ctx) error {
+	reports, err := h.getCutoffReports(c)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	pdf := fpdf.New("L", "mm", "A4", "")
+	pdf.SetAutoPageBreak(true, 15)
+	pdf.SetMargins(10, 10, 10)
+
+	pdf.AddPage()
+
+	pdf.SetFont("Helvetica", "B", 16)
+	pdf.CellFormat(0, 10, "Relatorio de Corte - Tecnicos", "", 1, "C", false, 0, "")
+
+	if len(reports) > 0 {
+		pdf.SetFont("Helvetica", "", 10)
+		period := fmt.Sprintf("Periodo: %s a %s", reports[0].PeriodStart, reports[0].PeriodEnd)
+		pdf.CellFormat(0, 7, period, "", 1, "C", false, 0, "")
+	}
+	pdf.Ln(5)
+
+	var grandTotal float64
+
+	for _, report := range reports {
+		if pdf.GetY() > 170 {
+			pdf.AddPage()
+		}
+
+		pdf.SetFont("Helvetica", "B", 11)
+		pdf.SetFillColor(217, 226, 243)
+		techInfo := report.TechnicianName
+		if report.CPF != "" {
+			techInfo += " - CPF: " + report.CPF
+		} else if report.CNPJ != "" {
+			techInfo += " - CNPJ: " + report.CNPJ
+		}
+		pdf.CellFormat(0, 8, techInfo, "1", 1, "L", true, 0, "")
+
+		if report.BankName != "" || report.PixKey != "" {
+			pdf.SetFont("Helvetica", "", 8)
+			bankInfo := ""
+			if report.BankName != "" {
+				bankInfo = fmt.Sprintf("Banco: %s | Ag: %s | Cc: %s", report.BankName, report.Agency, report.AccountNumber)
+			}
+			if report.PixKey != "" {
+				if bankInfo != "" {
+					bankInfo += " | "
+				}
+				bankInfo += "PIX: " + report.PixKey
+			}
+			pdf.CellFormat(0, 6, bankInfo, "LR", 1, "L", false, 0, "")
+		}
+
+		colWidths := []float64{40, 80, 40, 30, 40, 47}
+
+		pdf.SetFont("Helvetica", "B", 9)
+		pdf.SetFillColor(68, 114, 196)
+		pdf.SetTextColor(255, 255, 255)
+		headers := []string{"N OS", "Cliente", "Data Fech.", "Assinatura", "Valor Aceito", ""}
+		for i, header := range headers {
+			if i < len(colWidths) && colWidths[i] > 0 && header != "" {
+				pdf.CellFormat(colWidths[i], 7, header, "1", 0, "C", true, 0, "")
+			}
+		}
+		pdf.Ln(-1)
+		pdf.SetTextColor(0, 0, 0)
+
+		pdf.SetFont("Helvetica", "", 9)
+		for _, entry := range report.Entries {
+			if pdf.GetY() > 185 {
+				pdf.AddPage()
+			}
+
+			closedAt := ""
+			if entry.ClosedAt != nil {
+				closedAt = entry.ClosedAt.Format("02/01/2006")
+			}
+			sig := "Nao"
+			if entry.HasSignature {
+				sig = "Sim"
+			}
+
+			pdf.CellFormat(colWidths[0], 6, entry.OSNumber, "1", 0, "L", false, 0, "")
+			pdf.CellFormat(colWidths[1], 6, truncateStr(entry.ClientName, 40), "1", 0, "L", false, 0, "")
+			pdf.CellFormat(colWidths[2], 6, closedAt, "1", 0, "C", false, 0, "")
+			pdf.CellFormat(colWidths[3], 6, sig, "1", 0, "C", false, 0, "")
+			pdf.CellFormat(colWidths[4], 6, fmt.Sprintf("R$ %.2f", entry.AcceptedValue), "1", 0, "R", false, 0, "")
+			pdf.Ln(-1)
+		}
+
+		pdf.SetFont("Helvetica", "B", 9)
+		pdf.SetFillColor(226, 239, 218)
+		pdf.CellFormat(colWidths[0]+colWidths[1]+colWidths[2]+colWidths[3], 7,
+			"Total - "+report.TechnicianName, "1", 0, "R", true, 0, "")
+		pdf.CellFormat(colWidths[4], 7, fmt.Sprintf("R$ %.2f", report.TotalAmount), "1", 0, "R", true, 0, "")
+		pdf.Ln(-1)
+		pdf.Ln(4)
+
+		grandTotal += report.TotalAmount
+	}
+
+	pdf.Ln(2)
+	pdf.SetFont("Helvetica", "B", 12)
+	pdf.SetFillColor(68, 114, 196)
+	pdf.SetTextColor(255, 255, 255)
+	pdf.CellFormat(190, 9, "TOTAL GERAL", "1", 0, "R", true, 0, "")
+	pdf.CellFormat(40, 9, fmt.Sprintf("R$ %.2f", grandTotal), "1", 0, "R", true, 0, "")
+	pdf.SetTextColor(0, 0, 0)
+
+	pdf.SetFont("Helvetica", "I", 7)
+	pdf.Ln(15)
+	pdf.CellFormat(0, 5, fmt.Sprintf("Gerado em %s", time.Now().Format("02/01/2006 15:04:05")), "", 0, "R", false, 0, "")
+
+	var buf bytes.Buffer
+	if err := pdf.Output(&buf); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Erro ao gerar PDF"})
+	}
+
+	c.Set("Content-Type", "application/pdf")
+	c.Set("Content-Disposition", "attachment; filename=relatorio_corte_"+time.Now().Format("20060102_150405")+".pdf")
+
+	return c.Send(buf.Bytes())
+}
+
+func truncateStr(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen-3] + "..."
 }

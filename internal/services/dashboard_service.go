@@ -37,10 +37,14 @@ func NewDashboardService(
 func (s *dashboardService) GetStats() (*models.DashboardStats, error) {
 	totalTechnicians, _ := s.technicianRepo.CountAll()
 	activeTechnicians, _ := s.technicianRepo.CountByStatus("ATIVO")
+	homologacaoTechnicians, _ := s.technicianRepo.CountByStatus("HOMOLOGACAO")
+	blacklistTechnicians, _ := s.technicianRepo.CountByStatus("BLACKLIST")
+	desativadoTechnicians, _ := s.technicianRepo.CountByStatus("DESATIVADO")
 	totalTickets, _ := s.ticketRepo.CountAll()
 	openTickets, _ := s.ticketRepo.CountByStatus("ABERTO")
 	inProgressTickets, _ := s.ticketRepo.CountByStatus("EM_ATENDIMENTO")
 	closedTickets, _ := s.ticketRepo.CountByStatus("FECHADO")
+	finalizedTickets, _ := s.ticketRepo.CountByStatus("FINALIZADO")
 	totalClients, _ := s.clientRepo.Count()
 
 	return &models.DashboardStats{
@@ -50,7 +54,14 @@ func (s *dashboardService) GetStats() (*models.DashboardStats, error) {
 		OpenTickets:       openTickets,
 		InProgressTickets: inProgressTickets,
 		ClosedTickets:     closedTickets,
+		FinalizedTickets:  finalizedTickets,
 		TotalClients:      totalClients,
+		TechniciansByStatus: map[string]int64{
+			"ATIVO":       activeTechnicians,
+			"HOMOLOGACAO": homologacaoTechnicians,
+			"BLACKLIST":   blacklistTechnicians,
+			"DESATIVADO":  desativadoTechnicians,
+		},
 	}, nil
 }
 
@@ -116,7 +127,7 @@ func (s *dashboardService) GetRecentActivity(limit int) ([]models.RecentActivity
 
 func formatTimeAgo(t time.Time) string {
 	diff := time.Since(t)
-	
+
 	if diff < time.Minute {
 		return "agora"
 	} else if diff < time.Hour {

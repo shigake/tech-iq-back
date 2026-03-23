@@ -441,6 +441,23 @@ func (s *FinancialService) GetTechnicianPaymentsReport(filter models.TechnicianP
 	return s.repo.GetTechnicianPaymentsReport(startDate, endDate, filter.TechnicianID)
 }
 
+func (s *FinancialService) GetTechnicianCutoffReport(filter models.TechnicianCutoffReportFilter) ([]models.TechnicianCutoffReport, error) {
+	startDate, err := time.Parse("2006-01-02", filter.StartDate)
+	if err != nil {
+		return nil, errors.New("invalid start date format, expected YYYY-MM-DD")
+	}
+	endDate, err := time.Parse("2006-01-02", filter.EndDate)
+	if err != nil {
+		return nil, errors.New("invalid end date format, expected YYYY-MM-DD")
+	}
+
+	if endDate.Before(startDate) {
+		return nil, errors.New("end date must be after start date")
+	}
+
+	return s.repo.GetTechnicianCutoffReport(startDate, endDate, filter.TechnicianID)
+}
+
 // GetCategories returns all available financial categories
 func (s *FinancialService) GetCategories() []models.FinancialCategory {
 	return models.GetFinancialCategories()

@@ -347,14 +347,22 @@ func (s *GeoService) GetClusters(zoom int, swLat, swLng, neLat, neLng float64, s
 
 	hasBounds := swLat != 0 || swLng != 0 || neLat != 0 || neLng != 0
 
-	// Filtrar por status e bounds
+	statusSet := make(map[string]bool)
+	if status != "" {
+		for _, s := range strings.Split(status, ",") {
+			s = strings.TrimSpace(s)
+			if s != "" {
+				statusSet[s] = true
+			}
+		}
+	}
+
 	filtered := make([]cache.TechnicianGeoData, 0, len(allTechs))
 	for _, tech := range allTechs {
-		// Ignorar técnicos sem localização válida
 		if tech.Latitude == 0 && tech.Longitude == 0 {
 			continue
 		}
-		if status != "" && tech.Status != status {
+		if len(statusSet) > 0 && !statusSet[tech.Status] {
 			continue
 		}
 		if hasBounds {
@@ -391,6 +399,8 @@ func (s *GeoService) GetClusters(zoom int, swLat, swLng, neLat, neLng float64, s
 				Status:       tech.Status,
 				City:         tech.City,
 				State:        tech.State,
+				Phone:        tech.Phone,
+				Skills:       tech.Skills,
 				HasRealLoc:   tech.HasRealLocation,
 				MinutesAgo:   minutesAgo,
 			})
@@ -757,6 +767,18 @@ func (s *GeoService) loadTechniciansToCache() {
 	geoData := make([]cache.TechnicianGeoData, 0, len(technicians))
 
 	for _, tech := range technicians {
+		var phone string
+		if len(tech.Phones) > 0 {
+			phone = tech.Phones[0].Number
+		}
+
+		var skills []string
+		for skill, active := range tech.Skills {
+			if active {
+				skills = append(skills, skill)
+			}
+		}
+
 		data := cache.TechnicianGeoData{
 			TechnicianID: tech.ID,
 			Name:         tech.FullName,
@@ -766,6 +788,8 @@ func (s *GeoService) loadTechniciansToCache() {
 			Number:       tech.Number,
 			Neighborhood: tech.Neighborhood,
 			Status:       tech.Status,
+			Phone:        phone,
+			Skills:       skills,
 		}
 
 		// Prioridade de coordenadas:

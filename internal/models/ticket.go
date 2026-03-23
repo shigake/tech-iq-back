@@ -49,6 +49,7 @@ const (
 	TicketStatusInProgress   TicketStatus = "EM_ATENDIMENTO"
 	TicketStatusForClosing   TicketStatus = "PARA_FECHAMENTO"
 	TicketStatusClosed       TicketStatus = "FECHADO"
+	TicketStatusFinalized    TicketStatus = "FINALIZADO"
 	TicketStatusUnproductive TicketStatus = "IMPRODUTIVO"
 )
 
@@ -299,4 +300,31 @@ type TicketFilters struct {
 	Search       string `json:"search"`
 	DateFrom     string `json:"dateFrom"`
 	DateTo       string `json:"dateTo"`
+}
+
+type TicketSignature struct {
+	ID                string    `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	TicketID          string    `json:"ticketId" gorm:"type:uuid;not null;uniqueIndex"`
+	Ticket            *Ticket   `json:"ticket,omitempty" gorm:"foreignKey:TicketID"`
+	SignatureType     string    `json:"signatureType" gorm:"type:varchar(20);not null"`
+	SignatureImageURL string    `json:"signatureImageUrl" gorm:"type:varchar(500)"`
+	SignatureData     string    `json:"signatureData" gorm:"type:text"`
+	SignedAt          time.Time `json:"signedAt" gorm:"not null"`
+	SignedBy          string    `json:"signedBy" gorm:"type:varchar(255)"`
+	CreatedAt         time.Time `json:"createdAt"`
+	UpdatedAt         time.Time `json:"updatedAt"`
+}
+
+func (s *TicketSignature) BeforeCreate(tx *gorm.DB) error {
+	if s.ID == "" {
+		s.ID = uuid.New().String()
+	}
+	return nil
+}
+
+type CreateTicketSignatureRequest struct {
+	SignatureType     string `json:"signatureType" validate:"required"`
+	SignatureImageURL string `json:"signatureImageUrl"`
+	SignatureData     string `json:"signatureData"`
+	SignedBy          string `json:"signedBy" validate:"required"`
 }

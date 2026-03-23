@@ -41,12 +41,14 @@ type TechnicianGeoData struct {
 	Number          string   `json:"number,omitempty"`
 	Neighborhood    string   `json:"neighborhood,omitempty"`
 	Status          string   `json:"status"`
+	Phone           string   `json:"phone,omitempty"`
+	Skills          []string `json:"skills,omitempty"`
 	Latitude        float64  `json:"latitude"`
 	Longitude       float64  `json:"longitude"`
 	AccuracyM       *float64 `json:"accuracyM,omitempty"`
 	EventType       string   `json:"eventType,omitempty"`
-	LastUpdateTime  *int64   `json:"lastUpdateTime,omitempty"` // Unix timestamp
-	HasRealLocation bool     `json:"hasRealLocation"`          // true se tem localização real do app
+	LastUpdateTime  *int64   `json:"lastUpdateTime,omitempty"`
+	HasRealLocation bool     `json:"hasRealLocation"`
 }
 
 // TechnicianLastLocationKey retorna a chave Redis para última localização de um técnico

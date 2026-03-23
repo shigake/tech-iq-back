@@ -94,13 +94,13 @@ type FinancialEntry struct {
 	AttachmentURLs pq.StringArray `json:"attachmentUrls" gorm:"type:text[]"`
 
 	// Audit
-	CreatedBy   *string        `json:"createdBy" gorm:"type:uuid"`
-	CreatedByUser *User        `json:"createdByUser,omitempty" gorm:"foreignKey:CreatedBy;constraint:OnDelete:SET NULL"`
-	UpdatedBy   *string        `json:"updatedBy" gorm:"type:uuid"`
-	UpdatedByUser *User        `json:"updatedByUser,omitempty" gorm:"foreignKey:UpdatedBy;constraint:OnDelete:SET NULL"`
-	CreatedAt   time.Time      `json:"createdAt"`
-	UpdatedAt   time.Time      `json:"updatedAt"`
-	DeletedAt   gorm.DeletedAt `json:"-" gorm:"index"`
+	CreatedBy     *string        `json:"createdBy" gorm:"type:uuid"`
+	CreatedByUser *User          `json:"createdByUser,omitempty" gorm:"foreignKey:CreatedBy;constraint:OnDelete:SET NULL"`
+	UpdatedBy     *string        `json:"updatedBy" gorm:"type:uuid"`
+	UpdatedByUser *User          `json:"updatedByUser,omitempty" gorm:"foreignKey:UpdatedBy;constraint:OnDelete:SET NULL"`
+	CreatedAt     time.Time      `json:"createdAt"`
+	UpdatedAt     time.Time      `json:"updatedAt"`
+	DeletedAt     gorm.DeletedAt `json:"-" gorm:"index"`
 
 	// Optimistic locking
 	Version int `json:"version" gorm:"default:1"`
@@ -144,9 +144,9 @@ type PaymentBatch struct {
 	Status PaymentBatchStatus `json:"status" gorm:"type:varchar(20);not null;default:draft;index"`
 
 	// Approval
-	ApprovedBy   *string    `json:"approvedBy" gorm:"type:uuid"`
-	ApprovedByUser *User    `json:"approvedByUser,omitempty" gorm:"foreignKey:ApprovedBy;constraint:OnDelete:SET NULL"`
-	ApprovedAt   *time.Time `json:"approvedAt"`
+	ApprovedBy     *string    `json:"approvedBy" gorm:"type:uuid"`
+	ApprovedByUser *User      `json:"approvedByUser,omitempty" gorm:"foreignKey:ApprovedBy;constraint:OnDelete:SET NULL"`
+	ApprovedAt     *time.Time `json:"approvedAt"`
 
 	// Payment
 	PaidAt           *time.Time `json:"paidAt"`
@@ -179,16 +179,16 @@ func (PaymentBatch) TableName() string {
 
 // FinancialAuditLog represents an audit log for financial operations
 type FinancialAuditLog struct {
-	ID          string    `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
-	EntityType  string    `json:"entityType" gorm:"type:varchar(30);not null;index"`
-	EntityID    string    `json:"entityId" gorm:"type:uuid;not null;index"`
-	Action      string    `json:"action" gorm:"type:varchar(20);not null"`
-	Changes     string    `json:"changes" gorm:"type:jsonb"` // JSON string of changes
-	PerformedBy string    `json:"performedBy" gorm:"type:uuid;not null"`
-	PerformedByUser *User `json:"performedByUser,omitempty" gorm:"foreignKey:PerformedBy"`
-	PerformedAt time.Time `json:"performedAt" gorm:"default:now();index"`
-	IPAddress   string    `json:"ipAddress" gorm:"type:varchar(45)"`
-	UserAgent   string    `json:"userAgent" gorm:"type:text"`
+	ID              string    `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	EntityType      string    `json:"entityType" gorm:"type:varchar(30);not null;index"`
+	EntityID        string    `json:"entityId" gorm:"type:uuid;not null;index"`
+	Action          string    `json:"action" gorm:"type:varchar(20);not null"`
+	Changes         string    `json:"changes" gorm:"type:jsonb"` // JSON string of changes
+	PerformedBy     string    `json:"performedBy" gorm:"type:uuid;not null"`
+	PerformedByUser *User     `json:"performedByUser,omitempty" gorm:"foreignKey:PerformedBy"`
+	PerformedAt     time.Time `json:"performedAt" gorm:"default:now();index"`
+	IPAddress       string    `json:"ipAddress" gorm:"type:varchar(45)"`
+	UserAgent       string    `json:"userAgent" gorm:"type:text"`
 }
 
 func (f *FinancialAuditLog) BeforeCreate(tx *gorm.DB) error {
@@ -343,6 +343,36 @@ type CashFlowFilter struct {
 
 // TechnicianPaymentsFilter represents filters for the technician payments report
 type TechnicianPaymentsFilter struct {
+	StartDate    string `query:"startDate" validate:"required"`
+	EndDate      string `query:"endDate" validate:"required"`
+	TechnicianID string `query:"technicianId"`
+}
+
+type TechnicianCutoffReportEntry struct {
+	TicketID      string     `json:"ticketId"`
+	OSNumber      string     `json:"osNumber"`
+	ClientName    string     `json:"clientName"`
+	ClosedAt      *time.Time `json:"closedAt"`
+	AcceptedValue float64    `json:"acceptedValue"`
+	HasSignature  bool       `json:"hasSignature"`
+}
+
+type TechnicianCutoffReport struct {
+	TechnicianID   string                        `json:"technicianId"`
+	TechnicianName string                        `json:"technicianName"`
+	CPF            string                        `json:"cpf"`
+	CNPJ           string                        `json:"cnpj"`
+	BankName       string                        `json:"bankName"`
+	Agency         string                        `json:"agency"`
+	AccountNumber  string                        `json:"accountNumber"`
+	PixKey         string                        `json:"pixKey"`
+	PeriodStart    string                        `json:"periodStart"`
+	PeriodEnd      string                        `json:"periodEnd"`
+	Entries        []TechnicianCutoffReportEntry `json:"entries"`
+	TotalAmount    float64                       `json:"totalAmount"`
+}
+
+type TechnicianCutoffReportFilter struct {
 	StartDate    string `query:"startDate" validate:"required"`
 	EndDate      string `query:"endDate" validate:"required"`
 	TechnicianID string `query:"technicianId"`

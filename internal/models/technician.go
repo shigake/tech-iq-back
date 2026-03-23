@@ -148,6 +148,23 @@ func (a *StringArray) Scan(value interface{}) error {
 	return json.Unmarshal(bytes, a)
 }
 
+type TechnicianStatus string
+
+const (
+	TechnicianStatusAtivo       TechnicianStatus = "ATIVO"
+	TechnicianStatusHomologacao TechnicianStatus = "HOMOLOGACAO"
+	TechnicianStatusBlacklist   TechnicianStatus = "BLACKLIST"
+	TechnicianStatusDesativado  TechnicianStatus = "DESATIVADO"
+)
+
+func IsValidTechnicianStatus(status string) bool {
+	switch TechnicianStatus(status) {
+	case TechnicianStatusAtivo, TechnicianStatusHomologacao, TechnicianStatusBlacklist, TechnicianStatusDesativado:
+		return true
+	}
+	return false
+}
+
 // SkillsMap is a custom type for PostgreSQL JSONB map of skills
 type SkillsMap map[string]bool
 
@@ -315,6 +332,38 @@ type CreateTechnicianRequest struct {
 	KnowledgeDescription string          `json:"knowledgeDescription"`
 	EquipmentDescription string          `json:"equipmentDescription"`
 	Vehicle              string          `json:"vehicle"`
+}
+
+type TechnicianHistory struct {
+	ID            string      `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	TechnicianID  string      `json:"technicianId" gorm:"type:varchar(36);not null;index"`
+	Technician    *Technician `json:"technician,omitempty" gorm:"foreignKey:TechnicianID"`
+	TicketID      *string     `json:"ticketId" gorm:"type:uuid;index"`
+	Ticket        *Ticket     `json:"ticket,omitempty" gorm:"foreignKey:TicketID"`
+	ActivatedAt   time.Time   `json:"activatedAt" gorm:"not null"`
+	AcceptedValue float64     `json:"acceptedValue" gorm:"type:decimal(12,2)"`
+	ProposedValue float64     `json:"proposedValue" gorm:"type:decimal(12,2)"`
+	StatusAtTime  string      `json:"statusAtTime" gorm:"type:varchar(20)"`
+	Notes         string      `json:"notes" gorm:"type:text"`
+	CreatedBy     string      `json:"createdBy" gorm:"type:varchar(36)"`
+	CreatedByUser *User       `json:"createdByUser,omitempty" gorm:"foreignKey:CreatedBy"`
+	CreatedAt     time.Time   `json:"createdAt"`
+	UpdatedAt     time.Time   `json:"updatedAt"`
+}
+
+func (h *TechnicianHistory) BeforeCreate(tx *gorm.DB) error {
+	if h.ID == "" {
+		h.ID = uuid.New().String()
+	}
+	return nil
+}
+
+type CreateTechnicianHistoryRequest struct {
+	TicketID      string  `json:"ticketId"`
+	ActivatedAt   string  `json:"activatedAt" validate:"required"`
+	AcceptedValue float64 `json:"acceptedValue"`
+	ProposedValue float64 `json:"proposedValue"`
+	Notes         string  `json:"notes"`
 }
 
 func (r *CreateTechnicianRequest) ToModel() *Technician {
