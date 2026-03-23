@@ -67,6 +67,16 @@ func (s *ticketService) Create(req *models.CreateTicketRequest) (*models.Ticket,
 		ticket.CategoryID = &req.CategoryID
 	}
 
+	// Parse scheduling
+	if req.ScheduledDate != "" {
+		if t, err := time.Parse(time.RFC3339, req.ScheduledDate); err == nil {
+			ticket.ScheduledDate = &t
+		}
+	}
+	if req.ScheduledPeriod != "" {
+		ticket.ScheduledPeriod = models.ScheduledPeriod(req.ScheduledPeriod)
+	}
+
 	// Parse dates
 	if req.StartDate != "" {
 		if t, err := time.Parse(time.RFC3339, req.StartDate); err == nil {
@@ -198,6 +208,19 @@ func (s *ticketService) Update(id string, req *models.CreateTicketRequest) (*mod
 		existing.CategoryID = &req.CategoryID
 	}
 
+	if req.ScheduledDate != "" {
+		if t, err := time.Parse(time.RFC3339, req.ScheduledDate); err == nil {
+			existing.ScheduledDate = &t
+		}
+	} else {
+		existing.ScheduledDate = nil
+	}
+	if req.ScheduledPeriod != "" {
+		existing.ScheduledPeriod = models.ScheduledPeriod(req.ScheduledPeriod)
+	} else {
+		existing.ScheduledPeriod = ""
+	}
+
 	if req.StartDate != "" {
 		if t, err := time.Parse(time.RFC3339, req.StartDate); err == nil {
 			existing.StartDate = &t
@@ -237,6 +260,7 @@ func (s *ticketService) Delete(id string) error {
 func (s *ticketService) UpdateStatus(id string, status string) error {
 	validStatuses := map[string]bool{
 		"ABERTO":          true,
+		"AGENDADO":        true,
 		"EM_ATENDIMENTO":  true,
 		"PARA_FECHAMENTO": true,
 		"FECHADO":         true,

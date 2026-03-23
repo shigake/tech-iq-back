@@ -46,11 +46,21 @@ type TicketStatus string
 
 const (
 	TicketStatusOpen         TicketStatus = "ABERTO"
+	TicketStatusScheduled    TicketStatus = "AGENDADO"
 	TicketStatusInProgress   TicketStatus = "EM_ATENDIMENTO"
 	TicketStatusForClosing   TicketStatus = "PARA_FECHAMENTO"
 	TicketStatusClosed       TicketStatus = "FECHADO"
 	TicketStatusFinalized    TicketStatus = "FINALIZADO"
 	TicketStatusUnproductive TicketStatus = "IMPRODUTIVO"
+)
+
+type ScheduledPeriod string
+
+const (
+	ScheduledPeriodMorning  ScheduledPeriod = "MANHA"
+	ScheduledPeriodAfternoon ScheduledPeriod = "TARDE"
+	ScheduledPeriodFullDay  ScheduledPeriod = "INTEGRAL"
+	ScheduledPeriodSpecific ScheduledPeriod = "HORARIO_ESPECIFICO"
 )
 
 type TicketPriority string
@@ -117,6 +127,10 @@ type Ticket struct {
 	ClientSignature     string     `json:"clientSignature" gorm:"column:client_signature;type:text"`
 	SignedAt            *time.Time `json:"signedAt" gorm:"column:signed_at"`
 	SignedByName        string     `json:"signedByName" gorm:"column:signed_by_name;type:varchar(255)"`
+
+	// Scheduling
+	ScheduledDate   *time.Time      `json:"scheduledDate" gorm:"column:scheduled_date"`
+	ScheduledPeriod ScheduledPeriod `json:"scheduledPeriod" gorm:"column:scheduled_period;type:varchar(30)"`
 
 	// Dates
 	StartDate *time.Time     `json:"startDate"`
@@ -188,6 +202,8 @@ type TicketDTO struct {
 	SignedAt            *time.Time `json:"signedAt"`
 	SignedByName        string     `json:"signedByName"`
 	IsSigned            bool       `json:"isSigned"`
+	ScheduledDate       *time.Time `json:"scheduledDate"`
+	ScheduledPeriod     string     `json:"scheduledPeriod"`
 	StartDate           *time.Time `json:"startDate"`
 	DueDate             *time.Time `json:"dueDate"`
 	ClosedAt            *time.Time `json:"closedAt"`
@@ -228,6 +244,8 @@ func (t *Ticket) ToDTO() TicketDTO {
 		SignedAt:            t.SignedAt,
 		SignedByName:        t.SignedByName,
 		IsSigned:            t.TechnicianSignature != "" && t.ClientSignature != "",
+		ScheduledDate:       t.ScheduledDate,
+		ScheduledPeriod:     string(t.ScheduledPeriod),
 		StartDate:           t.StartDate,
 		DueDate:             t.DueDate,
 		ClosedAt:            t.ClosedAt,
@@ -245,6 +263,8 @@ type CreateTicketRequest struct {
 	ClientID         string       `json:"clientId"`
 	CategoryID       string       `json:"categoryId"`
 	TechnicianIDs    []string     `json:"technicianIds"`
+	ScheduledDate    string       `json:"scheduledDate"`
+	ScheduledPeriod  string       `json:"scheduledPeriod"`
 	StartDate        string       `json:"startDate"`
 	DueDate          string       `json:"dueDate"`
 	ComputerBrand    string       `json:"computerBrand"`
