@@ -247,6 +247,9 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	if req.LastName != "" {
 		user.LastName = req.LastName
 	}
+	if req.Phone != "" {
+		user.Phone = req.Phone
+	}
 	if req.Role != "" {
 		user.Role = req.Role
 	}

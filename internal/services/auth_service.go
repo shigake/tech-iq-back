@@ -318,6 +318,7 @@ func (s *authService) GetCurrentUser(userID string) (*models.CurrentUserResponse
 		FirstName:      user.FirstName,
 		LastName:       user.LastName,
 		FullName:       user.FullName,
+		Phone:          user.Phone,
 		Role:           user.Role,
 		ProfilePicture: user.ProfilePicture,
 		Active:         user.Active,

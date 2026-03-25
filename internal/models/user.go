@@ -14,6 +14,7 @@ type User struct {
 	FirstName      string    `json:"firstName" gorm:"type:varchar(100)"`
 	LastName       string    `json:"lastName" gorm:"type:varchar(100)"`
 	FullName       string    `json:"fullName" gorm:"type:varchar(255)"`
+	Phone          string    `json:"phone" gorm:"type:varchar(20)"`
 	Role           string    `json:"role" gorm:"type:varchar(50);default:USER"` // ADMIN, EMPLOYEE, USER
 	ProfilePicture string    `json:"profilePicture" gorm:"type:text"`
 	Active         bool      `json:"active" gorm:"default:true"`
@@ -85,6 +86,7 @@ type UpdateUserRequest struct {
 	Email     string `json:"email" validate:"omitempty,email"`
 	FirstName string `json:"firstName" validate:"omitempty,min=2"`
 	LastName  string `json:"lastName" validate:"omitempty,min=2"`
+	Phone     string `json:"phone" validate:"omitempty"`
 	Role      string `json:"role" validate:"omitempty"`
 	Active    *bool  `json:"active"`
 }
@@ -101,6 +103,7 @@ type UserResponse struct {
 	FirstName      string `json:"firstName"`
 	LastName       string `json:"lastName"`
 	FullName       string `json:"fullName"`
+	Phone          string `json:"phone,omitempty"`
 	Role           string `json:"role"`
 	ProfilePicture string `json:"profilePicture,omitempty"`
 	Active         bool   `json:"active"`
@@ -116,6 +119,7 @@ func (u *User) ToResponse() UserResponse {
 		FirstName:      u.FirstName,
 		LastName:       u.LastName,
 		FullName:       u.FullName,
+		Phone:          u.Phone,
 		Role:           u.Role,
 		ProfilePicture: u.ProfilePicture,
 		Active:         u.Active,
@@ -130,6 +134,7 @@ type CurrentUserResponse struct {
 	FirstName      string   `json:"firstName"`
 	LastName       string   `json:"lastName"`
 	FullName       string   `json:"fullName"`
+	Phone          string   `json:"phone,omitempty"`
 	Role           string   `json:"role"`
 	ProfilePicture string   `json:"profilePicture,omitempty"`
 	Active         bool     `json:"active"`
