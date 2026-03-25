@@ -102,6 +102,7 @@ func (s *authService) SignIn(req *models.SignInRequest, ipAddress, userAgent str
 		Token:        token,
 		RefreshToken: refreshToken,
 		ExpiresIn:    int64(s.config.JWTExpiration.Seconds()),
+		ID:           user.ID,
 		FirstName:    user.FirstName,
 		LastName:     user.LastName,
 		Email:        user.Email,
@@ -151,6 +152,7 @@ func (s *authService) SignUp(req *models.SignUpRequest) (*models.AuthResponse, e
 		Token:        token,
 		RefreshToken: refreshToken,
 		ExpiresIn:    int64(s.config.JWTExpiration.Seconds()),
+		ID:           user.ID,
 		FirstName:    user.FirstName,
 		LastName:     user.LastName,
 		Email:        user.Email,
@@ -231,6 +233,7 @@ func (s *authService) RefreshToken(tokenString string) (*models.AuthResponse, er
 		Token:        newToken,
 		RefreshToken: newRefreshToken, // Empty if not renewed
 		ExpiresIn:    int64(s.config.JWTExpiration.Seconds()),
+		ID:           user.ID,
 		FirstName:    user.FirstName,
 		LastName:     user.LastName,
 		Email:        user.Email,
