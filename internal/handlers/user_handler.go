@@ -62,7 +62,7 @@ func getUserRole(c *fiber.Ctx) string {
 
 // Helper function to safely get user ID from context
 func getUserID(c *fiber.Ctx) string {
-	if id := c.Locals("userID"); id != nil {
+	if id := c.Locals("userId"); id != nil {
 		if idStr, ok := id.(string); ok {
 			return idStr
 		}
