@@ -14,91 +14,99 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// ErrorLoggerMiddleware creates a middleware that logs errors to the database
+type loggedRequest struct {
+	method       string
+	path         string
+	ip           string
+	userAgent    string
+	userID       string
+	userEmail    string
+	requestBody  string
+	queryParams  string
+	responseBody []byte
+	handlerErr   error
+	statusCode   int
+	duration     int64
+}
+
 func ErrorLoggerMiddleware(errorLogService *services.ErrorLogService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		start := time.Now()
 
-		// Continue with request
 		err := c.Next()
 
-		// Calculate duration
 		duration := time.Since(start).Milliseconds()
 		statusCode := c.Response().StatusCode()
 
-		// Only log errors (status >= 400)
-		if statusCode >= 400 {
-			go logError(c, errorLogService, statusCode, duration, err)
+		if statusCode < 400 {
+			return err
 		}
+
+		snapshot := snapshotRequest(c, statusCode, duration, err)
+		go logError(errorLogService, snapshot)
 
 		return err
 	}
 }
 
-func logError(c *fiber.Ctx, service *services.ErrorLogService, statusCode int, duration int64, handlerErr error) {
-	// Recover from any panic in logging
+func snapshotRequest(c *fiber.Ctx, statusCode int, duration int64, handlerErr error) loggedRequest {
+	respBody := c.Response().Body()
+	respCopy := make([]byte, len(respBody))
+	copy(respCopy, respBody)
+
+	return loggedRequest{
+		method:       c.Method(),
+		path:         c.Path(),
+		ip:           c.IP(),
+		userAgent:    c.Get("User-Agent"),
+		userID:       localsString(c, "userId"),
+		userEmail:    localsString(c, "email"),
+		requestBody:  sanitizeRequestBody(c.Body()),
+		queryParams:  string(c.Request().URI().QueryString()),
+		responseBody: respCopy,
+		handlerErr:   handlerErr,
+		statusCode:   statusCode,
+		duration:     duration,
+	}
+}
+
+func localsString(c *fiber.Ctx, key string) string {
+	v := c.Locals(key)
+	if v == nil {
+		return ""
+	}
+	if s, ok := v.(string); ok {
+		return s
+	}
+	return ""
+}
+
+func logError(service *services.ErrorLogService, r loggedRequest) {
 	defer func() {
-		if r := recover(); r != nil {
-			fmt.Printf("Error logging failed: %v\n", r)
+		if rec := recover(); rec != nil {
+			fmt.Printf("Error logging failed: %v\n", rec)
 		}
 	}()
 
-	method := c.Method()
-	path := c.Path()
-	
-	// Get feature name
-	feature := models.GetFeatureName(method, path)
-	
-	// Determine action from method
-	action := getActionFromMethod(method)
-	
-	// Determine error level
-	level := getErrorLevel(statusCode)
-	
-	// Get error message
-	errorMessage := getErrorMessage(c, handlerErr, statusCode)
-	
-	// Get request body (sanitized)
-	requestBody := sanitizeRequestBody(c)
-	
-	// Get query params
-	queryParams := c.Request().URI().QueryString()
-	
-	// Get user info from context (with safe type assertion)
-	userID := ""
-	userEmail := ""
-	if uid := c.Locals("userId"); uid != nil {
-		if uidStr, ok := uid.(string); ok {
-			userID = uidStr
-		}
-	}
-	if email := c.Locals("email"); email != nil {
-		if emailStr, ok := email.(string); ok {
-			userEmail = emailStr
-		}
-	}
-	
-	// Create error log
 	errorLog := &models.ErrorLog{
 		Timestamp:    time.Now(),
-		Level:        level,
-		Feature:      feature,
-		Endpoint:     path,
-		Method:       method,
-		Action:       action,
-		ErrorCode:    fmt.Sprintf("HTTP_%d", statusCode),
-		ErrorMessage: errorMessage,
-		RequestBody:  requestBody,
-		QueryParams:  string(queryParams),
-		UserID:       userID,
-		UserEmail:    userEmail,
-		IPAddress:    c.IP(),
-		UserAgent:    c.Get("User-Agent"),
-		StatusCode:   statusCode,
-		Duration:     duration,
+		Level:        getErrorLevel(r.statusCode),
+		Feature:      models.GetFeatureName(r.method, r.path),
+		Endpoint:     r.path,
+		Method:       r.method,
+		Action:       getActionFromMethod(r.method),
+		ErrorCode:    fmt.Sprintf("HTTP_%d", r.statusCode),
+		ErrorMessage: getErrorMessage(r.responseBody, r.handlerErr, r.statusCode),
+		RequestBody:  r.requestBody,
+		QueryParams:  r.queryParams,
+		UserID:       r.userID,
+		UserEmail:    r.userEmail,
+		IPAddress:    r.ip,
+		UserAgent:    r.userAgent,
+		StatusCode:   r.statusCode,
+		Duration:     r.duration,
 	}
-	
-	// Log to database
+
 	if err := service.LogError(errorLog); err != nil {
 		fmt.Printf("Failed to log error to database: %v\n", err)
 	}
@@ -130,9 +138,7 @@ func getErrorLevel(statusCode int) string {
 	}
 }
 
-func getErrorMessage(c *fiber.Ctx, handlerErr error, statusCode int) string {
-	// Try to get error from response body
-	body := c.Response().Body()
+func getErrorMessage(body []byte, handlerErr error, statusCode int) string {
 	if len(body) > 0 {
 		var errResp map[string]interface{}
 		if err := json.Unmarshal(body, &errResp); err == nil {
@@ -143,59 +149,49 @@ func getErrorMessage(c *fiber.Ctx, handlerErr error, statusCode int) string {
 				return msg
 			}
 		}
-		// If not JSON, return raw body (truncated)
 		if len(body) > 500 {
 			return string(body[:500]) + "..."
 		}
 		return string(body)
 	}
-	
-	// Try to get error from handler error
+
 	if handlerErr != nil {
 		return handlerErr.Error()
 	}
-	
-	// Default message based on status code
+
 	return fmt.Sprintf("HTTP Error %d", statusCode)
 }
 
-func sanitizeRequestBody(c *fiber.Ctx) string {
-	body := c.Body()
+func sanitizeRequestBody(body []byte) string {
 	if len(body) == 0 {
 		return ""
 	}
-	
-	// Parse JSON to sanitize sensitive fields
+
 	var data map[string]interface{}
 	if err := json.Unmarshal(body, &data); err != nil {
-		// Not JSON, return truncated
 		if len(body) > 1000 {
 			return string(body[:1000]) + "..."
 		}
 		return string(body)
 	}
-	
-	// Sanitize sensitive fields
+
 	sensitiveFields := []string{"password", "senha", "token", "secret", "key", "apiKey", "api_key"}
 	sanitizeMap(data, sensitiveFields)
-	
-	// Convert back to JSON
+
 	sanitized, err := json.Marshal(data)
 	if err != nil {
 		return "[failed to sanitize]"
 	}
-	
-	// Truncate if too long
+
 	if len(sanitized) > 2000 {
 		return string(sanitized[:2000]) + "..."
 	}
-	
+
 	return string(sanitized)
 }
 
 func sanitizeMap(data map[string]interface{}, sensitiveFields []string) {
 	for key, value := range data {
-		// Check if key is sensitive
 		keyLower := strings.ToLower(key)
 		for _, sensitive := range sensitiveFields {
 			if strings.Contains(keyLower, sensitive) {
@@ -203,37 +199,23 @@ func sanitizeMap(data map[string]interface{}, sensitiveFields []string) {
 				break
 			}
 		}
-		
-		// Recursively sanitize nested maps
+
 		if nested, ok := value.(map[string]interface{}); ok {
 			sanitizeMap(nested, sensitiveFields)
 		}
 	}
 }
 
-// PanicRecoveryMiddleware recovers from panics and logs them
 func PanicRecoveryMiddleware(errorLogService *services.ErrorLogService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		defer func() {
 			if r := recover(); r != nil {
-				// Get stack trace
 				stack := debug.Stack()
-				
+
 				method := c.Method()
 				path := c.Path()
 				feature := models.GetFeatureName(method, path)
-				
-				// Get user info
-				userID := ""
-				userEmail := ""
-				if uid := c.Locals("userId"); uid != nil {
-					userID = uid.(string)
-				}
-				if email := c.Locals("userEmail"); email != nil {
-					userEmail = email.(string)
-				}
-				
-				// Create error log for panic
+
 				errorLog := &models.ErrorLog{
 					Timestamp:    time.Now(),
 					Level:        "CRITICAL",
@@ -244,35 +226,31 @@ func PanicRecoveryMiddleware(errorLogService *services.ErrorLogService) fiber.Ha
 					ErrorCode:    "PANIC",
 					ErrorMessage: fmt.Sprintf("Panic: %v", r),
 					StackTrace:   string(stack),
-					RequestBody:  sanitizeRequestBody(c),
+					RequestBody:  sanitizeRequestBody(c.Body()),
 					QueryParams:  string(c.Request().URI().QueryString()),
-					UserID:       userID,
-					UserEmail:    userEmail,
+					UserID:       localsString(c, "userId"),
+					UserEmail:    localsString(c, "userEmail"),
 					IPAddress:    c.IP(),
 					UserAgent:    c.Get("User-Agent"),
 					StatusCode:   500,
 				}
-				
-				// Log to database
+
 				if err := errorLogService.LogError(errorLog); err != nil {
 					fmt.Printf("Failed to log panic to database: %v\n", err)
 				}
-				
-				// Return 500 error
+
 				c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 					"error": "Internal server error",
 				})
 			}
 		}()
-		
+
 		return c.Next()
 	}
 }
 
-// RequestBodyBuffer middleware to allow reading body multiple times
 func RequestBodyBuffer() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// Store original body for later use
 		body := c.Body()
 		c.Locals("requestBody", bytes.Clone(body))
 		return c.Next()

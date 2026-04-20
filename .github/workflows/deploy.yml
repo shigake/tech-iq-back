@@ -82,6 +82,12 @@ jobs:
               {"op": "add", "path": "/spec/template/spec/volumes", "value": [{"name": "uploads", "hostPath": {"path": "/opt/tech-iq/uploads", "type": "DirectoryOrCreate"}}]},
               {"op": "add", "path": "/spec/template/spec/containers/0/volumeMounts", "value": [{"name": "uploads", "mountPath": "/app/uploads"}]}
             ]' || true
+
+            # Ensure liveness/readiness probes exist so K8s restarts pods that hang
+            kubectl patch deployment tech-erp-backend -n hml --type='json' -p='[
+              {"op": "add", "path": "/spec/template/spec/containers/0/livenessProbe", "value": {"httpGet": {"path": "/api/v1/health", "port": 8080}, "initialDelaySeconds": 15, "periodSeconds": 20, "timeoutSeconds": 5, "failureThreshold": 3}},
+              {"op": "add", "path": "/spec/template/spec/containers/0/readinessProbe", "value": {"httpGet": {"path": "/api/v1/health", "port": 8080}, "initialDelaySeconds": 5, "periodSeconds": 10, "timeoutSeconds": 3, "failureThreshold": 3}}
+            ]' || true
             
             # Configure Traefik middleware for large uploads (50MB)
             cat <<EOF | kubectl apply -f -
