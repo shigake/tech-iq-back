@@ -11,6 +11,8 @@
 # Configuration
 BASE_URL="${BASE_URL:-http://localhost:8080}"
 API_URL="$BASE_URL/api/v1"
+TEST_EMAIL="${TEST_EMAIL:-admin@example.com}"
+TEST_PASSWORD="${TEST_PASSWORD:-changeme}"
 
 # Colors for output
 RED='\033[0;31m'
@@ -149,7 +151,7 @@ log_section "AUTHENTICATION"
 log_info "Testing Sign In..."
 response=$(curl -s -w "\n%{http_code}" -X POST \
     -H "Content-Type: application/json" \
-    -d '{"email":"admin@techerp.com","password":"admin123"}' \
+    -d "{\"email\":\"$TEST_EMAIL\",\"password\":\"$TEST_PASSWORD\"}" \
     "$API_URL/auth/signin")
 status=$(get_status "$response")
 body=$(get_body "$response")

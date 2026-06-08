@@ -5,7 +5,7 @@ This folder contains the Postman collection and environment files for testing th
 ## Files
 
 - `TechERP_API.postman_collection.json` - Complete API collection with all endpoints
-- `TechERP_API.postman_environment.json` - Environment variables for Production
+- `TechERP_API.postman_environment.json` - Environment variables for local development
 
 ## How to Import
 
@@ -16,13 +16,13 @@ This folder contains the Postman collection and environment files for testing th
 
 ## Setup
 
-1. After importing, select the **TechERP - Production** environment from the dropdown (top right)
-2. The `baseUrl` is pre-configured to `https://srv1209774.hstgr.cloud/api/v1`
+1. After importing, select the **TechERP - Local** environment from the dropdown (top right)
+2. The `baseUrl` is pre-configured to `http://localhost:8080/api/v1`
 
 ## Authentication
 
 1. Open the **Auth > Sign In** request
-2. Update the email/password if needed (default: `admin@techerp.com` / `admin123`)
+2. Update the email/password with your credentials
 3. Send the request
 4. The token will be automatically saved to the `{{token}}` variable (via test script)
 5. All subsequent requests will use this token automatically

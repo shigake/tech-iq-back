@@ -5,8 +5,13 @@
 # ========================================
 
 param(
-    [string]$BaseUrl = "http://localhost:8080"
+    [string]$BaseUrl = "http://localhost:8080",
+    [string]$TestEmail = $env:TEST_EMAIL,
+    [string]$TestPassword = $env:TEST_PASSWORD
 )
+
+if (-not $TestEmail) { $TestEmail = "admin@example.com" }
+if (-not $TestPassword) { $TestPassword = "changeme" }
 
 $ErrorActionPreference = "Continue"
 
@@ -157,8 +162,8 @@ Write-Section "AUTHENTICATION"
 # Sign In
 Write-Info "Testing Sign In..."
 $loginBody = @{
-    email = "admin@techerp.com"
-    password = "admin123"
+    email = $TestEmail
+    password = $TestPassword
 }
 
 try {

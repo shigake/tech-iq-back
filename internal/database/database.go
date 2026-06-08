@@ -2,6 +2,7 @@ package database
 
 import (
 	"log"
+	"os"
 
 	"github.com/shigake/tech-iq-back/internal/config"
 	"github.com/shigake/tech-iq-back/internal/models"
@@ -283,23 +284,29 @@ func SeedAccessControl(db *gorm.DB) {
 func SeedAdminUser(db *gorm.DB) {
 	log.Println("🔄 Checking admin user...")
 
+	adminEmail := os.Getenv("ADMIN_EMAIL")
+	if adminEmail == "" {
+		adminEmail = "admin@example.com"
+	}
+	adminPassword := os.Getenv("ADMIN_PASSWORD")
+	if adminPassword == "" {
+		adminPassword = "changeme"
+	}
+
 	var existing models.User
-	if db.Where("email = ?", "admin@techerp.com").First(&existing).RowsAffected > 0 {
+	if db.Where("email = ?", adminEmail).First(&existing).RowsAffected > 0 {
 		log.Println("✅ Admin user already exists")
 		return
 	}
 
-	// Create admin user with hashed password
-	// Password: admin123
-	// Generate hash at runtime to ensure it's valid
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(adminPassword), bcrypt.DefaultCost)
 	if err != nil {
 		log.Printf("⚠️ Failed to hash password: %v", err)
 		return
 	}
 
 	admin := models.User{
-		Email:     "admin@techerp.com",
+		Email:     adminEmail,
 		Password:  string(hashedPassword),
 		FirstName: "Administrador",
 		LastName:  "Sistema",
@@ -313,7 +320,7 @@ func SeedAdminUser(db *gorm.DB) {
 		return
 	}
 
-	log.Println("✅ Admin user created (admin@techerp.com / admin123)")
+	log.Println("✅ Admin user created")
 }
 
 // SeedFinancialCategories creates default financial categories
